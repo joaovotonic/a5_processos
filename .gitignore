@@ -1,0 +1,71 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+ENV/
+env/
+
+# Environment Variables & Local Config
+.env
+.env.local
+*.local
+
+# Database & Backups
+*.db
+*.sqlite
+*.sqlite3
+database/*.db
+database/tts_cache/
+backups/
+scratch/
+
+# User Uploads (mantém a pasta mas ignora arquivos de upload)
+static/uploads/*
+!static/uploads/.gitkeep
+
+# PDFs de Esteira
+entrada_pdfs/*
+!entrada_pdfs/.gitkeep
+arquivados_pdfs/*
+!arquivados_pdfs/.gitkeep
+
+# Logs & Temporary Files
+*.log
+*.tmp
+*.bak
+temp/
+
+# IDE & OS Files
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+.DS_Store
+

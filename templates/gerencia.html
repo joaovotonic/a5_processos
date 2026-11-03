@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerência & Indicadores • A5 Tecnologia</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen antialiased transition-colors">
+    <header class="bg-white dark:bg-zinc-900/90 border-b border-slate-200 dark:border-zinc-800 px-6 py-3 sticky top-0 z-30 backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div>
+                <h1 class="text-sm font-bold text-[#254a93] dark:text-white flex items-center gap-1.5 leading-none">
+                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-400"></i>
+                    <span>Gerência, Produtividade & Auditoria</span>
+                </h1>
+                <p class="text-[10px] font-semibold text-[#2aa6c8] dark:text-sky-400 tracking-wide mt-0.5 leading-tight">A5 Tecnologia • Métricas & Exportação</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="toggleGerenciaTheme()" id="gerenciaThemeBtn"
+                    class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 p-2 rounded-lg text-xs transition" title="Alternar Tema">
+                <i data-lucide="moon" class="w-4 h-4"></i>
+            </button>
+            <a href="/api/backup/download" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-semibold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                <i data-lucide="database" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>Backup (.DB)</span>
+            </a>
+            <a href="/api/export/csv?period=all" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-semibold px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span>Exportar CSV</span>
+            </a>
+            <a href="/admin" class="bg-sky-500 hover:bg-sky-400 text-slate-950 px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                <span>Voltar ao Kanban</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-6 space-y-6">
+        <!-- CARDS DE MÉTRICAS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                <span class="text-[11px] uppercase tracking-wider font-bold text-slate-400">Finalizadas Hoje</span>
+                <div id="mDaily" class="text-3xl font-extrabold font-mono text-sky-500 mt-1">0</div>
+            </div>
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                <span class="text-[11px] uppercase tracking-wider font-bold text-slate-400">Finalizadas no Mês</span>
+                <div id="mMonthly" class="text-3xl font-extrabold font-mono text-slate-900 dark:text-white mt-1">0</div>
+            </div>
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                <span class="text-[11px] uppercase tracking-wider font-bold text-slate-400">Acumulado no Ano</span>
+                <div id="mYearly" class="text-3xl font-extrabold font-mono text-emerald-500 mt-1">0</div>
+            </div>
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-4 rounded-xl shadow-sm">
+                <span class="text-[11px] uppercase tracking-wider font-bold text-slate-400">Tempo Médio de Ciclo</span>
+                <div id="mLeadTime" class="text-3xl font-extrabold font-mono text-indigo-400 mt-1">0h</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- RANKING DE TÉCNICOS -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 rounded-xl shadow-sm">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                    <i data-lucide="award" class="w-4 h-4 text-sky-500"></i>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white">Produtividade por Técnico (Mês Atual)</h3>
+                </div>
+                <div id="techRankingList" class="space-y-3"></div>
+            </div>
+
+            <!-- LOG DE AUDITORIA -->
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-5 rounded-xl shadow-sm">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-zinc-800 pb-2">
+                    <i data-lucide="history" class="w-4 h-4 text-sky-500"></i>
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white">Histórico Recente de Movimentações</h3>
+                </div>
+                <div id="historyList" class="space-y-2 max-h-80 overflow-y-auto text-xs"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function esc(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function refreshIcons() {
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadAnalytics() {
+            try {
+                const res = await fetch("/api/analytics");
+                const data = await res.json();
+
+                document.getElementById("mDaily").textContent = data.daily_count;
+                document.getElementById("mMonthly").textContent = data.monthly_count;
+                document.getElementById("mYearly").textContent = data.yearly_count;
+                document.getElementById("mLeadTime").textContent = `${data.avg_Lead_time_hours}h`;
+
+                const maxCount = Math.max(...data.tech_ranking.map(t => t.total), 1);
+                document.getElementById("techRankingList").innerHTML = data.tech_ranking.map(t => {
+                    const pct = Math.round((t.total / maxCount) * 100);
+                    return `
+                        <div>
+                            <div class="flex justify-between gap-2 text-xs font-semibold mb-1">
+                                <span class="truncate text-slate-800 dark:text-zinc-200">${esc(t.tech)}</span>
+                                <span class="text-sky-400 font-mono font-bold shrink-0">${t.total} OS</span>
+                            </div>
+                            <div class="w-full bg-slate-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-sky-500 h-full rounded-full transition-all duration-500" style="width:${pct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join("") || `<p class="text-xs text-slate-400">Nenhuma finalização registrada neste mês ainda.</p>`;
+
+                document.getElementById("historyList").innerHTML = data.recent_history.map(h => `
+                    <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 flex justify-between items-start gap-3">
+                        <div class="min-w-0 flex-1">
+                            <span class="font-mono font-bold text-sky-400">OS ${esc(h.os_number)}</span> — ${esc(h.action_description)}
+                            <span class="block text-[10px] text-slate-400 mt-0.5">Por: ${esc(h.actor)}</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400 shrink-0">${esc((h.timestamp || '').slice(0, 16).replace('T', ' '))}</span>
+                    </div>
+                `).join("");
+                refreshIcons();
+            } catch (e) {}
+        }
+
+        function applyGerenciaTheme(theme) {
+            const isDark = theme === "dark";
+            document.documentElement.classList.toggle("dark", isDark);
+            const btn = document.getElementById("gerenciaThemeBtn");
+            if (btn) {
+                btn.innerHTML = isDark ? `<i data-lucide="sun" class="w-4 h-4"></i>` : `<i data-lucide="moon" class="w-4 h-4"></i>`;
+                refreshIcons();
+            }
+            localStorage.setItem("a5_gerencia_theme", theme);
+        }
+        function toggleGerenciaTheme() {
+            const cur = localStorage.getItem("a5_gerencia_theme") || "dark";
+            applyGerenciaTheme(cur === "dark" ? "clean" : "dark");
+        }
+        applyGerenciaTheme(localStorage.getItem("a5_gerencia_theme") || localStorage.getItem("a5_theme") || "dark");
+        loadAnalytics();
+    </script>
+</body>
+</html>

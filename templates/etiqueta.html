@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Etiqueta O.S. {{ card.os_number }} - {{ card.client_name }}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @page {
+            size: 60mm 40mm;
+            margin: 0mm;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            width: 60mm;
+            height: 40mm;
+            background: #ffffff;
+            color: #000000;
+            overflow: hidden;
+        }
+        .label-container {
+            width: 60mm;
+            height: 40mm;
+            padding: 1.8mm 2.2mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5mm solid #000000;
+            padding-bottom: 0.8mm;
+        }
+        .header-logo-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1.2mm;
+        }
+        .logo-box {
+            background: #000000;
+            color: #ffffff;
+            font-family: 'Times New Roman', Georgia, serif;
+            font-weight: bold;
+            font-size: 8pt;
+            padding: 0.4mm 1.2mm;
+            border-radius: 0.4mm;
+            line-height: 1;
+        }
+        .header-title {
+            font-size: 8pt;
+            font-weight: 900;
+            letter-spacing: -0.2px;
+        }
+
+        /* Linha do Cliente com O.S. Grande ao Lado */
+        .client-os-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.5mm;
+            margin: 0.8mm 0;
+            line-height: 1.1;
+        }
+        .client-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .client-name {
+            font-size: 9.5pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #000000;
+        }
+        .equip-name {
+            font-size: 7.5pt;
+            font-weight: 700;
+            color: #333333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 0.4mm;
+        }
+        .os-badge-large {
+            flex-shrink: 0;
+            background: #000000;
+            color: #ffffff;
+            padding: 0.8mm 1.6mm;
+            border-radius: 0.5mm;
+            text-align: center;
+            line-height: 1;
+        }
+        .os-label-mini {
+            font-size: 5.5pt;
+            font-weight: bold;
+            color: #cccccc;
+            margin-bottom: 0.4mm;
+            letter-spacing: 0.5px;
+        }
+        .os-number-big {
+            font-family: monospace;
+            font-size: 13pt;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+
+        /* Seção Central: Acessórios 2x2 + QR Code */
+        .content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 0.4mm solid #000000;
+            border-bottom: 0.4mm solid #000000;
+            padding: 0.8mm 0;
+            flex: 1;
+            min-height: 0;
+        }
+        .accessories-grid {
+            flex: 1;
+            padding-right: 1.5mm;
+            font-size: 7.5pt;
+            line-height: 1.25;
+        }
+        .acc-title {
+            font-size: 6pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 0.6mm;
+        }
+        .acc-row {
+            display: flex;
+            gap: 2mm;
+            margin-bottom: 0.4mm;
+        }
+        .acc-item {
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .chk-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.8mm;
+            height: 2.8mm;
+            border: 0.35mm solid #000000;
+            border-radius: 0.4mm;
+            font-size: 6.5pt;
+            font-weight: 900;
+            line-height: 1;
+            margin-right: 0.8mm;
+            background: #ffffff;
+            color: #000000;
+        }
+        .chk-box.checked {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .qr-box-wrap {
+            flex-shrink: 0;
+            padding-left: 1.5mm;
+            border-left: 0.35mm solid #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .qr-box {
+            width: 19mm;
+            height: 19mm;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Rodapé */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: monospace;
+            font-size: 6.5pt;
+            font-weight: bold;
+            color: #333333;
+            padding-top: 0.6mm;
+        }
+
+        @media screen {
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                background: #09090b;
+                color: #f4f4f5;
+            }
+            .label-container {
+                border: 1px solid #000;
+                box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+                border-radius: 4px;
+            }
+            .no-print {
+                margin-top: 24px;
+                display: flex;
+                gap: 12px;
+            }
+            .btn {
+                background: #0284c7;
+                color: #fff;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 13px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .btn:hover {
+                background: #0369a1;
+            }
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="label-container">
+        
+        <!-- CABEÇALHO -->
+        <div class="header">
+            <div class="header-logo-wrap">
+                <span class="logo-box">A5</span>
+                <span class="header-title">A5 TECNOLOGIA</span>
+            </div>
+            <div style="font-size: 7.5pt; font-weight: 700; color: #444444; letter-spacing: -0.2px;">
+                <span>BALANÇAS & SISTEMAS</span>
+            </div>
+        </div>
+
+        <!-- CLIENTE COM O.S. GRANDE AO LADO -->
+        <div class="client-os-row">
+            <div class="client-info">
+                <div class="client-name">CLI: {{ card.client_name }}</div>
+                <div class="equip-name">EQP: {{ card.equipment_type }} {{ card.equipment_model or '' }}</div>
+            </div>
+            <div class="os-badge-large">
+                <div class="os-label-mini">O.S.</div>
+                <div class="os-number-big">{{ card.os_number }}</div>
+            </div>
+        </div>
+
+        <!-- ACESSÓRIOS 2x2 + MEGA QR CODE -->
+        <div class="content">
+            <div class="accessories-grid">
+                <div class="acc-title">ACESSÓRIOS RECEBIDOS:</div>
+                <div class="acc-row">
+                    <span class="acc-item"><span class="chk-box {% if card.accessories and 'Prato' in card.accessories %}checked{% endif %}">{% if card.accessories and 'Prato' in card.accessories %}✓{% else %}&nbsp;{% endif %}</span>Prato</span>
+                    <span class="acc-item"><span class="chk-box {% if card.accessories and 'Fonte' in card.accessories %}checked{% endif %}">{% if card.accessories and 'Fonte' in card.accessories %}✓{% else %}&nbsp;{% endif %}</span>Fonte</span>
+                </div>
+                <div class="acc-row">
+                    <span class="acc-item"><span class="chk-box {% if card.accessories and 'Cabo' in card.accessories %}checked{% endif %}">{% if card.accessories and 'Cabo' in card.accessories %}✓{% else %}&nbsp;{% endif %}</span>Cabo</span>
+                    <span class="acc-item"><span class="chk-box {% if card.accessories and 'Bateria' in card.accessories %}checked{% endif %}">{% if card.accessories and 'Bateria' in card.accessories %}✓{% else %}&nbsp;{% endif %}</span>Bateria</span>
+                </div>
+            </div>
+            <div class="qr-box-wrap">
+                <div class="qr-box" id="qrcode"></div>
+            </div>
+        </div>
+
+        <!-- RODAPÉ -->
+        <div class="footer">
+            <span>A5 BALANÇAS & SISTEMAS</span>
+            <span>{{ card.created_at[:16] if card.created_at else '' }}</span>
+        </div>
+    </div>
+
+    <div class="no-print">
+        <button class="btn" onclick="window.print()">🖨️ Imprimir Etiqueta (60x40mm)</button>
+        <button class="btn" style="background:#334155" onclick="window.close()">Fechar</button>
+    </div>
+
+    <script>
+        new QRCode(document.getElementById("qrcode"), {
+            text: "{{ qr_url }}",
+            width: 72,
+            height: 72,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+        window.onload = () => {
+            setTimeout(() => window.print(), 400);
+        };
+    </script>
+</body>
+</html>

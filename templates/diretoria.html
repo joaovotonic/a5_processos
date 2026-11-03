@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Diretoria - Sr. Jacson - A5 Tecnologia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-card {
+            background: rgba(18, 18, 23, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-inner {
+            background: rgba(24, 24, 27, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .call-btn {
+            background: rgba(24, 24, 27, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .call-btn:hover {
+            border-color: #0ea5e9;
+            background: #1e1e24;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+        }
+        .call-btn:active {
+            transform: scale(0.97);
+        }
+        .filter-btn.active {
+            background: #0ea5e9 !important;
+            color: #09090b !important;
+            font-weight: 800 !important;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+        }
+        /* Tema Clean */
+        body.theme-clean {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean .glass-card {
+            background: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
+        }
+        body.theme-clean .glass-inner {
+            background: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean .call-btn {
+            background: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean .call-btn:hover {
+            border-color: #0284c7 !important;
+            background: #f0f9ff !important;
+        }
+        body.theme-clean header {
+            background-color: #ffffff !important;
+            border-bottom-color: #e2e8f0 !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        body.theme-clean header h1 { color: #254a93 !important; }
+        body.theme-clean header p { color: #2aa6c8 !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(14, 165, 233, 0.3); border-radius: 9999px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased pb-12">
+
+    <!-- CABEÇALHO EXECUTIVO -->
+    <header class="px-5 py-3.5 bg-zinc-950/90 border-b border-zinc-800/80 sticky top-0 z-30 backdrop-blur-md flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <svg viewBox="0 0 48 32" class="w-10 h-7 shrink-0 drop-shadow" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central">A5</text>
+            </svg>
+            <span class="bg-amber-500 text-slate-950 font-mono font-black px-2.5 py-1 rounded-xl text-xs shrink-0 shadow-sm">
+                DIRETORIA EXECUTIVA
+            </span>
+            <div>
+                <h1 class="text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                    <span>Painel do Sr. Jacson</span>
+                    <span id="socketDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" title="Conectado à TV da Oficina"></span>
+                </h1>
+                <p class="text-[11px] text-sky-400 font-semibold leading-tight">A5 Tecnologia • Central de Chamados & Produtividade da Esteira</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="/painel-tv" target="_blank" class="glass-inner hover:border-sky-500/50 text-zinc-300 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="tv" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span class="hidden sm:inline">TV Oficina</span>
+            </a>
+            <a href="/admin" target="_blank" class="glass-inner hover:border-sky-500/50 text-zinc-300 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span class="hidden sm:inline">Kanban</span>
+            </a>
+            <button type="button" onclick="toggleTheme()" id="themeBtn"
+                class="glass-inner hover:border-slate-500 text-zinc-300 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                title="Alternar Tema">
+                <i data-lucide="sun" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6 flex-1">
+
+        <!-- ============================================================================== -->
+        <!-- BLOCO A: CENTRAL DE CHAMADOS NA TV (1 CLIQUE DO SR. JACSON)                   -->
+        <!-- ============================================================================== -->
+        <section class="glass-card rounded-3xl p-5 sm:p-6 space-y-4 border border-amber-500/20 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                        <i data-lucide="volume-2" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-black uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                            <span>Central de Chamados na TV (1 Clique)</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">Audio Ducking Ativo</span>
+                        </h2>
+                        <p class="text-xs text-zinc-400">Clique em qualquer pessoa para abaixar o som da TV e chamá-la imediatamente para a sua sala.</p>
+                    </div>
+                </div>
+
+                <!-- Toggle de Urgência -->
+                <button type="button" id="urgentToggleBtn" onclick="toggleUrgent()"
+                    class="px-3.5 py-1.5 rounded-xl text-xs font-black border border-zinc-700 bg-zinc-900 text-zinc-300 flex items-center gap-2 transition hover:border-rose-500">
+                    <span id="urgentDot" class="w-2.5 h-2.5 rounded-full bg-zinc-500"></span>
+                    <span id="urgentText">Chamado Normal</span>
+                </button>
+            </div>
+
+            <!-- GRID DE BOTÕES DE 1 CLIQUE -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 pt-1">
+                <!-- 1. TODOS (OFICINA TODA) -->
+                <button type="button" onclick="quickCall('TODOS (OFICINA TODA)')"
+                    class="call-btn col-span-2 sm:col-span-2 lg:col-span-2 p-3.5 rounded-2xl flex items-center justify-between gap-2 border border-sky-500/30 bg-sky-950/20 group">
+                    <div class="text-left min-w-0">
+                        <span class="text-[10px] font-black uppercase text-sky-400 block tracking-wider">Aviso Geral</span>
+                        <strong class="text-xs sm:text-sm font-black text-white group-hover:text-sky-300 block truncate">📢 TODA A OFICINA</strong>
+                    </div>
+                    <span class="w-8 h-8 rounded-xl bg-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-110 transition shrink-0">
+                        <i data-lucide="radio" class="w-4 h-4"></i>
+                    </span>
+                </button>
+
+                <!-- 2. PRISCILA (ADM / RECEPÇÃO) -->
+                <button type="button" onclick="quickCall('Priscila (Recepção)')"
+                    class="call-btn col-span-2 sm:col-span-2 lg:col-span-2 p-3.5 rounded-2xl flex items-center justify-between gap-2 border border-purple-500/30 bg-purple-950/20 group">
+                    <div class="text-left min-w-0">
+                        <span class="text-[10px] font-black uppercase text-purple-400 block tracking-wider">Recepção / Adm</span>
+                        <strong class="text-xs sm:text-sm font-black text-white group-hover:text-purple-300 block truncate">👩‍💼 PRISCILA</strong>
+                    </div>
+                    <span class="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition shrink-0">
+                        <i data-lucide="user" class="w-4 h-4"></i>
+                    </span>
+                </button>
+
+                <!-- 3. TÉCNICOS INDIVIDUAIS -->
+                {% for tech in technicians %}
+                    <button type="button" onclick="quickCall('{{ tech }}')"
+                        class="call-btn p-3 rounded-2xl flex flex-col justify-between gap-2 group text-left">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[9px] font-black uppercase text-zinc-400 group-hover:text-sky-400">Técnico</span>
+                            <span class="w-6 h-6 rounded-lg bg-zinc-800 group-hover:bg-sky-500/20 flex items-center justify-center text-zinc-400 group-hover:text-sky-400 transition">
+                                <i data-lucide="wrench" class="w-3 h-3"></i>
+                            </span>
+                        </div>
+                        <strong class="text-xs font-black text-zinc-100 group-hover:text-white truncate block">{{ tech }}</strong>
+                    </button>
+                {% endfor %}
+            </div>
+
+            <!-- OPÇÃO EXPANSÍVEL: MENSAGEM PERSONALIZADA -->
+            <details class="group pt-1">
+                <summary class="text-xs font-bold text-zinc-400 hover:text-zinc-200 cursor-pointer flex items-center justify-between list-none">
+                    <span class="flex items-center gap-1.5">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5 text-sky-400"></i>
+                        <span>Enviar Mensagem Específica ou Falar Texto Personalizado na TV</span>
+                    </span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition group-open:rotate-180"></i>
+                </summary>
+                <div class="pt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div class="md:col-span-3">
+                        <input type="text" id="customMsgInput" placeholder="Ex: Favor trazer a O.S. 1025 aqui na minha sala com urgência..."
+                            class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <button type="button" onclick="sendCustomMessage()"
+                            class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-sky-600/20">
+                            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                            <span>FALAR NA TV</span>
+                        </button>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- ============================================================================== -->
+        <!-- BLOCO B: RELATÓRIO COMPLETO DE PRODUTIVIDADE & TEMPOS (ESTEIRA DE PRODUÇÃO)    -->
+        <!-- ============================================================================== -->
+        <section class="space-y-4">
+
+            <!-- BARRA DE FILTROS DINÂMICOS -->
+            <div class="glass-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 border border-sky-500/20">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-black uppercase text-zinc-400 flex items-center gap-1.5 mr-1">
+                        <i data-lucide="filter" class="w-3.5 h-3.5 text-sky-400"></i>
+                        <span>Período:</span>
+                    </span>
+                    <button type="button" onclick="setPeriod('today')" id="filter_today" class="filter-btn active text-xs font-bold px-3 py-1.5 rounded-xl glass-inner transition">Hoje</button>
+                    <button type="button" onclick="setPeriod('week')" id="filter_week" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-xl glass-inner transition">Esta Semana</button>
+                    <button type="button" onclick="setPeriod('month')" id="filter_month" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-xl glass-inner transition">Este Mês</button>
+                    <button type="button" onclick="setPeriod('all')" id="filter_all" class="filter-btn text-xs font-bold px-3 py-1.5 rounded-xl glass-inner transition">Geral (Tudo)</button>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <label for="techFilter" class="text-xs font-bold text-zinc-400">Técnico:</label>
+                    <select id="techFilter" onchange="loadReport()"
+                        class="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-sky-500">
+                        <option value="">TODOS OS TÉCNICOS</option>
+                        {% for tech in technicians %}
+                            <option value="{{ tech }}">{{ tech }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <button type="button" onclick="loadReport()" class="p-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white transition shadow" title="Atualizar dados agora">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="refreshIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIS NO TOPO (5 CARDS EXECUTIVOS) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <!-- 1. Balanças Prontas -->
+                <div class="glass-card rounded-2xl p-4 space-y-1 border border-emerald-500/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-emerald-400 tracking-wider">Balanças Prontas</span>
+                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                    </div>
+                    <div class="text-2xl font-black text-white font-mono" id="kpiProntas">0</div>
+                    <p class="text-[10px] text-zinc-400">Finalizadas no período</p>
+                </div>
+
+                <!-- 2. Orçamentos Feitos -->
+                <div class="glass-card rounded-2xl p-4 space-y-1 border border-sky-500/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-sky-400 tracking-wider">Orçamentos Feitos</span>
+                        <i data-lucide="file-check" class="w-4 h-4 text-sky-400"></i>
+                    </div>
+                    <div class="text-2xl font-black text-white font-mono" id="kpiOrcamentos">0</div>
+                    <p class="text-[10px] text-zinc-400">Laudos concluídos</p>
+                </div>
+
+                <!-- 3. Tempo Médio Orçamento -->
+                <div class="glass-card rounded-2xl p-4 space-y-1 border border-amber-500/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-amber-400 tracking-wider">Média Orçamento</span>
+                        <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                    </div>
+                    <div class="text-2xl font-black text-amber-300 font-mono" id="kpiMediaOrc">0m</div>
+                    <p class="text-[10px] text-zinc-400">Diagnóstico técnico</p>
+                </div>
+
+                <!-- 4. Tempo Médio Manutenção -->
+                <div class="glass-card rounded-2xl p-4 space-y-1 border border-purple-500/30">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-purple-400 tracking-wider">Média Conserto</span>
+                        <i data-lucide="wrench" class="w-4 h-4 text-purple-400"></i>
+                    </div>
+                    <div class="text-2xl font-black text-purple-300 font-mono" id="kpiMediaMan">0m</div>
+                    <p class="text-[10px] text-zinc-400">Reparo + calibração</p>
+                </div>
+
+                <!-- 5. Balanças Aguardando Cliente (Tempo Morto) -->
+                <div class="glass-card rounded-2xl p-4 space-y-1 border border-rose-500/30 col-span-2 sm:col-span-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase text-rose-400 tracking-wider">Paradas p/ Cliente</span>
+                        <i data-lucide="pause-circle" class="w-4 h-4 text-rose-400"></i>
+                    </div>
+                    <div class="text-2xl font-black text-rose-300 font-mono" id="kpiParadas">0</div>
+                    <p class="text-[10px] text-zinc-400">Aguardando aprovação</p>
+                </div>
+            </div>
+
+            <!-- DESEMPENHO POR TÉCNICO (TABELA / CARDS) -->
+            <div class="glass-card rounded-3xl p-5 space-y-3">
+                <div class="flex items-center justify-between border-b border-white/5 pb-2.5">
+                    <h3 class="text-xs font-black uppercase text-zinc-200 flex items-center gap-2 tracking-wider">
+                        <i data-lucide="users" class="w-4 h-4 text-sky-400"></i>
+                        <span>Produtividade Individual da Equipe de Oficina</span>
+                    </h3>
+                    <span class="text-[11px] text-zinc-400">Horas líquidas de trabalho direto</span>
+                </div>
+
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-[10px] font-black uppercase text-zinc-400 border-b border-white/5">
+                                <th class="py-2.5 px-3">Técnico</th>
+                                <th class="py-2.5 px-3 text-center">Orçamentos</th>
+                                <th class="py-2.5 px-3 text-center">Balanças Prontas</th>
+                                <th class="py-2.5 px-3 text-center">Tempo Médio / Balança</th>
+                                <th class="py-2.5 px-3 text-right">Tempo Líquido Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="techStatsBody" class="divide-y divide-white/5 text-zinc-300 font-medium">
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RELATÓRIO DETALHADO POR BALANÇA (ORDENS DE SERVIÇO) -->
+            <div class="glass-card rounded-3xl p-5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-2.5">
+                    <div>
+                        <h3 class="text-xs font-black uppercase text-zinc-200 flex items-center gap-2 tracking-wider">
+                            <i data-lucide="layers" class="w-4 h-4 text-emerald-400"></i>
+                            <span>Rastreabilidade Detalhada da Esteira por O.S.</span>
+                        </h3>
+                        <p class="text-[11px] text-zinc-400">Tempo líquido = Orçamento + Manutenção (desconta o tempo de espera do cliente).</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="osSearchInput" onkeyup="filterOsTable(this.value)" placeholder="Buscar O.S., Cliente ou Modelo..."
+                            class="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 w-56">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs" id="osDetailTable">
+                        <thead>
+                            <tr class="text-[10px] font-black uppercase text-zinc-400 border-b border-white/5">
+                                <th class="py-2.5 px-3">Nº O.S.</th>
+                                <th class="py-2.5 px-3">Cliente</th>
+                                <th class="py-2.5 px-3">Equipamento</th>
+                                <th class="py-2.5 px-3">Técnico</th>
+                                <th class="py-2.5 px-3 text-center">Tempo Orçamento</th>
+                                <th class="py-2.5 px-3 text-center">Tempo Conserto</th>
+                                <th class="py-2.5 px-3 text-center font-bold text-emerald-400">Tempo Líquido Total</th>
+                                <th class="py-2.5 px-3 text-right">Fase Atual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="osDetailsBody" class="divide-y divide-white/5 text-zinc-300">
+                            <!-- Preenchido via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- SCRIPT DE COMUNICAÇÃO E CONTROLE -->
+    <script>
+        lucide.createIcons();
+        const socket = io();
+        let isUrgent = false;
+        let currentPeriod = "today";
+        let reportData = null;
+
+        // WebSocket
+        socket.on("connect", () => {
+            document.getElementById("socketDot").className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse";
+        });
+        socket.on("disconnect", () => {
+            document.getElementById("socketDot").className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        });
+
+        // Atualiza relatório automaticamente quando o quadro Kanban mudar
+        socket.on("board_updated", () => {
+            loadReport(false);
+        });
+
+        // Alternar tema Dark/Clean
+        function toggleTheme() {
+            document.body.classList.toggle("theme-clean");
+            const isClean = document.body.classList.contains("theme-clean");
+            localStorage.setItem("a5_diretoria_theme", isClean ? "clean" : "dark");
+        }
+        if (localStorage.getItem("a5_diretoria_theme") === "clean") {
+            document.body.classList.add("theme-clean");
+        }
+
+        // Toggle Urgente
+        function toggleUrgent() {
+            isUrgent = !isUrgent;
+            const btn = document.getElementById("urgentToggleBtn");
+            const dot = document.getElementById("urgentDot");
+            const txt = document.getElementById("urgentText");
+            if (isUrgent) {
+                btn.classList.add("border-rose-500", "bg-rose-950/40", "text-rose-300");
+                dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping";
+                txt.textContent = "URGENTE ATIVADO";
+            } else {
+                btn.classList.remove("border-rose-500", "bg-rose-950/40", "text-rose-300");
+                dot.className = "w-2.5 h-2.5 rounded-full bg-zinc-500";
+                txt.textContent = "Chamado Normal";
+            }
+        }
+
+        // Chamado Rápido com 1 clique para a TV
+        async function quickCall(techName) {
+            try {
+                socket.emit("director_call_tech", {
+                    tech_name: techName,
+                    message: isUrgent ? "Favor comparecer urgente na sala do Sr. Jacson." : "Favor comparecer à sala do Sr. Jacson.",
+                    is_urgent: isUrgent,
+                    sender: "Sr. Jacson"
+                });
+
+                // Feedback visual instantâneo
+                const toast = document.createElement("div");
+                toast.className = "fixed bottom-5 right-5 z-50 bg-amber-500 text-slate-950 px-4 py-2.5 rounded-2xl font-black text-xs shadow-2xl flex items-center gap-2 animate-bounce";
+                toast.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Chamado emitido na TV para: ${techName}!`;
+                document.body.appendChild(toast);
+                lucide.createIcons();
+                setTimeout(() => toast.remove(), 2800);
+            } catch (err) {
+                alert("Erro ao disparar chamado: " + err.message);
+            }
+        }
+
+        // Mensagem de texto personalizada
+        function sendCustomMessage() {
+            const input = document.getElementById("customMsgInput");
+            const msg = input.value.trim();
+            if (!msg) {
+                alert("Escreva uma mensagem antes de enviar.");
+                return;
+            }
+            socket.emit("director_call_tech", {
+                tech_name: "TODOS (OFICINA TODA)",
+                message: msg,
+                is_urgent: isUrgent,
+                sender: "Sr. Jacson"
+            });
+            input.value = "";
+            alert("📢 Mensagem transmitida para a TV da oficina com sucesso!");
+        }
+
+        // Troca de Período dos Filtros
+        function setPeriod(p) {
+            currentPeriod = p;
+            document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+            const target = document.getElementById("filter_" + p);
+            if (target) target.classList.add("active");
+            loadReport();
+        }
+
+        // Carrega Relatório de Produtividade via API
+        async function loadReport(spin = true) {
+            const refreshIcon = document.getElementById("refreshIcon");
+            if (spin && refreshIcon) refreshIcon.classList.add("animate-spin");
+
+            const techFilter = document.getElementById("techFilter").value;
+            const url = `/api/diretoria/report?period=${currentPeriod}&tech=${encodeURIComponent(techFilter)}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                reportData = data;
+                renderReportUI(data);
+            } catch (err) {
+                console.error("Erro ao carregar relatório da diretoria:", err);
+            } finally {
+                if (spin && refreshIcon) setTimeout(() => refreshIcon.classList.remove("animate-spin"), 400);
+            }
+        }
+
+        function renderReportUI(data) {
+            // 1. Atualiza KPIs
+            const k = data.kpis || {};
+            document.getElementById("kpiProntas").textContent = k.total_prontas || 0;
+            document.getElementById("kpiOrcamentos").textContent = k.total_orcamentos_feitos || 0;
+            document.getElementById("kpiMediaOrc").textContent = k.tempo_medio_orcamento_str || "0m";
+            document.getElementById("kpiMediaMan").textContent = k.tempo_medio_manutencao_str || "0m";
+            document.getElementById("kpiParadas").textContent = k.balancas_aguardando_cliente || 0;
+
+            // 2. Tabela de Desempenho por Técnico
+            const techTbody = document.getElementById("techStatsBody");
+            const techs = data.technicians_performance || [];
+            if (techs.length === 0) {
+                techTbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-zinc-500">Nenhum registro para os filtros selecionados.</td></tr>`;
+            } else {
+                techTbody.innerHTML = techs.map(t => `
+                    <tr class="hover:bg-white/5 transition">
+                        <td class="py-2.5 px-3 font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${t.prontas_count > 0 ? 'bg-emerald-500' : 'bg-zinc-600'}"></span>
+                            <span>${t.name}</span>
+                        </td>
+                        <td class="py-2.5 px-3 text-center font-mono font-bold text-sky-400">${t.orcamentos_count}</td>
+                        <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-400">${t.prontas_count}</td>
+                        <td class="py-2.5 px-3 text-center font-mono text-zinc-300">${t.tempo_medio_str || '-'}</td>
+                        <td class="py-2.5 px-3 text-right font-mono font-black text-amber-400">${t.tempo_total_str || '0s'}</td>
+                    </tr>
+                `).join("");
+            }
+
+            // 3. Tabela Analítica de O.S.
+            renderOsTable(data.os_details || []);
+        }
+
+        function renderOsTable(cards) {
+            const osTbody = document.getElementById("osDetailsBody");
+            if (!cards || cards.length === 0) {
+                osTbody.innerHTML = `<tr><td colspan="8" class="py-4 text-center text-zinc-500">Nenhuma O.S. encontrada para o período.</td></tr>`;
+                return;
+            }
+
+            osTbody.innerHTML = cards.map(c => {
+                let badgeColor = "bg-zinc-800 text-zinc-300";
+                if (c.phase === "PRONTAS") badgeColor = "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+                else if (c.phase === "EM_ORCAMENTO") badgeColor = "bg-amber-500/20 text-amber-300 border border-amber-500/30";
+                else if (c.phase === "EM_MANUTENCAO") badgeColor = "bg-purple-500/20 text-purple-300 border border-purple-500/30";
+                else if (c.phase === "ORCAMENTOS_ENVIADOS") badgeColor = "bg-rose-500/20 text-rose-300 border border-rose-500/30";
+
+                return `
+                    <tr class="hover:bg-white/5 transition os-row" data-search="${(c.os_number + ' ' + c.client_name + ' ' + c.equipment_model + ' ' + c.tech_name).toLowerCase()}">
+                        <td class="py-2 px-3 font-mono font-black text-white">OS ${c.os_number}</td>
+                        <td class="py-2 px-3 font-bold text-zinc-200 truncate max-w-[180px]">${c.client_name}</td>
+                        <td class="py-2 px-3 text-zinc-400 truncate max-w-[150px]">${c.equipment_model}</td>
+                        <td class="py-2 px-3 text-zinc-300 font-semibold">${c.tech_name || '-'}</td>
+                        <td class="py-2 px-3 text-center font-mono text-amber-300">${c.tempo_orcamento_str}</td>
+                        <td class="py-2 px-3 text-center font-mono text-purple-300">${c.tempo_manutencao_str}</td>
+                        <td class="py-2 px-3 text-center font-mono font-black text-emerald-400 bg-emerald-500/5">${c.tempo_liquido_str}</td>
+                        <td class="py-2 px-3 text-right">
+                            <span class="text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-lg ${badgeColor}">
+                                ${c.phase.replace('_', ' ')}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function filterOsTable(query) {
+            const q = (query || "").toLowerCase().trim();
+            document.querySelectorAll(".os-row").forEach(row => {
+                const text = row.getAttribute("data-search") || "";
+                row.style.display = text.includes(q) ? "" : "none";
+            });
+        }
+
+        // Carga inicial
+        window.addEventListener("DOMContentLoaded", () => {
+            loadReport();
+        });
+    </script>
+</body>
+</html>

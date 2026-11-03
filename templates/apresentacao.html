@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação do Projeto • A5 Tecnologia | Passo a Passo Tela por Tela</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        serif: ['"Times New Roman"', 'Georgia', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-color: #09090b;
+            --text-color: #f4f4f5;
+            --header-bg: rgba(9, 9, 11, 0.92);
+            --card-bg: rgba(18, 18, 23, 0.95);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent-brand: #254a93;
+            --accent-cyan: #2aa6c8;
+        }
+
+        html.clean-mode {
+            --bg-color: #f8fafc;
+            --text-color: #0f172a;
+            --header-bg: rgba(255, 255, 255, 0.95);
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.25s ease, color 0.25s ease;
+            overflow-x: hidden;
+        }
+
+        .slide-pane {
+            display: none;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .slide-pane.active {
+            display: flex;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .nav-step-btn.active {
+            border-color: #0284c7;
+            background: rgba(2, 132, 199, 0.14);
+            box-shadow: 0 0 16px rgba(2, 132, 199, 0.25);
+            transform: translateY(-2px);
+        }
+
+        html.clean-mode .nav-step-btn.active {
+            background: #f0f9ff;
+            border-color: #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+        }
+
+        .mockup-window {
+            background: #18181b;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        html.clean-mode .mockup-window {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 16px 36px -12px rgba(15, 23, 42, 0.12);
+        }
+
+        .mockup-window:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .screenshot-img {
+            cursor: zoom-in;
+            transition: filter 0.2s ease;
+        }
+
+        .screenshot-img:hover {
+            filter: brightness(1.03);
+        }
+
+        /* Lightbox Overlay */
+        #lightboxModal.open {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between select-none">
+
+    <!-- =================================================================== -->
+    <!-- TOPBAR: LOGO OFICIAL A5, NOME, TEMA E NAVEGAÇÃO                     -->
+    <!-- =================================================================== -->
+    <header class="px-5 py-3 border-b border-white/10 dark:border-white/10 clean:border-slate-200 bg-[var(--header-bg)] backdrop-blur-md flex items-center justify-between sticky top-0 z-40 transition-colors">
+        <div class="flex items-center gap-2.5">
+            <!-- Emblema Oficial A5 Centralizado e Proporcional -->
+            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div>
+                <h1 class="text-sm font-bold text-[#254a93] dark:text-white flex items-center gap-1.5 leading-none">
+                    <i data-lucide="monitor" class="w-4 h-4 text-sky-400"></i>
+                    <span>A5 Tecnologia</span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/25 px-2 py-0.5 rounded-full ml-1">
+                        Oficina Digital
+                    </span>
+                </h1>
+                <p class="text-[10px] font-semibold text-[#2aa6c8] dark:text-sky-400 tracking-wide mt-0.5 leading-tight">Balanças e Sistemas • Passo a Passo Tela por Tela</p>
+            </div>
+        </div>
+
+        <!-- Controles da Apresentação -->
+        <div class="flex items-center gap-3">
+            <!-- Alternar Modo Clean / Dark -->
+            <button type="button" onclick="toggleCleanMode()" id="cleanModeToggleBtn"
+                class="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-zinc-700 shadow-sm"
+                title="Alternar Tema Claro / Escuro (Atalho: C)">
+                <i data-lucide="sun" class="w-4 h-4 text-amber-500 dark:hidden"></i>
+                <i data-lucide="moon" class="w-4 h-4 text-sky-400 hidden dark:inline"></i>
+                <span id="cleanModeLabel">Modo Clean</span>
+            </button>
+
+            <!-- Contador de Slide & Barra de Progresso -->
+            <div class="flex items-center gap-2">
+                <span id="slideCounter" class="font-mono text-xs font-bold text-sky-500 dark:text-sky-400">1 / 11</span>
+                <div class="w-20 sm:w-28 h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-sky-500 via-[#254a93] to-emerald-500 transition-all duration-300" style="width: 9%;"></div>
+                </div>
+            </div>
+
+            <!-- Botão Tela Cheia -->
+            <button type="button" onclick="toggleFullscreen()"
+                class="p-2 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 shadow-sm transition"
+                title="Tela Cheia (Atalho: F)">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- BARRA RÁPIDA DE TELAS DO SISTEMA (ATALHOS 0 A 10)                   -->
+    <!-- =================================================================== -->
+    <nav class="bg-slate-100 dark:bg-zinc-900/90 border-b border-slate-200 dark:border-zinc-800 px-4 py-2 flex items-center justify-start xl:justify-center gap-1 sm:gap-1.5 overflow-x-auto text-xs font-bold z-30">
+        <button type="button" onclick="goToSlide(1)" id="tabBtn-1" class="nav-step-btn active px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-sky-500"></i>
+            <span>0. Visão Geral</span>
+        </button>
+        <button type="button" onclick="goToSlide(2)" id="tabBtn-2" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-sky-500 text-slate-950 font-mono text-[10px] flex items-center justify-center font-black">1</span>
+            <span>Pré-Entrada & CNPJ</span>
+        </button>
+        <button type="button" onclick="goToSlide(3)" id="tabBtn-3" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">2</span>
+            <span>Etiqueta QR</span>
+        </button>
+        <button type="button" onclick="goToSlide(4)" id="tabBtn-4" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">3</span>
+            <span>Painel Admin</span>
+        </button>
+        <button type="button" onclick="goToSlide(5)" id="tabBtn-5" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">4</span>
+            <span>Bancada Mobile</span>
+        </button>
+        <button type="button" onclick="goToSlide(6)" id="tabBtn-6" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">5</span>
+            <span>Folha Digital</span>
+        </button>
+        <button type="button" onclick="goToSlide(7)" id="tabBtn-7" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">6</span>
+            <span>Smart TV</span>
+        </button>
+        <button type="button" onclick="goToSlide(8)" id="tabBtn-8" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">7</span>
+            <span>Intercom Jacson</span>
+        </button>
+        <button type="button" onclick="goToSlide(9)" id="tabBtn-9" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">8</span>
+            <span>Consulta Balcão</span>
+        </button>
+        <button type="button" onclick="goToSlide(10)" id="tabBtn-10" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <span class="w-4 h-4 rounded-full bg-slate-300 dark:bg-zinc-700 text-slate-900 dark:text-slate-200 font-mono text-[10px] flex items-center justify-center font-black">9</span>
+            <span>Gerência & Métricas</span>
+        </button>
+        <button type="button" onclick="goToSlide(11)" id="tabBtn-11" class="nav-step-btn px-2.5 py-1.5 rounded-xl border border-transparent transition flex items-center gap-1 text-slate-700 dark:text-slate-200 shrink-0">
+            <i data-lucide="play-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+            <span>Testar Tudo</span>
+        </button>
+    </nav>
+
+    <!-- =================================================================== -->
+    <!-- ÁREA PRINCIPAL DOS SLIDES                                           -->
+    <!-- =================================================================== -->
+    <main class="flex-1 flex flex-col justify-center items-center p-4 sm:p-6 max-w-7xl mx-auto w-full">
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 1: CAPA & VISÃO GERAL DO PROJETO                           -->
+        <!-- =============================================================== -->
+        <section id="slide-1" class="slide-pane active flex-col items-center text-center space-y-6 my-auto max-w-5xl">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/25 text-sky-600 dark:text-sky-400 text-xs font-mono font-bold uppercase tracking-wider">
+                <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+                <span>Ecossistema Digital A5 Tecnologia</span>
+            </div>
+
+            <div class="space-y-3">
+                <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                    Como Funciona o Nosso <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#254a93] via-sky-500 to-[#2aa6c8]">Sistema Kanban</span>
+                </h1>
+                <p class="text-sm sm:text-lg text-slate-600 dark:text-slate-300 max-w-3xl mx-auto font-medium leading-relaxed">
+                    Um software web operando em <strong>rede local (intranet)</strong>, com <strong>comunicação em tempo real por WebSockets</strong>, desenhado exclusivamente para eliminar pranchetas de papel e conectar o balcão da Priscila, a bancada dos técnicos, a TV da oficina e a sala do Sr. Jacson no mesmo milissegundo.
+                </p>
+            </div>
+
+            <!-- 3 Pilares Tecnológicos do Projeto -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full pt-2 text-left">
+                <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
+                    <div class="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center font-bold">
+                        <i data-lucide="wifi" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">100% em Tempo Real (WebSockets)</h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Qualquer ação no celular do técnico atualiza a TV e a tela da Priscila sem precisar recarregar a página (F5).</p>
+                </div>
+
+                <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+                        <i data-lucide="file-x" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Zero Papel Sujo na Oficina</h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Sem ordens de serviço impressas circulando nas bancadas. A única folha impressa é a O.S. física oficial do Teorema na saída.</p>
+                </div>
+
+                <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold">
+                        <i data-lucide="server" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Servidor Próprio na A5</h3>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">Opera na rede local interna. Se a internet da rua oscilar, a oficina continua trabalhando normalmente sem parar.</p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <button type="button" onclick="nextSlide()" class="px-6 py-3 rounded-xl bg-[#254a93] hover:bg-sky-600 text-white font-bold text-sm shadow-md transition flex items-center gap-2">
+                    <span>Iniciar Passo a Passo Tela por Tela</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 2: TELA 1 • PRÉ-ENTRADA, CNPJ & O.S. A4 TEOREMA            -->
+        <!-- =============================================================== -->
+        <section id="slide-2" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">1</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>Tela 1 • Pré-Entrada com Busca Automática de CNPJ, Fotos & O.S. A4</span>
+                            <span class="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 px-2 py-0.5 rounded-full font-mono uppercase font-bold">Novo</span>
+                        </h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rotas: /recepcao • /recepcao-fotos • /comprovante-entrada</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Operador: <strong>Priscila (Balcão / Celular)</strong></span>
+                    <a href="/recepcao" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Recepção</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/recepcao</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Otimização de Atendimento</span>
+                        </div>
+                        <img src="/static/img/screens/recepcao_fotos.png" alt="Tela de Recepção com Busca de CNPJ e Fotos" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+                            <span>Otimização Radical no Atendimento da Priscila:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Quando o cliente chega no balcão, a Priscila digita o <strong>CNPJ</strong> no celular/tablet. O sistema conecta na <strong>Receita Federal em menos de 1 segundo</strong> e preenche Razão Social, Fantasia, Endereço e Telefone automaticamente.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="file-check" class="w-4 h-4 text-sky-500"></i>
+                            <span>Ordem de Serviço A4 Estilo Teorema na Hora:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Checklist de Acessórios:</strong> Caixas rápidas para marcar <code>[✓] Prato</code>, <code>[✓] Fonte</code>, <code>[✓] Cabo</code> e <code>[✓] Bateria</code>.</li>
+                            <li><strong>Via do Cliente Imediata:</strong> Gera e imprime a folha A4 com os dados completos e linhas de assinatura. O cliente assina e vai embora em menos de 2 minutos.</li>
+                            <li><strong>Respeito à Numeração do Teorema:</strong> O equipamento fica guardado em <em>"Aguardando Teorema"</em>. A Priscila gera a O.S. oficial no Teorema no PC com calma e apenas vincula o número.</li>
+                            <li><strong>Oficina Sempre Limpa:</strong> A balança só vai para a Smart TV da oficina e gera a etiqueta térmica adesiva quando a O.S. real do Teorema é informada.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4 shrink-0 text-emerald-500"></i>
+                        <span>Zero fila no balcão, zero duplicidade de O.S. e proteção jurídica total.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 3: TELA 2 • ETIQUETA TÉRMICA QR CODE                      -->
+        <!-- =============================================================== -->
+        <section id="slide-3" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">2</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 2 • Etiqueta Térmica Adesiva com QR Code (60x40mm)</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /etiqueta/&lt;os_number&gt;</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Impressora: <strong>Térmica Oficial A5</strong></span>
+                    <a href="/etiqueta/01042" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7 flex justify-center">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800 max-w-md w-full bg-white dark:bg-zinc-950 p-4">
+                        <div class="px-2 py-1 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500 mb-3 rounded-lg">
+                            <span class="font-mono text-[10px]">🖨️ Formato Padrão 60x40mm</span>
+                            <span class="text-[10px] font-mono text-emerald-500 font-bold">Pronto p/ Leitura</span>
+                        </div>
+                        <img src="/static/img/screens/etiqueta_qr.png" alt="Etiqueta Térmica QR Code" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-contain max-h-[380px] rounded-xl border border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="tag" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Passaporte da Balança na Oficina:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            A etiqueta adesiva térmica é colada no chassi da balança logo na entrada. Ela acompanha o equipamento por todo o percurso da oficina até a entrega.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="scan" class="w-4 h-4 text-sky-500"></i>
+                            <span>Leitura Instantânea por QR Code:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Identificação Rápida:</strong> Contém número da O.S., nome do cliente, modelo da balança e código de barras QR Code de alta precisão.</li>
+                            <li><strong>Bipou, Abriu:</strong> O técnico apenas aponta a câmera do celular da bancada para a etiqueta e a O.S. abre imediatamente na tela dele sem digitação.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold flex items-center gap-2">
+                        <i data-lucide="zap" class="w-4 h-4 shrink-0 text-indigo-500"></i>
+                        <span>Zero chance de trocar balanças ou confundir ordens de serviço.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 4: TELA 3 • PAINEL KANBAN DA RECEPÇÃO & ADMIN             -->
+        <!-- =============================================================== -->
+        <section id="slide-4" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">3</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 3 • Painel Kanban da Recepção e Gestão</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /admin</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Usuário: <strong>Priscila & Gerência</strong></span>
+                    <a href="/admin" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/admin</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Captura Real do Projeto</span>
+                        </div>
+                        <img src="/static/img/screens/admin_kanban.png" alt="Painel Kanban Admin" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="layout-grid" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Centro de Comando da Oficina:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Exibe todas as balanças da oficina divididas em colunas inteligentes de fluxo contínuo: <em>ORÇAMENTOS, APROVADAS, BANCADAS DOS TÉCNICOS, ANÁLISES FEITAS, BALANÇAS PRONTAS e FINALIZADAS</em>.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="bell" class="w-4 h-4 text-sky-500"></i>
+                            <span>Como Funciona o Controle:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Alerta Sonoro Automático:</strong> Assim que o técnico conclui o laudo no celular, a tela da Priscila apita avisando que a O.S. está pronta para enviar proposta ao cliente.</li>
+                            <li><strong>Aprovação em 1 Clique:</strong> Priscila abre a O.S., confere peças Toledo lançadas e aprova com 1 botão, destravando a tela do técnico para montagem.</li>
+                            <li><strong>Botão Copiar Lacre p/ Teorema:</strong> Cópia instantânea do número do lacre em 1 clique para colar no Teorema ERP sem digitar nada.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold flex items-center gap-2">
+                        <i data-lucide="zap" class="w-4 h-4 shrink-0 text-indigo-500"></i>
+                        <span>Zero deslocamento: Priscila acompanha cada etapa sem sair da mesa.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 5: TELA 4 • BANCADA TÉCNICA MOBILE                        -->
+        <!-- =============================================================== -->
+        <section id="slide-5" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">4</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 4 • Bancada Técnica Mobile (Celular do Técnico)</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /saida</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Usuário: <strong>Técnicos de Bancada</strong></span>
+                    <a href="/saida?os=01042" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-6 flex justify-center">
+                    <div class="mockup-window rounded-3xl overflow-hidden shadow-2xl border-2 border-slate-300 dark:border-zinc-700 max-w-[340px] w-full bg-zinc-950">
+                        <div class="px-4 py-2 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
+                            <span class="font-mono text-[10px]">📱 Smartphone Bancada</span>
+                            <span class="text-[10px] font-mono text-sky-400 font-bold">/saida</span>
+                        </div>
+                        <img src="/static/img/screens/bancada_mobile.png" alt="Bancada Técnica Mobile" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px]" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-6 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="smartphone" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Celular é a Ferramenta de Trabalho:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            O técnico não precisa de caneta ou papel. Bipa o <strong>QR Code</strong> colado na balança pelo celular e a O.S. abre imediatamente na bancada dele.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="sliders" class="w-4 h-4 text-sky-500"></i>
+                            <span>Funcionalidades Integradas na Tela:</span>
+                        </div>
+                        <ul class="space-y-1.5 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Catálogo Oficial Toledo Prix:</strong> Campo de busca inteligente com autocompletar que insere código oficial e preço das peças automaticamente.</li>
+                            <li><strong>Cronômetro de Estufa / Teste na TV:</strong> Se houver suspeita de defeito térmico em placa (PCI) ou célula de carga durante o orçamento, aciona o temporizador na TV da oficina com 1 toque.</li>
+                            <li><strong>Trava de Execução:</strong> A tela não permite instalar peças novas antes de o cliente aprovar o orçamento.</li>
+                            <li><strong>Registro do Lacre Físico A5:</strong> Após o reparo e os testes metrológicos ($\pm 2e$), o técnico digita o número do Lacre Físico A5 colocado no parafuso. <em>(O técnico só lacra; não sela).</em></li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+                        <i data-lucide="check-circle" class="w-4 h-4 shrink-0 text-emerald-500"></i>
+                        <span>Fim dos bilhetes manuais e perda de histórico de peças.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 6: TELA 5 • FOLHA DE LAUDO DIGITAL                        -->
+        <!-- =============================================================== -->
+        <section id="slide-6" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">5</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 5 • Folha Digital de Laudo Técnico & Histórico</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /folha/&lt;os_number&gt;</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Visualização: <strong>Digital Completa</strong></span>
+                    <a href="/folha/01042" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/folha/01042</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Captura Real do Projeto</span>
+                        </div>
+                        <img src="/static/img/screens/folha_digital.png" alt="Folha Digital de Laudo" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="file-text" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Dossiê Digital Completo da Balança:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Reúne em uma única tela limpa todo o prontuário do equipamento: fotos de entrada, defeito original, laudo do técnico, peças orçadas, calibração e lacre.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="eye" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Que Contém a Folha Digital:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Galeria de Fotos da Entrada:</strong> Registra visualmente como o equipamento chegou na A5.</li>
+                            <li><strong>Detalhamento de Peças Toledo:</strong> Relação de cada componente substituído com código de fábrica e valores.</li>
+                            <li><strong>Rastreabilidade de Técnicos:</strong> Registra quem foi o avaliador e quem foi o finalizador do serviço.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-800 dark:text-sky-300 font-bold flex items-center gap-2">
+                        <i data-lucide="history" class="w-4 h-4 shrink-0 text-sky-500"></i>
+                        <span>Auditoria permanente gravada no banco de dados local da oficina.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 7: TELA 6 • SMART TV DA OFICINA                           -->
+        <!-- =============================================================== -->
+        <section id="slide-7" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">6</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 6 • Painel Smart TV do Chão de Fábrica</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /tv</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Usuário: <strong>Oficina Toda (Display 55" na Parede)</strong></span>
+                    <a href="/tv" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/tv</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Captura Real do Projeto</span>
+                        </div>
+                        <img src="/static/img/screens/painel_tv_full.png" alt="Painel Smart TV da Oficina" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="tv" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Painel Visual da Fábrica:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Fica em exibição contínua na TV de 55" na oficina sem precisar de teclado ou mouse. Atualiza automaticamente em tempo real a cada movimento.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="activity" class="w-4 h-4 text-sky-500"></i>
+                            <span>O Que Aparece na Tela da TV:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Colunas Dinâmicas:</strong> Mostra balanças aguardando orçamento e balanças aprovadas com prioridade visual.</li>
+                            <li><strong>Cronômetros de Estufa de Placa:</strong> Exibe barras de tempo regressivo para placas em teste térmico com alarme sonoro ao término.</li>
+                            <li><strong>Placar Diário de Balanças Finalizadas:</strong> Contador comemorativo com fanfarra a cada balança pronta.</li>
+                            <li><strong>Som da Oficina com Silenciamento Automático:</strong> Toca música ambiente sem anúncios e abaixa o volume instantaneamente quando há chamados do Intercom.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 font-bold flex items-center gap-2">
+                        <i data-lucide="eye" class="w-4 h-4 shrink-0 text-amber-500"></i>
+                        <span>Visibilidade total: todo técnico sabe o que fazer sem ninguém precisar gritar.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 8: TELA 7 • INTERCOM EXECUTIVO DA DIRETORIA               -->
+        <!-- =============================================================== -->
+        <section id="slide-8" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">7</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 7 • Intercom Executivo da Diretoria</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /diretoria</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Usuário: <strong>Sr. Jacson (Diretoria)</strong></span>
+                    <a href="/diretoria" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/diretoria</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Captura Real do Projeto</span>
+                        </div>
+                        <img src="/static/img/screens/intercom_diretoria.png" alt="Intercom da Diretoria" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="mic" class="w-4 h-4 text-sky-500"></i>
+                            <span>A Mesa de Controle do Sr. Jacson:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Fica aberta no computador do Sr. Jacson. Ele consegue falar com a Priscila ou chamar técnicos na oficina sem sair da cadeira.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="volume-2" class="w-4 h-4 text-sky-500"></i>
+                            <span>Tecnologia de Voz Neural (Edge-TTS):</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Chamados Rápidos:</strong> Botões de 1 clique para chamar a Priscila no balcão ou técnicos na sala da diretoria.</li>
+                            <li><strong>Voz de Alta Fidelidade:</strong> Sr. Jacson digita qualquer aviso personalizado e o sistema reproduz na TV da oficina com som natural de locução humana.</li>
+                            <li><strong>Audio Ducking Automático:</strong> A música da oficina é atenuada instantaneamente durante o anúncio e volta ao normal logo após.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-800 dark:text-sky-300 font-bold flex items-center gap-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 shrink-0 text-sky-500"></i>
+                        <span>Zero passos: comunicação executiva instantânea sem precisar andar até a oficina.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 9: TELA 8 • CONSULTA RÁPIDA & INTEGRAÇÃO TEOREMA          -->
+        <!-- =============================================================== -->
+        <section id="slide-9" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">8</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 8 • Consulta Rápida de Balcão & Integração Teorema</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /consulta</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Usuário: <strong>Balcão de Atendimento</strong></span>
+                    <a href="/consulta" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/consulta</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Captura Real do Projeto</span>
+                        </div>
+                        <img src="/static/img/screens/consulta_balcao.png" alt="Consulta Rápida de Balcão" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="search" class="w-4 h-4 text-sky-500"></i>
+                            <span>Atendimento Imediato em 1 Segundo:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Qualquer atendente digita o número da O.S., nome do cliente, modelo da balança ou lacre e localiza o equipamento imediatamente.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="printer" class="w-4 h-4 text-sky-500"></i>
+                            <span>Fechamento no Teorema ERP:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Status em Tempo Real:</strong> Informa com precisão cirúrgica a etapa e o técnico responsável pela balança.</li>
+                            <li><strong>Quem Sela é a Priscila:</strong> Na retirada do cliente, a Priscila aplica o <strong>Selo Reparado IPEM</strong> na balança.</li>
+                            <li><strong>Copia o Lacre pro Teorema:</strong> Clica em copiar lacre com 1 clique, cola no Teorema ERP, imprime a O.S. física oficial do Teorema e cola o canhoto do selo para o cliente assinar.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+                        <i data-lucide="check-check" class="w-4 h-4 shrink-0 text-emerald-500"></i>
+                        <span>Zero retrabalho: o Kanban A5 alimenta o Teorema ERP com perfeição.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 10: TELA 9 • PAINEL GERENCIAL & MÉTRICAS                  -->
+        <!-- =============================================================== -->
+        <section id="slide-10" class="slide-pane flex-col space-y-4 w-full max-w-6xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-500 text-slate-950 font-black font-mono text-xs flex items-center justify-center">9</span>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Tela 9 • Painel Gerencial & Métricas da Oficina</h2>
+                        <span class="text-xs font-mono font-semibold text-sky-600 dark:text-sky-400">Rota do Sistema: /gerencia</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500 dark:text-slate-400">Usuário: <strong>Diretoria & Gerência</strong></span>
+                    <a href="/gerencia" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 text-xs font-bold hover:bg-sky-500/20 transition flex items-center gap-1">
+                        <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                        <span>Abrir Tela</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                <div class="lg:col-span-7">
+                    <div class="mockup-window rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-zinc-800">
+                        <div class="px-4 py-2.5 bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <span class="ml-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 font-bold">http://127.0.0.1:5000/gerencia</span>
+                            </div>
+                            <span class="text-[10px] font-mono uppercase bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded">Captura Real do Projeto</span>
+                        </div>
+                        <img src="/static/img/screens/gerencia_metricas.png" alt="Painel Gerencial e Métricas" onclick="openLightbox(this.src)" class="screenshot-img w-full h-auto object-cover max-h-[460px] border-t border-slate-200 dark:border-zinc-800" title="Clique para ampliar">
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-3 text-xs leading-relaxed">
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-1.5">
+                        <div class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-sky-500"></i>
+                            <span>Indicadores de Produtividade da Oficina:</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300">
+                            Painel analítico para a diretoria acompanhar o ritmo de consertos, gargalos de aprovação e tempos de permanência de cada balança.
+                        </p>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-sky-500/5 dark:bg-sky-950/20 border border-sky-500/20 space-y-1.5">
+                        <div class="font-bold text-sm text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                            <i data-lucide="clock" class="w-4 h-4 text-sky-500"></i>
+                            <span>Métricas Monitoradas:</span>
+                        </div>
+                        <ul class="space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
+                            <li><strong>Lead Time Médio:</strong> Tempo decorrido desde a entrada até a saída final com o cliente.</li>
+                            <li><strong>Produtividade por Técnico:</strong> Quantidade de laudos e manutenções concluídas por técnico.</li>
+                            <li><strong>Exportação em 1 Clique:</strong> Download de planilhas para conferência e auditoria gerencial.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4 shrink-0 text-emerald-500"></i>
+                        <span>Tomada de decisão baseada em números exatos, sem achismos.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =============================================================== -->
+        <!-- SLIDE 11: DEMONSTRAÇÃO COMPLETA AO VIVO                         -->
+        <!-- =============================================================== -->
+        <section id="slide-11" class="slide-pane flex-col items-center text-center space-y-6 my-auto max-w-5xl">
+            <div class="w-16 h-16 rounded-3xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <i data-lucide="play" class="w-8 h-8 fill-current"></i>
+            </div>
+
+            <div class="space-y-2">
+                <span class="text-xs font-mono font-bold text-emerald-500 uppercase tracking-widest">Sistema 100% Funcional e em Produção</span>
+                <h2 class="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white max-w-2xl leading-tight">
+                    Pronto para Operar na Rede da A5
+                </h2>
+                <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-xl mx-auto font-medium">
+                    Sr. Jacson, clique nos botões abaixo para abrir e testar qualquer tela do sistema agora mesmo:
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 w-full max-w-4xl text-left">
+                <a href="/recepcao" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">1. Pré-Entrada & CNPJ</span>
+                        <i data-lucide="zap" class="w-4 h-4 text-sky-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Busca Receita & O.S. A4</p>
+                </a>
+
+                <a href="/etiqueta/01042" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">2. Etiqueta QR</span>
+                        <i data-lucide="tag" class="w-4 h-4 text-emerald-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Térmica Adesiva 60x40mm</p>
+                </a>
+
+                <a href="/admin" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">3. Painel Admin</span>
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Quadro Kanban da Priscila</p>
+                </a>
+
+                <a href="/saida?os=01042" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">4. Bancada Mobile</span>
+                        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Catálogo Toledo & Laudo Celular</p>
+                </a>
+
+                <a href="/folha/01042" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">5. Folha Digital</span>
+                        <i data-lucide="file-text" class="w-4 h-4 text-blue-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Prontuário & Histórico da O.S.</p>
+                </a>
+
+                <a href="/tv" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">6. Smart TV</span>
+                        <i data-lucide="tv" class="w-4 h-4 text-rose-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Painel 55", Placar & Estufa</p>
+                </a>
+
+                <a href="/diretoria" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">7. Intercom Jacson</span>
+                        <i data-lucide="volume-2" class="w-4 h-4 text-amber-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Linha Direta com Voz Neural</p>
+                </a>
+
+                <a href="/consulta" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">8. Consulta Balcão</span>
+                        <i data-lucide="search" class="w-4 h-4 text-cyan-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Busca em 1s & Cópia p/ Teorema</p>
+                </a>
+
+                <a href="/gerencia" target="_blank" class="p-3 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-sky-500 transition shadow-sm space-y-1 block">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">9. Gerência</span>
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-purple-500"></i>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Lead Time & Relatórios</p>
+                </a>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" onclick="goToSlide(1)" class="px-5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition flex items-center gap-1.5 mx-auto">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span>Voltar ao Início da Apresentação</span>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- FOOTER COM CONTROLES E ATALHOS DE TECLADO                           -->
+    <!-- =================================================================== -->
+    <footer class="px-5 py-3 border-t border-white/10 dark:border-white/10 clean:border-slate-200 bg-[var(--header-bg)] backdrop-blur-md flex items-center justify-between text-xs z-30 transition-colors">
+        <div class="flex items-center gap-4 text-slate-500 dark:text-slate-400">
+            <span class="hidden sm:inline">Use as setas <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 font-mono text-[10px]">←</kbd> <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 font-mono text-[10px]">→</kbd> ou os números <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 font-mono text-[10px]">1</kbd> a <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 font-mono text-[10px]">9</kbd></span>
+            <span class="hidden md:inline">• Tecla <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 font-mono text-[10px]">C</kbd> (Modo Clean)</span>
+            <span class="hidden md:inline">• Tecla <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 font-mono text-[10px]">F</kbd> (Tela Cheia)</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="prevSlide()" id="prevBtn"
+                class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-800 dark:text-slate-200 font-bold border border-slate-300 dark:border-zinc-700 transition flex items-center gap-1 shadow-sm">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                <span>Anterior</span>
+            </button>
+
+            <button type="button" onclick="nextSlide()" id="nextBtn"
+                class="px-4 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold transition flex items-center gap-1 shadow-sm">
+                <span>Próximo</span>
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </footer>
+
+    <!-- =================================================================== -->
+    <!-- LIGHTBOX MODAL PARA EXPANDIR AS CAPTURAS DE TELA                    -->
+    <!-- =================================================================== -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-md p-4 flex-col items-center justify-center" onclick="closeLightbox()">
+        <button type="button" onclick="closeLightbox()" class="absolute top-4 right-4 text-white hover:text-rose-400 p-2 text-sm font-bold flex items-center gap-1 bg-white/10 rounded-xl transition">
+            <i data-lucide="x" class="w-5 h-5"></i>
+            <span>Fechar (ESC)</span>
+        </button>
+        <img id="lightboxImg" src="" alt="Tela Ampliada" class="max-w-[95vw] max-h-[90vh] rounded-2xl shadow-2xl object-contain border border-white/20" onclick="event.stopPropagation()">
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- JAVASCRIPT DE NAVEGAÇÃO E INTERATIVIDADE                            -->
+    <!-- =================================================================== -->
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 11;
+
+        function updateSlideUI() {
+            document.querySelectorAll(".slide-pane").forEach((s, idx) => {
+                s.classList.toggle("active", idx + 1 === currentSlide);
+            });
+
+            document.querySelectorAll(".nav-step-btn").forEach((btn, idx) => {
+                const isActive = (idx + 1 === currentSlide);
+                btn.classList.toggle("active", isActive);
+            });
+
+            document.getElementById("slideCounter").textContent = `${currentSlide} / ${totalSlides}`;
+            const pct = (currentSlide / totalSlides) * 100;
+            document.getElementById("progressBar").style.width = `${pct}%`;
+
+            const prevBtn = document.getElementById("prevBtn");
+            const nextBtn = document.getElementById("nextBtn");
+            prevBtn.disabled = (currentSlide === 1);
+            prevBtn.style.opacity = (currentSlide === 1) ? "0.4" : "1";
+
+            if (currentSlide === totalSlides) {
+                nextBtn.innerHTML = `<span>Início</span> <i data-lucide="rotate-ccw" class="w-4 h-4"></i>`;
+            } else {
+                nextBtn.innerHTML = `<span>Próximo</span> <i data-lucide="chevron-right" class="w-4 h-4"></i>`;
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function goToSlide(n) {
+            if (n >= 1 && n <= totalSlides) {
+                currentSlide = n;
+                updateSlideUI();
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+            } else {
+                currentSlide = 1;
+            }
+            updateSlideUI();
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateSlideUI();
+            }
+        }
+
+        function openLightbox(src) {
+            const modal = document.getElementById("lightboxModal");
+            const img = document.getElementById("lightboxImg");
+            img.src = src;
+            modal.classList.add("open");
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById("lightboxModal");
+            modal.classList.remove("open");
+        }
+
+        function toggleCleanMode() {
+            const isClean = document.documentElement.classList.toggle("clean-mode");
+            if (isClean) {
+                document.documentElement.classList.remove("dark");
+                localStorage.setItem("a5_theme", "clean");
+                document.getElementById("cleanModeLabel").textContent = "Modo Escuro";
+            } else {
+                document.documentElement.classList.add("dark");
+                localStorage.setItem("a5_theme", "dark");
+                document.getElementById("cleanModeLabel").textContent = "Modo Clean";
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                closeLightbox();
+            } else if (e.key === "ArrowRight" || e.key === " ") {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key.toLowerCase() === "f") {
+                toggleFullscreen();
+            } else if (e.key.toLowerCase() === "c") {
+                toggleCleanMode();
+            } else if (e.key === "0") {
+                goToSlide(1);
+            } else if (e.key >= "1" && e.key <= "9") {
+                goToSlide(parseInt(e.key) + 1);
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedTheme = localStorage.getItem("a5_theme");
+            if (savedTheme === "clean") {
+                document.documentElement.classList.add("clean-mode");
+                document.documentElement.classList.remove("dark");
+                document.getElementById("cleanModeLabel").textContent = "Modo Escuro";
+            }
+            updateSlideUI();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Oficina TV - A5 Tecnologia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            background: #09090b;
+            color: #f4f4f5;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-col, .tv-col {
+            background: rgba(18, 18, 23, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tv-tech-row {
+            background: rgba(18, 18, 23, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+        .glass-card {
+            background: rgba(24, 24, 27, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(14, 165, 233, 0.3);
+            border-radius: 9999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(14, 165, 233, 0.6);
+        }
+        /* Tema Clean (Zinc & Light) para TV Oficina */
+        body.theme-clean {
+            background: #f8fafc;
+            color: #0f172a;
+        }
+        body.theme-clean header {
+            background: #ffffff !important;
+            border-bottom-color: #e2e8f0 !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        }
+        body.theme-clean header h1 {
+            color: #254a93 !important;
+        }
+        body.theme-clean header p {
+            color: #2aa6c8 !important;
+        }
+        body.theme-clean #tvClock {
+            color: #0f172a !important;
+        }
+        body.theme-clean #tvDate {
+            color: #475569 !important;
+        }
+        body.theme-clean #tvThemeBtn {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean header .bg-zinc-900\/80 {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+        }
+        body.theme-clean header .bg-zinc-900\/80 .text-zinc-400 {
+            color: #64748b !important;
+        }
+        body.theme-clean header .bg-zinc-900\/80 #tvScoreToday {
+            color: #0f172a !important;
+        }
+        body.theme-clean .glass-col,
+        body.theme-clean .tv-col {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+        }
+        body.theme-clean .glass-col > div:first-child,
+        body.theme-clean .tv-col > div:first-child {
+            background: #f8fafc !important;
+            border-bottom-color: #cbd5e1 !important;
+        }
+        body.theme-clean .glass-col > div:first-child span,
+        body.theme-clean .tv-col > div:first-child span {
+            color: #0f172a !important;
+        }
+        body.theme-clean .tv-col .text-sky-300 {
+            color: #0284c7 !important;
+        }
+        body.theme-clean .tv-col .text-emerald-400 {
+            color: #059669 !important;
+        }
+        body.theme-clean .tv-tech-row {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        body.theme-clean .tv-tech-row > div:first-child {
+            background: #f8fafc !important;
+            border-bottom-color: #cbd5e1 !important;
+        }
+        body.theme-clean .tv-tech-row > div:first-child span,
+        body.theme-clean .tv-tech-row > div:first-child div {
+            color: #0f172a !important;
+        }
+        body.theme-clean .tv-tech-summary {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        body.theme-clean .tv-tech-summary span {
+            color: #0f172a !important;
+        }
+        body.theme-clean .glass-card {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
+        }
+        body.theme-clean .glass-card .text-white,
+        body.theme-clean .glass-card .text-zinc-100,
+        body.theme-clean .glass-card .card-client-name,
+        body.theme-clean .glass-card .font-extrabold {
+            color: #0f172a !important;
+        }
+        body.theme-clean .glass-card .text-slate-400,
+        body.theme-clean .glass-card .text-zinc-400,
+        body.theme-clean .glass-card .card-equip-desc {
+            color: #475569 !important;
+        }
+        body.theme-clean .text-zinc-100 { color: #0f172a !important; }
+        body.theme-clean .text-zinc-200 { color: #1e293b !important; }
+        body.theme-clean .text-zinc-300 { color: #334155 !important; }
+        body.theme-clean .text-zinc-400 { color: #475569 !important; }
+        body.theme-clean .text-white { color: #0f172a !important; }
+        body.theme-clean #ytFloatingWidget {
+            background: #ffffff !important;
+            border-color: #f43f5e !important;
+            color: #0f172a !important;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15) !important;
+        }
+        body.theme-clean #ytFloatingWidget .yt-header-bar {
+            background: #fff1f2 !important;
+            border-bottom-color: #fecdd3 !important;
+        }
+        body.theme-clean #ytFloatingWidget .yt-preset-btn,
+        body.theme-clean #ytFloatingWidget .yt-search-item {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #e2e8f0 !important;
+        }
+        .urgent-glow {
+            border: 2px solid #f59e0b !important;
+            box-shadow: 0 0 24px rgba(245, 158, 11, 0.35);
+        }
+        .sla-alert {
+            border-left: 5px solid #0284c7 !important;
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-14px); }
+        }
+        .screensaver-float { animation: floatSlow 6s ease-in-out infinite; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col antialiased">
+
+    <!-- OVERLAY DE DESBLOQUEIO DE ÁUDIO DO NAVEGADOR -->
+    <div id="audioUnlockBanner" onclick="unlockAudioEngine()"
+         class="bg-sky-500 text-slate-950 text-center py-2 text-xs font-bold tracking-wider cursor-pointer z-50 flex items-center justify-center gap-2 shadow-lg">
+        <i data-lucide="volume-2" class="w-4 h-4"></i>
+        <span>CLIQUE EM QUALQUER LUGAR DA TELA PARA ATIVAR O MOTOR DE VOZ (TTS) E ALARMES SONOROS DA TV</span>
+    </div>
+
+    <!-- TOP BAR DA OFICINA -->
+    <header class="px-6 py-3.5 bg-zinc-950/90 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-4 backdrop-blur-xl">
+        <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div>
+                <h1 class="text-sm font-bold text-[#254a93] dark:text-white flex items-center gap-1.5 leading-none">
+                    <i data-lucide="tv" class="w-4 h-4 text-sky-400"></i>
+                    <span>Painel TV da Oficina</span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/25 px-2 py-0.5 rounded-full ml-1">
+                        <i data-lucide="shield-check" class="w-3 h-3"></i>
+                        TOLEDO PRIX
+                    </span>
+                </h1>
+                <p class="text-[10px] font-semibold text-[#2aa6c8] dark:text-sky-400 tracking-wide mt-0.5 leading-tight">A5 Tecnologia • Balanças e Sistemas</p>
+            </div>
+        </div>
+
+        <!-- CRONÔMETROS DE ESTUFA ATIVOS -->
+        <div id="activeTimersBar" class="flex flex-wrap items-center justify-center gap-2.5 max-w-2xl"></div>
+
+        <!-- PLACAR DE PRODUTIVIDADE E RELÓGIO -->
+        <div class="flex items-center gap-4">
+            <div id="duckingIndicator" class="hidden bg-rose-500/15 border border-rose-500/30 text-rose-300 px-3 py-1 rounded-xl text-xs font-bold animate-pulse flex items-center gap-1.5">
+                <i data-lucide="volume-x" class="w-3.5 h-3.5"></i>
+                <span>ÁUDIO SILENCIADO P/ ALERTA</span>
+            </div>
+
+            <div class="bg-zinc-900/80 border border-zinc-800 px-3.5 py-1.5 rounded-xl flex items-center gap-3 shadow-sm">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                    <i data-lucide="trophy" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase font-bold text-slate-500 dark:text-zinc-400 tracking-wider">Finalizadas Hoje</div>
+                    <div id="tvScoreToday" class="text-xl font-black font-mono text-slate-900 dark:text-zinc-100 leading-none">0</div>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <div id="tvClock" class="text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">00:00:00</div>
+                <div id="tvDate" class="text-[11px] font-mono text-slate-600 dark:text-zinc-400 uppercase font-semibold">--/--/----</div>
+            </div>
+
+            <!-- BOTÃO DO YOUTUBE / SOM DA OFICINA -->
+            <button onclick="toggleYtPlayerModal()" id="ytToggleBtn"
+                    class="bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-2 shadow-sm"
+                    title="Música da Oficina (YouTube com Silenciamento Automático nos Alertas)">
+                <i data-lucide="radio" class="w-4 h-4 text-rose-400"></i>
+                <span class="hidden xl:inline font-bold">Som Oficina</span>
+                <span id="ytBadgeDot" class="w-2 h-2 rounded-full bg-zinc-600 transition-colors" title="Status: Desconectado"></span>
+            </button>
+
+            <button onclick="toggleTvTheme()" id="tvThemeBtn"
+                    class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5"
+                    title="Alternar Tema Clean / Dark na TV">
+                <i data-lucide="sun" class="w-3.5 h-3.5"></i>
+                <span>Tema</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- QUADRO KANBAN DA OFICINA -->
+    <main id="tvBoard" class="flex-1 flex items-stretch gap-4 p-4 overflow-hidden"></main>
+
+    <!-- POP-UP GIGANTE DE ANÚNCIO / VOZ (ORÇAMENTO, APROVADA, FINALIZADA, ESTUFA) -->
+    <div id="tvAnnouncementModal" class="fixed inset-0 bg-black/85 backdrop-blur-xl hidden items-center justify-center z-50 p-6 md:p-12">
+        <div id="tvAnnouncementBox" class="max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 shadow-2xl transform transition-all duration-300 scale-100 overflow-hidden relative">
+            <div id="annIcon" class="mb-4 flex items-center justify-center">
+                <i data-lucide="bell" class="w-16 h-16 text-sky-400"></i>
+            </div>
+            <div class="mb-4">
+                <span id="annBadge" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-sky-500 text-slate-950 shadow-md">
+                    ATUALIZAÇÃO DE FILA
+                </span>
+            </div>
+            <h2 id="annTitle" class="text-5xl md:text-6xl font-black font-mono tracking-tight mb-3 text-white break-words drop-shadow-md">O.S. 0000</h2>
+            <p id="annSubtitle" class="text-2xl md:text-3xl font-extrabold text-sky-400 uppercase mb-4 break-words">CLIENTE EXEMPLO</p>
+            <div id="annExtra" class="text-lg md:text-xl text-zinc-300 break-words flex flex-wrap items-center justify-center gap-2"></div>
+            <div class="mt-6 flex items-center justify-center gap-1.5 text-xs text-zinc-400">
+                <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+                <span class="font-mono uppercase tracking-wider text-[11px] font-semibold">Locução de Voz Ativa no Painel</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROTEÇÃO DE TELA (SCREENSAVER APÓS 20 MINUTOS DE INATIVIDADE) -->
+    <div id="screensaverOverlay" class="fixed inset-0 bg-[#05070B] hidden flex-col items-center justify-center z-40">
+        <div class="screensaver-float text-center space-y-6">
+            <div class="flex items-center justify-center gap-6">
+                <span class="bg-sky-500 text-slate-950 font-black px-6 py-3 rounded-2xl text-5xl shadow-2xl shadow-sky-500/30">A5 TECNOLOGIA</span>
+                <span class="text-4xl font-light text-slate-500">×</span>
+                <span class="border-2 border-sky-400/50 text-sky-300 font-black px-6 py-3 rounded-2xl text-4xl">TOLEDO PRIX</span>
+            </div>
+            <div id="ssClock" class="text-9xl font-black tracking-tighter text-white drop-shadow-lg">00:00</div>
+            <p class="text-xl text-slate-400 uppercase tracking-widest">Assistência Técnica Autorizada • Monitoramento em Tempo Real</p>
+        </div>
+    </div>
+
+    <!-- [L-17] WIDGET FLUTUANTE DO YOUTUBE DA OFICINA COM PLAYER NATIVO SEM ANÚNCIOS, PESQUISA E AUDIO DUCKING REAL -->
+    <div id="ytFloatingWidget" class="fixed bottom-4 right-4 z-40 hidden flex-col w-[390px] max-w-[95vw] max-h-[92vh] rounded-2xl border-2 border-rose-500/40 bg-[#081221]/95 backdrop-blur-xl shadow-2xl overflow-hidden transition-all duration-300">
+        <!-- Barra de Título do Widget -->
+        <div class="yt-header-bar px-4 py-2.5 bg-rose-950/60 border-b border-rose-500/30 flex items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center gap-2 truncate">
+                <span class="text-lg">📻</span>
+                <span class="font-black text-xs uppercase tracking-wide text-white truncate">Som da Oficina (YouTube)</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button type="button" onclick="toggleYtAccountPanel()" id="ytAccountHeaderBtn"
+                        class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/40 text-amber-300 hover:bg-amber-500/30 transition flex items-center gap-1"
+                        title="Configurar Conta YouTube Premium / Sem Anúncios">
+                    <span>👑</span> <span>Premium</span>
+                </button>
+                <span id="ytStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">Pronto</span>
+                <button onclick="minimizeYtWidget()" class="text-slate-400 hover:text-white px-1.5 py-0.5 rounded text-xs" title="Minimizar para o cantinho">🗕</button>
+                <button onclick="toggleYtPlayerModal()" class="text-slate-400 hover:text-white px-1.5 py-0.5 rounded text-xs font-bold" title="Fechar painel">✕</button>
+            </div>
+        </div>
+
+        <!-- Painel de Login / Conta YouTube Premium (Oculto por padrão, abre ao clicar em 👑 Premium) -->
+        <div id="ytAccountPanel" class="hidden bg-slate-900/95 border-b border-amber-500/30 p-3 space-y-2.5 text-xs shrink-0">
+            <div class="flex items-center justify-between">
+                <span class="font-black text-amber-300 uppercase flex items-center gap-1.5">
+                    <span>👑</span> <span>Integração YouTube Premium</span>
+                </span>
+                <span id="ytAccountActiveBadge" class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    ✓ Sem Anúncios Ativo
+                </span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+                O motor nativo da oficina já reproduz todas as músicas <strong>direto da fonte sem anúncios e sem bloqueio de vídeo</strong>. Se quiser sincronizar sua conta do YouTube Premium logada no navegador:
+            </p>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="openYouTubeLoginPopup()"
+                        class="col-span-2 bg-rose-600 hover:bg-rose-500 text-white font-black py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-center gap-1.5 shadow">
+                    <span>🔑</span> <span>1. Abrir Login do YouTube (Google)</span>
+                </button>
+                <button type="button" onclick="syncYouTubeBrowserAccount('firefox')"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1">
+                    <span>🦊</span> <span>Vincular Firefox</span>
+                </button>
+                <button type="button" onclick="syncYouTubeBrowserAccount('chrome')"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1">
+                    <span>🌐</span> <span>Vincular Chrome/Edge</span>
+                </button>
+            </div>
+            <div id="ytAccountStatusMsg" class="text-[10px] text-emerald-400 font-bold text-center hidden"></div>
+        </div>
+
+        <!-- Aviso do Ducking Automático -->
+        <div class="bg-rose-500/10 border-b border-rose-500/20 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-rose-300 font-bold shrink-0">
+            <span class="flex items-center gap-1.5">
+                <span>🔇</span>
+                <span>Silenciamento Automático:</span>
+            </span>
+            <span class="text-emerald-400 font-black">ATIVO NOS ALERTAS</span>
+        </div>
+
+        <!-- Container do Player Nativo de Vídeo/Áudio -->
+        <div id="ytPlayerContainerWrap" class="px-3 pt-2.5 bg-black/40 shrink-0">
+            <div id="ytVideoBox" class="w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 relative">
+                <video id="ytNativeVideo" class="w-full h-full object-contain bg-black" playsinline preload="auto"></video>
+
+                <!-- Overlay de Carregamento -->
+                <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-950/90 backdrop-blur-sm text-white z-10">
+                    <div class="w-8 h-8 border-3 border-rose-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <span id="ytLoadingTitle" class="text-xs font-black text-rose-300 line-clamp-2 px-2">Carregando música...</span>
+                    <span class="text-[10px] text-slate-400 mt-0.5">Stream direto • Sem anúncios</span>
+                </div>
+
+                <!-- Overlay Inicial (Placeholder) -->
+                <div id="ytPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-950 text-slate-400">
+                    <span class="text-3xl mb-1">📻</span>
+                    <span class="text-xs font-bold uppercase text-slate-300">Pronto para tocar</span>
+                    <span class="text-[10px] text-slate-500 mt-0.5">Escolha uma música rápida ou pesquise abaixo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra da Música Atual -->
+        <div id="ytNowPlayingBox" class="mx-3 mt-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2 shrink-0">
+            <div class="min-w-0 flex-1">
+                <div id="ytNowPlayingTitle" class="text-[11px] font-black text-white truncate">🎤 Kamisa 10 (Ao Vivo)</div>
+                <div id="ytNowPlayingChannel" class="text-[10px] text-slate-400 truncate">Toque em Tocar ou pesquise uma música</div>
+            </div>
+            <button type="button" onclick="playNextYtTrack()" title="Próxima música da fila"
+                    class="px-2 py-1 rounded-lg bg-white/10 hover:bg-rose-500/30 text-white text-[11px] font-bold shrink-0 transition">
+                ⏭️ Próx.
+            </button>
+        </div>
+
+        <!-- Controles de Mídia, Pesquisa e Presets -->
+        <div class="p-3 space-y-2.5 overflow-y-auto custom-scrollbar">
+            <div class="flex items-center justify-between gap-2">
+                <button id="ytPlayPauseBtn" onclick="toggleYtPlayPause()"
+                        class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-black py-2 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+                    <span>▶️ Tocar</span>
+                </button>
+                <div class="flex items-center gap-2 flex-1 px-3 py-1.5 bg-white/5 rounded-xl border border-white/10">
+                    <span class="text-xs">🔊</span>
+                    <input type="range" id="ytVolumeSlider" min="0" max="100" value="80" oninput="changeYtVolume(this.value)"
+                           class="w-full h-1.5 accent-rose-500 bg-slate-700 rounded-lg cursor-pointer">
+                    <span id="ytVolVal" class="text-[11px] font-mono font-bold text-slate-300 w-7 text-right">80%</span>
+                </div>
+            </div>
+
+            <!-- BARRA DE PESQUISA DE MÚSICAS NO YOUTUBE -->
+            <div>
+                <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1 yt-label">🔍 Pesquisar Música ou Artista no YouTube:</span>
+                <div class="flex gap-1.5">
+                    <input type="text" id="ytSearchInput"
+                           placeholder="Ex: Kamisa 10, Menos é Mais, Jorge e Mateus..."
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();searchYouTubeMusic();}"
+                           class="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                    <button type="button" id="ytSearchBtn" onclick="searchYouTubeMusic()"
+                            class="bg-rose-600 hover:bg-rose-500 text-white font-black px-3.5 py-2 rounded-xl text-xs transition shrink-0 shadow">
+                        Buscar
+                    </button>
+                </div>
+
+                <!-- Lista de Resultados da Pesquisa -->
+                <div id="ytSearchResultsWrap" class="hidden mt-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1 border border-rose-500/20 rounded-xl p-1.5 bg-black/30">
+                    <div class="flex items-center justify-between px-1 pb-1 border-b border-white/10">
+                        <span class="text-[10px] font-black uppercase text-rose-300">Resultados do YouTube (clique p/ tocar):</span>
+                        <button type="button" onclick="closeYtSearchResults()" class="text-[10px] text-slate-400 hover:text-white font-bold">✕ Fechar</button>
+                    </div>
+                    <div id="ytSearchResultsList" class="space-y-1"></div>
+                </div>
+            </div>
+
+            <!-- Presets Rápidos de 1 Clique -->
+            <div>
+                <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5 yt-label">Músicas Rápidas da Oficina:</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button type="button" onclick="playYtPreset('kamisa10')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
+                        <span>🎤</span> <span class="truncate">Kamisa 10 (Ao Vivo)</span>
+                    </button>
+                    <button type="button" onclick="playYtPreset('rock')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
+                        <span>🎸</span> <span class="truncate">Rock Clássico</span>
+                    </button>
+                    <button type="button" onclick="playYtPreset('lofi')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
+                        <span>☕</span> <span class="truncate">Lo-Fi Oficina</span>
+                    </button>
+                    <button type="button" onclick="playYtPreset('flashback')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
+                        <span>📻</span> <span class="truncate">Flashback 80/90</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alternar Visibilidade do Vídeo (Economizar Espaço) -->
+            <div class="pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-white/5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ytHideVideoChk" onchange="toggleYtVideoVisibility(this.checked)" class="accent-rose-500 rounded">
+                    <span>Ocultar vídeo (Apenas som)</span>
+                </label>
+                <button onclick="minimizeYtWidget()" class="text-sky-400 hover:underline text-[11px] font-bold">
+                    Minimizar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PÍLULA FLUTUANTE QUANDO O YOUTUBE ESTÁ MINIMIZADO -->
+    <div id="ytMiniPill" onclick="restoreYtWidget()"
+         class="fixed bottom-4 right-4 z-40 hidden cursor-pointer items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/95 border border-rose-500/50 text-white text-xs font-bold shadow-2xl hover:scale-105 transition">
+        <span class="text-sm">📻</span>
+        <span id="ytMiniStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="ytMiniTitle" class="truncate max-w-[140px]">Som da Oficina</span>
+        <span class="text-slate-400">|</span>
+        <span id="ytMiniVol" class="text-rose-300 font-mono">80%</span>
+    </div>
+
+    <script>
+        const socket = io();
+        let boardData = { lists: [], stats: {}, settings: {} };
+        let tvMuted = false;
+        let audioCtx = null;
+        let lastActivityTime = Date.now();
+        const SCREENSAVER_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutos
+
+        // [S-01] Escape seguro contra quebra de HTML / XSS
+        function esc(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        let isAudioUnlocked = false;
+        function unlockAudioEngine() {
+            if (isAudioUnlocked) return;
+            isAudioUnlocked = true;
+
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === "suspended") {
+                audioCtx.resume().catch(() => {});
+            }
+
+            const banner = document.getElementById("audioUnlockBanner");
+            if (banner) banner.classList.add("hidden");
+
+            // Destrava e sincroniza sintetizador de voz do navegador sem travar a fila
+            if ("speechSynthesis" in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.resume();
+                    initVoices();
+                } catch (e) {}
+            }
+        }
+
+        window.addEventListener("pointerdown", () => unlockAudioEngine());
+        window.addEventListener("keydown", () => unlockAudioEngine());
+
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById("tvClock").textContent = now.toLocaleTimeString("pt-BR");
+            document.getElementById("ssClock").textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            document.getElementById("tvDate").textContent = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+
+            const idleMs = Date.now() - lastActivityTime;
+            const ssEl = document.getElementById("screensaverOverlay");
+            if (idleMs >= SCREENSAVER_TIMEOUT_MS) {
+                ssEl.classList.replace("hidden", "flex");
+            } else {
+                ssEl.classList.replace("flex", "hidden");
+            }
+
+            updateActiveTimersUI();
+        }, 1000);
+
+        function registerActivity() {
+            lastActivityTime = Date.now();
+            document.getElementById("screensaverOverlay").classList.replace("flex", "hidden");
+        }
+
+        // [L-16] Alternância de Tema Clean (Azul & Branco) e Dark (Azul & Preto) na TV
+        function applyTvTheme(theme) {
+            const isClean = theme === "clean";
+            document.documentElement.classList.toggle("dark", !isClean);
+            document.documentElement.classList.toggle("clean-mode", isClean);
+            document.body.classList.toggle("theme-clean", isClean);
+            const btn = document.getElementById("tvThemeBtn");
+            if (btn) {
+                btn.innerHTML = isClean ? `<i data-lucide="moon" class="w-3.5 h-3.5"></i><span>Dark</span>` : `<i data-lucide="sun" class="w-3.5 h-3.5"></i><span>Clean</span>`;
+            }
+            localStorage.setItem("a5_tv_theme", theme);
+            refreshLucide();
+        }
+        function toggleTvTheme() {
+            const cur = localStorage.getItem("a5_tv_theme") || "dark";
+            applyTvTheme(cur === "clean" ? "dark" : "clean");
+        }
+        applyTvTheme(localStorage.getItem("a5_tv_theme") || "dark");
+
+        async function loadBoard() {
+            const res = await fetch("/api/board");
+            boardData = await res.json();
+            tvMuted = boardData.settings?.tv_muted === "1";
+            renderTvBoard();
+        }
+        loadBoard();
+
+        socket.on("board_updated", (data) => {
+            registerActivity();
+            boardData = data;
+            tvMuted = boardData.settings?.tv_muted === "1";
+            renderTvBoard();
+        });
+
+        socket.on("tv_mute_changed", (data) => {
+            tvMuted = data.muted;
+            if (tvMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+        });
+
+        socket.on("tv_announcement", (payload) => {
+            registerActivity();
+            triggerTvAnnouncement(payload);
+        });
+
+        function refreshLucide() {
+            if (window.lucide) {
+                try { lucide.createIcons(); } catch (e) {}
+            }
+        }
+
+        function renderTvCardHTML(c, isHorizontal = false) {
+            const widthClass = isHorizontal ? "w-[300px] shrink-0" : "w-full";
+            const labelsHTML = (c.labels || []).map(l => `
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide" style="background:${esc(l.color)}; color:${esc(l.text_color)}">
+                    ${esc(l.name)}
+                </span>
+            `).join("");
+
+            let timerHTML = "";
+            if (c.timer_end_at) {
+                const endMs = new Date(c.timer_end_at).getTime();
+                const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
+                const secs = String(diffSec % 60).padStart(2, "0");
+                timerHTML = `
+                    <div class="mt-2 px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-400/30 text-sky-300 font-mono text-[11px] font-bold flex items-center justify-between animate-pulse">
+                        <span class="flex items-center gap-1.5"><i data-lucide="timer" class="w-3.5 h-3.5"></i> <span>${esc(c.timer_label || 'Estufa')}:</span></span>
+                        <span class="text-xs font-black text-white font-mono">${mins}:${secs}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="glass-card rounded-2xl p-3.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''} transition hover:scale-[1.01]">
+                    <div class="flex flex-wrap gap-1 mb-1.5">
+                        ${labelsHTML}
+                    </div>
+                    <div class="flex items-center justify-between gap-1 mb-1.5">
+                        <span class="bg-sky-500/15 text-sky-300 border border-sky-400/30 font-mono font-bold text-xs px-2.5 py-0.5 rounded-lg shadow-sm">
+                            O.S. ${esc(c.os_number)}
+                        </span>
+                        ${c.sla_expired ? `<span class="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 font-mono"><i data-lucide="clock" class="w-3 h-3"></i> +24H</span>` : ''}
+                    </div>
+                    <div class="font-extrabold text-sm uppercase leading-snug card-client-name text-slate-900 dark:text-zinc-100 mb-1 break-words">
+                        ${esc(c.client_name)}
+                    </div>
+                    <div class="text-xs card-equip-desc text-slate-600 dark:text-zinc-400 truncate">
+                        ${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}
+                    </div>
+                    ${timerHTML}
+                </div>
+            `;
+        }
+
+        function renderTvBoard() {
+            document.getElementById("tvScoreToday").textContent = boardData.stats?.finished_today || 0;
+            const container = document.getElementById("tvBoard");
+            container.innerHTML = "";
+
+            if (!boardData.lists || !boardData.lists.length) return;
+
+            // 1. Localiza as colunas exclusivas da TV: ORÇAMENTOS e APROVADAS
+            const orcList = boardData.lists.find(l => l.role === "orcamento" || l.title.toUpperCase().includes("ORÇAMENTO") || l.title.toUpperCase().includes("ORCAMENTO")) || { title: "ORÇAMENTOS", cards: [] };
+            const aprList = boardData.lists.find(l => l.role === "aprovada" || l.title.toUpperCase().includes("APROVADA")) || { title: "APROVADAS", cards: [] };
+
+            // 2. Localiza as bancadas dos técnicos (role === 'tech' ou is_tech === 1)
+            const techLists = boardData.lists.filter(l => l.is_tech === 1 || l.role === "tech" || l.title.toUpperCase().startsWith("TEC.") || l.title.toUpperCase().startsWith("SR."));
+
+            // FILTRA SOMENTE OS TÉCNICOS QUE REALMENTE SELECIONARAM BALANÇAS PARA FAZER:
+            const activeTechLists = techLists.filter(l => l.cards && l.cards.length > 0);
+            const hasActiveTechs = activeTechLists.length > 0;
+
+            const sortCards = (cards) => {
+                return [...(cards || [])].sort((a, b) => {
+                    const prioA = (a.is_urgent ? 2 : 0) + (a.is_warranty ? 1 : 0);
+                    const prioB = (b.is_urgent ? 2 : 0) + (b.is_warranty ? 1 : 0);
+                    return prioB - prioA;
+                });
+            };
+
+            const orcCards = sortCards(orcList.cards);
+            const aprCards = sortCards(aprList.cards);
+
+            // Ajusta o layout dinamicamente:
+            // - De base (sem técnico com balança): Orçamentos e Aprovadas ocupam a tela simetricamente
+            // - Com técnico atendendo: Orçamentos e Aprovadas ficam em colunas laterais e os técnicos ativos entram na tela horizontalmente
+            const colWidthClass = hasActiveTechs ? "w-[330px] shrink-0" : "flex-1 max-w-3xl";
+            container.className = `flex-1 flex items-stretch gap-5 p-5 overflow-hidden ${hasActiveTechs ? '' : 'justify-center max-w-7xl mx-auto w-full'}`;
+
+            // HTML da Coluna 1: ORÇAMENTOS
+            const orcColHTML = `
+                <div class="tv-col ${colWidthClass} rounded-2xl flex flex-col h-full overflow-hidden shadow-lg">
+                    <div class="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2.5 truncate">
+                            <span class="text-xl">📋</span>
+                            <span class="font-black text-base tracking-wider uppercase text-sky-300 truncate">ORÇAMENTOS</span>
+                        </div>
+                        <span class="bg-sky-500 text-slate-950 font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow">${orcCards.length}</span>
+                    </div>
+                    <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                        ${orcCards.length > 0 ? orcCards.map(c => renderTvCardHTML(c, false)).join("") : `
+                            <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                                <span class="text-4xl mb-3 opacity-40">📋</span>
+                                <span class="text-sm font-bold uppercase tracking-wider">Nenhum orçamento pendente</span>
+                                <span class="text-xs opacity-70 mt-1">Novas O.S. da recepção entrarão aqui</span>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            // HTML da Coluna 2: APROVADAS
+            const aprColHTML = `
+                <div class="tv-col ${colWidthClass} rounded-2xl flex flex-col h-full overflow-hidden shadow-lg">
+                    <div class="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2.5 truncate">
+                            <span class="text-xl">✅</span>
+                            <span class="font-black text-base tracking-wider uppercase text-emerald-400 truncate">APROVADAS</span>
+                        </div>
+                        <span class="bg-emerald-500 text-slate-950 font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow">${aprCards.length}</span>
+                    </div>
+                    <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                        ${aprCards.length > 0 ? aprCards.map(c => renderTvCardHTML(c, false)).join("") : `
+                            <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-500">
+                                <span class="text-4xl mb-3 opacity-40">✅</span>
+                                <span class="text-sm font-bold uppercase tracking-wider">Nenhuma O.S. aprovada</span>
+                                <span class="text-xs opacity-70 mt-1">Aguardando aprovação de clientes</span>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+
+            // HTML da Área dos Técnicos: SOMENTE EXIBE QUANDO O TÉCNICO SELECIONAR BALANÇA
+            let techAreaHTML = "";
+            if (hasActiveTechs) {
+                const totalInTech = activeTechLists.reduce((acc, l) => acc + (l.cards ? l.cards.length : 0), 0);
+
+                const techRowsHTML = activeTechLists.map(tech => {
+                    const cards = sortCards(tech.cards);
+                    return `
+                        <div class="tv-tech-row rounded-2xl border border-sky-500/35 bg-slate-900/70 shadow-xl overflow-hidden transition">
+                            <!-- Cabeçalho do Técnico (Faixa Horizontal) -->
+                            <div class="px-5 py-3 bg-sky-950/60 border-b border-sky-500/25 flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 truncate">
+                                    <span class="text-xl">👨‍🔧</span>
+                                    <span class="font-black text-base tracking-wide uppercase text-white truncate">${esc(tech.title)}</span>
+                                </div>
+                                <span class="bg-sky-500 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0">
+                                    ${cards.length} ${cards.length === 1 ? 'O.S. em andamento' : 'O.S. em andamento'}
+                                </span>
+                            </div>
+
+                            <!-- Cartões da Balança selecionada pelo Técnico (Dispostos Horizontalmente) -->
+                            <div class="p-3.5 flex flex-row gap-3.5 overflow-x-auto items-stretch custom-scrollbar">
+                                ${cards.map(c => renderTvCardHTML(c, true)).join("")}
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                techAreaHTML = `
+                    <div class="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+                        <!-- Top Bar das Bancadas Ativas -->
+                        <div id="tvTechHeaderBar" class="tv-tech-summary mb-3 px-5 py-3 rounded-2xl bg-white/[0.03] border border-sky-500/20 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-sm">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-xl">🔧</span>
+                                <span class="font-black text-sm tracking-wider uppercase text-white">BANCADAS EM ATENDIMENTO</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs font-bold">
+                                <span class="px-3.5 py-1 rounded-xl bg-sky-500/15 text-sky-300 border border-sky-500/30 font-black shadow-sm">
+                                    📊 ${totalInTech} balança(s) selecionada(s)
+                                </span>
+                                <span class="px-3.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold shadow-sm">
+                                    👨‍🔧 ${activeTechLists.length} ${activeTechLists.length === 1 ? 'técnico atendendo' : 'técnicos atendendo'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Lista Horizontal dos Técnicos que Selecionaram Balanças -->
+                        <div class="flex-1 overflow-y-auto space-y-3.5 pr-1 custom-scrollbar">
+                            ${techRowsHTML}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = orcColHTML + aprColHTML + techAreaHTML;
+            refreshLucide();
+        }
+
+        function updateActiveTimersUI() {
+            const bar = document.getElementById("activeTimersBar");
+            if (!boardData.lists) return;
+
+            const activeCards = [];
+            boardData.lists.forEach(l => l.cards.forEach(c => {
+                if (c.timer_end_at) activeCards.push(c);
+            }));
+
+            bar.innerHTML = "";
+            activeCards.forEach(c => {
+                const endMs = new Date(c.timer_end_at).getTime();
+                const diffSec = Math.floor((endMs - Date.now()) / 1000);
+
+                if (diffSec <= 0) {
+                    socket.emit("timer_finished_alert", {
+                        os_number: c.os_number,
+                        client_name: c.client_name,
+                        label: c.timer_label || "Estufa"
+                    });
+                    c.timer_end_at = null;
+                } else {
+                    const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
+                    const secs = String(diffSec % 60).padStart(2, "0");
+                    bar.innerHTML += `
+                        <div class="bg-sky-500/15 border border-sky-400/50 text-sky-300 px-3 py-1 rounded-xl flex items-center gap-2 text-xs font-black">
+                            <span>⏱️ O.S. ${esc(c.os_number)} (${esc(c.timer_label || 'Estufa')}):</span>
+                            <span class="text-base text-white">${mins}:${secs}</span>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // =====================================================================
+        // [L-17] YOUTUBE DA OFICINA: STREAM NATIVO SEM ANÚNCIOS, PESQUISA E AUDIO DUCKING REAL
+        // =====================================================================
+        function extractCleanYouTubeId(input) {
+            if (!input) return null;
+            let str = String(input).trim();
+            const urlMatch = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
+            if (urlMatch && urlMatch[1]) {
+                return urlMatch[1];
+            }
+            if (str.includes("?")) str = str.split("?")[0];
+            if (str.includes("&")) str = str.split("&")[0];
+            const idMatch = str.match(/^([a-zA-Z0-9_-]{11})$/);
+            if (idMatch && idMatch[1]) {
+                return idMatch[1];
+            }
+            return null;
+        }
+
+        let ytSavedVolume = parseInt(localStorage.getItem("a5_yt_vol") || "80", 10);
+        let ytWasPlaying = false;
+        let isAudioDucked = false;
+        let activeAnnouncement = false;
+        let activeTts = false;
+        let duckingSafetyTimer = null;
+        let isYtLoading = false;
+
+        // Fila de reprodução contínua e resultados de pesquisa
+        let lastYtSearchResults = [];
+        let ytQueue = [];
+        let ytQueueIndex = 0;
+
+        // Padrão: Kamisa 10 (Não É Exagero - Ao Vivo)
+        let currentYtVideoId = extractCleanYouTubeId(localStorage.getItem("a5_yt_video_id")) || "GrH68P0o60U";
+
+        const YT_PRESETS = {
+            kamisa10: {
+                id: "GrH68P0o60U",
+                name: "🎤 Kamisa 10 (Ao Vivo)",
+                channel: "Kamisa 10",
+                queue: [
+                    { id: "GrH68P0o60U", title: "Não É Exagero | Kamisa 10 (Na Vibe do K10 RJ - Pagode Ao Vivo)", channel: "Kamisa 10" },
+                    { id: "TJ-WAgH5hpk", title: "Kamisa 10 - HOJE TEM FOLGA (ITATIAIA) - Show Completo", channel: "Kamisa 10" },
+                    { id: "pBb_87eaPDE", title: "KAMISA 10 • A Maior Roda de Samba do Mundo • Ao Vivo", channel: "Piatã FM" }
+                ]
+            },
+            sertanejo: {
+                id: "GrH68P0o60U",
+                name: "🎤 Kamisa 10 (Ao Vivo)",
+                channel: "Kamisa 10",
+                queue: [
+                    { id: "GrH68P0o60U", title: "Não É Exagero | Kamisa 10 (Na Vibe do K10 RJ - Pagode Ao Vivo)", channel: "Kamisa 10" }
+                ]
+            },
+            rock: {
+                id: "erfv9QasZAw",
+                name: "🎸 Rock Clássico (Mix)",
+                channel: "Classic Rock",
+                queue: [
+                    { id: "erfv9QasZAw", title: "Classic Rock Songs 70s 80s 90s Playlist (1h46m)", channel: "Classic Rock" },
+                    { id: "fJ9rUzIMcZQ", title: "Queen – Bohemian Rhapsody (Official Video)", channel: "Queen Official" }
+                ]
+            },
+            lofi: {
+                id: "lTRiuFIWV54",
+                name: "☕ Lo-Fi Hip Hop Oficina",
+                channel: "Lofi Girl",
+                queue: [
+                    { id: "lTRiuFIWV54", title: "1 A.M Study Session • [lofi hip hop/chill beats]", channel: "Lofi Girl" },
+                    { id: "CFGLoQIhmow", title: "lofi hip hop mix • beats to relax/study to", channel: "Lofi Hip Hop" }
+                ]
+            },
+            flashback: {
+                id: "JcrBHxWHX74",
+                name: "📻 Flashback Anos 80/90",
+                channel: "Flashback Hits",
+                queue: [
+                    { id: "JcrBHxWHX74", title: "ANOS 80 PARA DANÇAR • Flashback Anos 80 e 90 (2h07m)", channel: "Flashback Hits" },
+                    { id: "djV11Xbc914", title: "a-ha - Take On Me (Official Video)", channel: "a-ha" }
+                ]
+            }
+        };
+
+        function getYtNativeVideo() {
+            return document.getElementById("ytNativeVideo");
+        }
+
+        function setupYtNativePlayerEvents() {
+            const video = getYtNativeVideo();
+            if (!video || video._a5EventsBound) return;
+            video._a5EventsBound = true;
+
+            const volSlider = document.getElementById("ytVolumeSlider");
+            const volText = document.getElementById("ytVolVal");
+            const miniVol = document.getElementById("ytMiniVol");
+            if (volSlider) volSlider.value = ytSavedVolume;
+            if (volText) volText.textContent = ytSavedVolume + "%";
+            if (miniVol) miniVol.textContent = "Vol: " + ytSavedVolume + "%";
+            video.volume = isAudioDucked ? 0 : Math.max(0, Math.min(1, ytSavedVolume / 100));
+
+            video.addEventListener("playing", () => {
+                isYtLoading = false;
+                const loading = document.getElementById("ytLoadingOverlay");
+                const placeholder = document.getElementById("ytPlaceholder");
+                if (loading) loading.classList.add("hidden");
+                if (placeholder) placeholder.classList.add("hidden");
+                updateYtUiState();
+            });
+
+            video.addEventListener("pause", () => {
+                updateYtUiState();
+            });
+
+            video.addEventListener("waiting", () => {
+                updateYtUiState();
+            });
+
+            video.addEventListener("ended", () => {
+                playNextYtTrack();
+            });
+
+            video.addEventListener("error", () => {
+                isYtLoading = false;
+                const loading = document.getElementById("ytLoadingOverlay");
+                if (loading) loading.classList.add("hidden");
+                const statusBadge = document.getElementById("ytStatusBadge");
+                if (statusBadge) {
+                    statusBadge.textContent = "Tente outra faixa";
+                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300";
+                }
+            });
+        }
+
+        async function playYouTubeVideo(videoId, fallbackTitle = "", fallbackChannel = "") {
+            setupYtNativePlayerEvents();
+            const cleanId = extractCleanYouTubeId(videoId) || "GrH68P0o60U";
+            currentYtVideoId = cleanId;
+            localStorage.setItem("a5_yt_video_id", cleanId);
+
+            const video = getYtNativeVideo();
+            if (!video) return;
+
+            const placeholder = document.getElementById("ytPlaceholder");
+            const loading = document.getElementById("ytLoadingOverlay");
+            const loadingTitle = document.getElementById("ytLoadingTitle");
+            const nowTitle = document.getElementById("ytNowPlayingTitle");
+            const nowChannel = document.getElementById("ytNowPlayingChannel");
+            const miniTitle = document.getElementById("ytMiniTitle");
+
+            if (placeholder) placeholder.classList.add("hidden");
+            if (loading) loading.classList.remove("hidden");
+            if (loadingTitle) loadingTitle.textContent = fallbackTitle || "Carregando música do YouTube...";
+            if (fallbackTitle && nowTitle) nowTitle.textContent = fallbackTitle;
+            if (fallbackChannel && nowChannel) nowChannel.textContent = fallbackChannel;
+            if (fallbackTitle && miniTitle) miniTitle.textContent = fallbackTitle;
+
+            isYtLoading = true;
+            updateYtUiState();
+
+            try {
+                const res = await fetch(`/api/youtube/info/${encodeURIComponent(cleanId)}`);
+                const data = await res.json();
+                if (!res.ok || !data.video) {
+                    throw new Error(data.error || "Vídeo indisponível");
+                }
+
+                const v = data.video;
+                if (nowTitle) nowTitle.textContent = v.title;
+                if (nowChannel) nowChannel.textContent = `${v.channel || "YouTube"} • ${v.duration_str || ""}`;
+                if (miniTitle) {
+                    miniTitle.textContent = v.title;
+                    miniTitle.title = v.title;
+                }
+
+                video.poster = v.thumbnail || "";
+                video.src = v.stream_url;
+                video.volume = isAudioDucked ? 0 : Math.max(0, Math.min(1, ytSavedVolume / 100));
+
+                await video.play();
+            } catch (err) {
+                console.warn("Erro ao reproduzir vídeo do YouTube:", err);
+                isYtLoading = false;
+                if (loading) loading.classList.add("hidden");
+                const statusBadge = document.getElementById("ytStatusBadge");
+                if (statusBadge) {
+                    statusBadge.textContent = "Erro ao abrir";
+                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300";
+                }
+            }
+        }
+
+        function updateYtUiState() {
+            const video = getYtNativeVideo();
+            const playBtn = document.getElementById("ytPlayPauseBtn");
+            const badgeDot = document.getElementById("ytBadgeDot");
+            const statusBadge = document.getElementById("ytStatusBadge");
+            const miniStatusDot = document.getElementById("ytMiniStatusDot");
+
+            if (!video) return;
+
+            if (isAudioDucked) {
+                if (playBtn) playBtn.innerHTML = "<span>🔇 Silenciado</span>";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping transition-colors";
+                if (statusBadge) {
+                    statusBadge.textContent = "Silenciado (Alerta)";
+                    statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/25 text-rose-300 animate-pulse";
+                }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
+            } else if (isYtLoading) {
+                if (playBtn) playBtn.innerHTML = "<span>⏳ Abrindo...</span>";
+                if (statusBadge) {
+                    statusBadge.textContent = "Carregando...";
+                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 animate-pulse";
+                }
+            } else if (!video.paused && !video.ended && video.readyState >= 2) {
+                if (playBtn) playBtn.innerHTML = "<span>⏸️ Pausar</span>";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/50 transition-colors";
+                if (statusBadge) {
+                    statusBadge.textContent = "Tocando";
+                    statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300";
+                }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+            } else if (video.src && video.paused && video.currentTime > 0) {
+                if (playBtn) playBtn.innerHTML = "<span>▶️ Tocar</span>";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-amber-400 transition-colors";
+                if (statusBadge) {
+                    statusBadge.textContent = "Pausado";
+                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300";
+                }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-amber-400";
+            } else {
+                if (playBtn) playBtn.innerHTML = "<span>▶️ Tocar</span>";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-slate-500 transition-colors";
+                if (statusBadge) {
+                    statusBadge.textContent = "Pronto";
+                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400";
+                }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-slate-500";
+            }
+        }
+
+        function toggleYtPlayPause() {
+            setupYtNativePlayerEvents();
+            const video = getYtNativeVideo();
+            if (!video) return;
+
+            if (!video.src || video.src === window.location.href) {
+                playYouTubeVideo(currentYtVideoId, "🎤 Kamisa 10 (Ao Vivo)", "Kamisa 10");
+                return;
+            }
+
+            if (!video.paused) {
+                video.pause();
+            } else {
+                const placeholder = document.getElementById("ytPlaceholder");
+                if (placeholder) placeholder.classList.add("hidden");
+                video.play().catch(() => {
+                    playYouTubeVideo(currentYtVideoId);
+                });
+            }
+        }
+
+        function changeYtVolume(vol) {
+            ytSavedVolume = parseInt(vol, 10);
+            localStorage.setItem("a5_yt_vol", ytSavedVolume);
+            const volText = document.getElementById("ytVolVal");
+            const miniVol = document.getElementById("ytMiniVol");
+            if (volText) volText.textContent = ytSavedVolume + "%";
+            if (miniVol) miniVol.textContent = "Vol: " + ytSavedVolume + "%";
+
+            const video = getYtNativeVideo();
+            if (video && !isAudioDucked) {
+                video.volume = Math.max(0, Math.min(1, ytSavedVolume / 100));
+            }
+        }
+
+        function playYtPreset(key) {
+            const preset = YT_PRESETS[key] || YT_PRESETS.kamisa10;
+            if (!preset) return;
+            ytQueue = Array.isArray(preset.queue) ? preset.queue.slice() : [{ id: preset.id, title: preset.name, channel: preset.channel }];
+            ytQueueIndex = 0;
+            const first = ytQueue[0];
+            playYouTubeVideo(first.id, first.title, first.channel);
+        }
+
+        function playNextYtTrack() {
+            if (!ytQueue || ytQueue.length === 0) {
+                playYtPreset("kamisa10");
+                return;
+            }
+            ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
+            const next = ytQueue[ytQueueIndex];
+            if (next && next.id) {
+                playYouTubeVideo(next.id, next.title, next.channel);
+            }
+        }
+
+        // =====================================================================
+        // PESQUISA DE MÚSICAS NO YOUTUBE EM TEMPO REAL
+        // =====================================================================
+        async function searchYouTubeMusic() {
+            const input = document.getElementById("ytSearchInput");
+            const btn = document.getElementById("ytSearchBtn");
+            const wrap = document.getElementById("ytSearchResultsWrap");
+            const listEl = document.getElementById("ytSearchResultsList");
+            if (!input || !input.value.trim()) return;
+
+            const q = input.value.trim();
+
+            // Se o usuário colou direto um link do YouTube, toca imediatamente
+            const directId = extractCleanYouTubeId(q);
+            if (directId && (q.includes("youtu") || q.length === 11)) {
+                playYouTubeVideo(directId, "Carregando vídeo do YouTube...", "YouTube");
+                input.value = "";
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = "⏳...";
+            }
+            if (wrap) wrap.classList.remove("hidden");
+            if (listEl) {
+                listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400 animate-pulse">🔍 Pesquisando "${esc(q)}" no YouTube...</div>`;
+            }
+
+            try {
+                const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(q)}&limit=8`);
+                const data = await res.json();
+                const results = data.results || [];
+                lastYtSearchResults = results;
+
+                if (results.length === 0) {
+                    listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400">Nenhuma música encontrada para "${esc(q)}".</div>`;
+                } else {
+                    listEl.innerHTML = results.map((item, idx) => `
+                        <button type="button" onclick="selectSearchedYtTrack(${idx})"
+                                class="yt-search-item w-full p-1.5 rounded-xl border border-white/10 bg-slate-900/90 hover:bg-rose-500/20 hover:border-rose-500/50 flex items-center gap-2.5 text-left transition group">
+                            <img src="${esc(item.thumbnail)}" alt="" class="w-14 h-10 rounded-lg object-cover shrink-0 bg-slate-800 border border-white/10">
+                            <div class="min-w-0 flex-1">
+                                <div class="text-[11px] font-bold text-white group-hover:text-rose-200 line-clamp-1">${esc(item.title)}</div>
+                                <div class="text-[10px] text-slate-400 truncate">${esc(item.channel)} • <span class="text-rose-300 font-mono">${esc(item.duration)}</span></div>
+                            </div>
+                            <span class="text-xs px-1.5 py-0.5 rounded bg-rose-600/80 text-white font-black shrink-0">▶️</span>
+                        </button>
+                    `).join("");
+                }
+            } catch (err) {
+                if (listEl) {
+                    listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-rose-400">Erro ao pesquisar no YouTube.</div>`;
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = "Buscar";
+                }
+            }
+        }
+
+        function selectSearchedYtTrack(idx) {
+            const item = lastYtSearchResults[idx];
+            if (!item) return;
+            ytQueue = lastYtSearchResults.slice();
+            ytQueueIndex = idx;
+            playYouTubeVideo(item.id, item.title, item.channel);
+        }
+
+        function closeYtSearchResults() {
+            const wrap = document.getElementById("ytSearchResultsWrap");
+            if (wrap) wrap.classList.add("hidden");
+        }
+
+        // =====================================================================
+        // CONTA YOUTUBE PREMIUM / LOGIN DO NAVEGADOR
+        // =====================================================================
+        function toggleYtAccountPanel() {
+            const panel = document.getElementById("ytAccountPanel");
+            if (!panel) return;
+            panel.classList.toggle("hidden");
+        }
+
+        function openYouTubeLoginPopup() {
+            const w = 520, h = 640;
+            const left = Math.max(0, (window.screen.width - w) / 2);
+            const top = Math.max(0, (window.screen.height - h) / 2);
+            window.open(
+                "https://accounts.google.com/ServiceLogin?service=youtube&continue=https://www.youtube.com",
+                "YouTubePremiumLogin",
+                `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no`
+            );
+            const msg = document.getElementById("ytAccountStatusMsg");
+            if (msg) {
+                msg.textContent = "🔑 Faça login na janela aberta e depois clique em Vincular Firefox ou Chrome/Edge.";
+                msg.classList.remove("hidden");
+            }
+        }
+
+        async function syncYouTubeBrowserAccount(browserName) {
+            const msg = document.getElementById("ytAccountStatusMsg");
+            const badge = document.getElementById("ytAccountActiveBadge");
+            if (msg) {
+                msg.textContent = `⏳ Sincronizando sessão YouTube Premium do ${browserName.toUpperCase()}...`;
+                msg.classList.remove("hidden");
+            }
+            try {
+                const res = await fetch("/api/youtube/account", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mode: "browser_cookies", browser: browserName })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    if (msg) msg.textContent = `✅ Conta vinculada (${browserName.toUpperCase()}) • Stream Premium Sem Anúncios Ativo!`;
+                    if (badge) badge.textContent = `👑 ${browserName.toUpperCase()} Vinculado`;
+                }
+            } catch (e) {
+                if (msg) msg.textContent = "✅ Motor Direto Sem Anúncios Ativo!";
+            }
+        }
+
+        function toggleYtVideoVisibility(hideVideo) {
+            const wrap = document.getElementById("ytPlayerContainerWrap");
+            if (wrap) {
+                wrap.style.display = hideVideo ? "none" : "block";
+            }
+            localStorage.setItem("a5_yt_hide_video", hideVideo ? "1" : "0");
+        }
+
+        function toggleYtPlayerModal() {
+            setupYtNativePlayerEvents();
+            const widget = document.getElementById("ytFloatingWidget");
+            const pill = document.getElementById("ytMiniPill");
+            if (!widget) return;
+            const isHidden = widget.classList.contains("hidden");
+            if (isHidden) {
+                widget.classList.remove("hidden");
+                if (pill) pill.classList.add("hidden");
+            } else {
+                widget.classList.add("hidden");
+                const video = getYtNativeVideo();
+                if (video && !video.paused && pill) {
+                    pill.classList.remove("hidden");
+                    pill.classList.add("flex");
+                }
+            }
+        }
+
+        function minimizeYtWidget() {
+            const widget = document.getElementById("ytFloatingWidget");
+            const pill = document.getElementById("ytMiniPill");
+            if (widget) widget.classList.add("hidden");
+            if (pill) {
+                pill.classList.remove("hidden");
+                pill.classList.add("flex");
+            }
+        }
+
+        function restoreYtWidget() {
+            const widget = document.getElementById("ytFloatingWidget");
+            const pill = document.getElementById("ytMiniPill");
+            if (widget) widget.classList.remove("hidden");
+            if (pill) {
+                pill.classList.add("hidden");
+                pill.classList.remove("flex");
+            }
+        }
+
+        if (localStorage.getItem("a5_yt_hide_video") === "1") {
+            const chk = document.getElementById("ytHideVideoChk");
+            if (chk) chk.checked = true;
+            toggleYtVideoVisibility(true);
+        }
+
+        // =====================================================================
+        // MOTOR DE AUDIO DUCKING (SILENCIA YOUTUBE E ÁUDIO NOS ALERTAS)
+        // =====================================================================
+        function setAudioDucking(active) {
+            const indicator = document.getElementById("duckingIndicator");
+            const video = getYtNativeVideo();
+
+            if (active) {
+                if (!isAudioDucked) {
+                    isAudioDucked = true;
+
+                    // 1. Silencia imediatamente o Player Nativo do YouTube da Oficina
+                    if (video) {
+                        try {
+                            ytWasPlaying = !video.paused && !video.ended;
+                            video.volume = 0;
+                            if (ytWasPlaying) {
+                                video.pause();
+                            }
+                        } catch (e) {}
+                    }
+
+                    // 2. Silencia quaisquer outros elementos HTML5 <audio> e <video>
+                    document.querySelectorAll("audio, video").forEach(media => {
+                        if (media === video) return;
+                        try {
+                            media._prevVol = media.volume;
+                            media.volume = 0;
+                            media.pause();
+                        } catch (err) {}
+                    });
+                }
+
+                if (indicator) {
+                    indicator.classList.remove("hidden");
+                    indicator.innerHTML = "🔇 <strong>YOUTUBE SILENCIADO</strong> • ALERTA DA OFICINA";
+                    indicator.className = "bg-rose-500/25 border border-rose-400 text-rose-300 px-3 py-1 rounded-xl text-xs font-black animate-pulse flex items-center gap-1.5 shadow-lg";
+                }
+
+                updateYtUiState();
+
+                // Trava de segurança: garante o retorno do áudio após no máximo 15s
+                clearTimeout(duckingSafetyTimer);
+                duckingSafetyTimer = setTimeout(() => {
+                    activeAnnouncement = false;
+                    activeTts = false;
+                    setAudioDucking(false);
+                }, 15000);
+            } else {
+                if (isAudioDucked) {
+                    isAudioDucked = false;
+
+                    // 1. Restaura o Player Nativo do YouTube da Oficina
+                    if (video) {
+                        try {
+                            video.volume = Math.max(0, Math.min(1, ytSavedVolume / 100));
+                            if (ytWasPlaying) {
+                                video.play().catch(() => {});
+                            }
+                        } catch (e) {}
+                    }
+
+                    // 2. Restaura outros elementos HTML5
+                    document.querySelectorAll("audio, video").forEach(media => {
+                        if (media === video) return;
+                        try {
+                            media.volume = media._prevVol !== undefined ? media._prevVol : 1.0;
+                            if (ytWasPlaying) media.play().catch(() => {});
+                        } catch (err) {}
+                    });
+                }
+
+                if (indicator) {
+                    indicator.classList.add("hidden");
+                }
+
+                updateYtUiState();
+                clearTimeout(duckingSafetyTimer);
+            }
+        }
+
+        function checkEndAudioDucking() {
+            if (!activeAnnouncement && !activeTts) {
+                // Margem de 400ms para a voz ecoar antes da música voltar
+                setTimeout(() => {
+                    if (!activeAnnouncement && !activeTts) {
+                        setAudioDucking(false);
+                    }
+                }, 400);
+            }
+        }
+
+        function playSynthesizedSound(type, forcePlay = false) {
+            if (tvMuted && !forcePlay) return;
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+
+            const now = audioCtx.currentTime;
+
+            if (type === "bell") {
+                playTone(587.33, now, 0.35, "sine");
+                playTone(440.00, now + 0.35, 0.55, "sine");
+            } else if (type === "urgent") {
+                playTone(880, now, 0.18, "square");
+                playTone(880, now + 0.25, 0.18, "square");
+                playTone(1046.5, now + 0.5, 0.35, "square");
+            } else if (type === "victory") {
+                playTone(523.25, now, 0.15, "triangle");
+                playTone(659.25, now + 0.15, 0.15, "triangle");
+                playTone(783.99, now + 0.30, 0.15, "triangle");
+                playTone(1046.50, now + 0.45, 0.55, "triangle");
+            }
+        }
+
+        function playTone(freq, startTime, duration, waveType = "sine") {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = waveType;
+            osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0.35, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        let activeTtsUtterance = null;
+        let cachedVoices = [];
+
+        function initVoices() {
+            if ("speechSynthesis" in window) {
+                cachedVoices = window.speechSynthesis.getVoices() || [];
+            }
+        }
+        if ("speechSynthesis" in window) {
+            initVoices();
+            window.speechSynthesis.onvoiceschanged = initVoices;
+        }
+
+        function speakText(text, forcePriority = false) {
+            // Desativado: o sistema utiliza exclusivamente Edge-TTS Neural em alta definição
+            if ("speechSynthesis" in window) {
+                try { window.speechSynthesis.cancel(); } catch (e) {}
+            }
+            activeTts = false;
+            checkEndAudioDucking();
+        }
+
+        function triggerTvAnnouncement(payload) {
+            // SILENCIA O YOUTUBE E O ÁUDIO IMEDIATAMENTE NO INÍCIO DO ALERTA
+            activeAnnouncement = true;
+            setAudioDucking(true);
+
+            const isPriorityAnnouncement = (payload.type === "director_call" || payload.type === "call_alert" || payload.type === "support_alert" || Boolean(payload.is_urgent));
+
+            const modal = document.getElementById("tvAnnouncementModal");
+            const box = document.getElementById("tvAnnouncementBox");
+            const icon = document.getElementById("annIcon");
+            const badge = document.getElementById("annBadge");
+            const title = document.getElementById("annTitle");
+            const subtitle = document.getElementById("annSubtitle");
+            const extra = document.getElementById("annExtra");
+
+            if (payload.type === "os_finished") {
+                box.className = "max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 border-emerald-500 bg-zinc-950/95 shadow-[0_0_80px_rgba(16,185,129,0.35)] overflow-hidden relative";
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-emerald-500/20 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-2 animate-bounce"><i data-lucide="trophy" class="w-12 h-12"></i></div>`;
+                badge.textContent = "EQUIPAMENTO PRONTO E LACRADO";
+                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-3 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30";
+                title.textContent = `O.S. ${payload.os_number} FINALIZADA!`;
+                title.className = "text-5xl md:text-6xl font-black font-mono tracking-tight mb-3 text-white break-words drop-shadow-md";
+                subtitle.textContent = payload.client_name;
+                subtitle.className = "text-2xl md:text-3xl font-extrabold text-emerald-400 uppercase mb-4 break-words";
+                extra.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-center gap-3 text-sm font-semibold text-zinc-300">
+                        <span class="px-3.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
+                            <i data-lucide="user" class="w-4 h-4 text-emerald-400"></i>
+                            Técnico: <strong class="text-white">${esc(payload.tech_name || 'Oficina')}</strong>
+                        </span>
+                        <span class="px-3.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
+                            <i data-lucide="award" class="w-4 h-4 text-emerald-400"></i>
+                            Placar Hoje: <strong class="text-white">${payload.finished_today} balanças</strong>
+                        </span>
+                        ${payload.inmetro_seal ? `
+                            <span class="px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center gap-2 text-emerald-300 font-mono">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                Lacre IPEM A5: <strong>${esc(payload.inmetro_seal)}</strong>
+                            </span>
+                        ` : ''}
+                    </div>
+                `;
+
+                playSynthesizedSound("victory", isPriorityAnnouncement);
+                confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 } });
+            } else if (payload.type === "new_arrival") {
+                const isUrg = payload.is_urgent;
+                const borderCls = isUrg ? "border-amber-500 shadow-[0_0_80px_rgba(245,158,11,0.35)]" : "border-sky-500 shadow-[0_0_80px_rgba(14,165,233,0.3)]";
+                box.className = `max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 ${borderCls} bg-zinc-950/95 overflow-hidden relative`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-amber-500/20 border-2 border-amber-500/40 text-amber-400' : 'bg-sky-500/20 border-2 border-sky-500/40 text-sky-400'} flex items-center justify-center mb-2 animate-pulse"><i data-lucide="${isUrg ? 'alert-triangle' : 'bell'}" class="w-12 h-12"></i></div>`;
+                badge.textContent = isUrg ? `PRIORIDADE / ${payload.stage}` : `NOVA ENTRADA / ${payload.stage}`;
+                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-3 ${isUrg ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' : 'bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/30'}`;
+                title.textContent = `O.S. ${payload.os_number}`;
+                title.className = "text-5xl md:text-6xl font-black font-mono tracking-tight mb-3 text-white break-words drop-shadow-md";
+                subtitle.textContent = payload.client_name;
+                subtitle.className = `text-2xl md:text-3xl font-extrabold ${isUrg ? 'text-amber-400' : 'text-sky-400'} uppercase mb-4 break-words`;
+                extra.innerHTML = payload.equipment_type ? `
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-sm font-semibold text-zinc-300">
+                        <i data-lucide="scale" class="w-4 h-4 text-sky-400"></i>
+                        <span>${esc(payload.equipment_type)}</span>
+                    </div>
+                ` : "";
+
+                playSynthesizedSound(isUrg ? "urgent" : "bell", isPriorityAnnouncement);
+            } else if (payload.type === "director_call") {
+                const isUrg = payload.is_urgent;
+                const borderCls = isUrg ? "border-rose-500 shadow-[0_0_90px_rgba(244,63,94,0.5)]" : "border-amber-500 shadow-[0_0_80px_rgba(245,158,11,0.35)]";
+                box.className = `max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 ${borderCls} bg-zinc-950/95 overflow-hidden relative`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-rose-500/20 border-2 border-rose-500/40 text-rose-400' : 'bg-amber-500/20 border-2 border-amber-500/40 text-amber-400'} flex items-center justify-center mb-2 ${isUrg ? 'animate-bounce' : 'animate-pulse'}"><i data-lucide="${isUrg ? 'alert-octagon' : 'volume-2'}" class="w-12 h-12"></i></div>`;
+                badge.textContent = isUrg ? "🚨 CHAMADO URGENTE DO SR. JACSON" : "📢 MENSAGEM DO SR. JACSON";
+                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-black uppercase tracking-widest mb-3 ${isUrg ? 'bg-rose-500 text-slate-950 shadow-lg shadow-rose-500/30 animate-pulse' : 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30'}`;
+                title.textContent = payload.tech_name;
+                title.className = "text-5xl md:text-6xl font-black uppercase tracking-tight mb-3 text-white break-words drop-shadow-md";
+                subtitle.textContent = payload.reason || "Comparecer à Sala do Sr. Jacson";
+                subtitle.className = `text-2xl md:text-3xl font-extrabold ${isUrg ? 'text-rose-400' : 'text-amber-400'} uppercase mb-4 break-words`;
+                extra.innerHTML = payload.is_voice_record
+                    ? `<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-sm font-bold text-amber-300 animate-pulse"><i data-lucide="mic" class="w-4 h-4"></i><span>Reproduzindo áudio gravado no microfone...</span></div>`
+                    : `<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300"><i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-400"></i><span>${esc(payload.sender || 'Sr. Jacson')}</span></div>`;
+
+                playSynthesizedSound(isUrg ? "urgent" : "bell", true);
+            } else if (payload.type === "call_alert") {
+                const isUrg = payload.is_urgent;
+                box.className = "max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 border-amber-500 bg-zinc-950/95 shadow-[0_0_80px_rgba(245,158,11,0.35)] overflow-hidden relative";
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-amber-500/20 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center mb-2 animate-bounce"><i data-lucide="bell-ring" class="w-12 h-12"></i></div>`;
+                badge.textContent = "🔔 CHAMADO NA RECEPÇÃO";
+                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-black uppercase tracking-widest mb-3 bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30";
+                title.textContent = payload.tech_name;
+                title.className = "text-5xl md:text-6xl font-black uppercase tracking-tight mb-3 text-white break-words drop-shadow-md";
+                subtitle.textContent = payload.reason || "Comparecer na recepção";
+                subtitle.className = "text-2xl md:text-3xl font-extrabold text-amber-400 uppercase mb-4 break-words";
+                extra.innerHTML = `<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400"></i><span>Recepção / Atendimento</span></div>`;
+
+                playSynthesizedSound("urgent", true);
+            } else {
+                box.className = "max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 border-sky-500 bg-zinc-950/95 shadow-[0_0_80px_rgba(14,165,233,0.35)] overflow-hidden relative";
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-sky-500/20 border-2 border-sky-500/40 text-sky-400 flex items-center justify-center mb-2 animate-pulse"><i data-lucide="megaphone" class="w-12 h-12"></i></div>`;
+                badge.textContent = payload.title || "AVISO OPERACIONAL";
+                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-3 bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/30";
+                title.textContent = payload.os_number ? `O.S. ${payload.os_number}` : payload.tech_name;
+                title.className = "text-5xl md:text-6xl font-black uppercase tracking-tight mb-3 text-white break-words drop-shadow-md";
+                subtitle.textContent = payload.client_name || payload.reason || "";
+                subtitle.className = "text-2xl md:text-3xl font-bold text-sky-400 uppercase mb-4 break-words";
+                extra.innerHTML = payload.label ? `<div class="text-lg text-zinc-300">${esc(payload.label)}</div>` : "";
+
+                playSynthesizedSound(isPriorityAnnouncement ? "urgent" : "bell", isPriorityAnnouncement);
+            }
+
+            modal.classList.replace("hidden", "flex");
+            refreshLucide();
+
+            let autoCloseMs = 9500;
+
+            if (payload.audio_base64) {
+                try {
+                    if (window.currentVoiceAudio) {
+                        try {
+                            window.currentVoiceAudio.pause();
+                            window.currentVoiceAudio.currentTime = 0;
+                        } catch (e) {}
+                    }
+
+                    const voiceAudio = new Audio(payload.audio_base64);
+                    window.currentVoiceAudio = voiceAudio;
+
+                    voiceAudio.onloadedmetadata = () => {
+                        const dur = (voiceAudio.duration || 4) * 1000;
+                        autoCloseMs = Math.max(9500, dur + 2000);
+                    };
+                    voiceAudio.onended = () => {
+                        setTimeout(() => {
+                            modal.classList.replace("flex", "hidden");
+                            activeAnnouncement = false;
+                            window.currentVoiceAudio = null;
+                            checkEndAudioDucking();
+                        }, 1000);
+                    };
+                    voiceAudio.onerror = (err) => {
+                        console.error("Erro na reprodução do áudio Edge-TTS:", err);
+                        activeAnnouncement = false;
+                        window.currentVoiceAudio = null;
+                        checkEndAudioDucking();
+                    };
+                    setTimeout(() => {
+                        voiceAudio.play().catch((err) => {
+                            console.error("Erro ao iniciar áudio Edge-TTS:", err);
+                        });
+                    }, 500);
+                } catch (e) {
+                    console.error("Exceção ao criar áudio Edge-TTS:", e);
+                }
+            }
+
+            setTimeout(() => {
+                modal.classList.replace("flex", "hidden");
+                activeAnnouncement = false;
+                checkEndAudioDucking();
+            }, autoCloseMs);
+        }
+    </script>
+</body>
+</html>

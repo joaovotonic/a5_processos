@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark-mode">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A5 Kanban • Recepção & Controle de Bancada</title>
+    
+    <!-- Google Fonts: Plus Jakarta Sans (UI) & JetBrains Mono (Dados/OS/Pesos) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    },
+                    colors: {
+                        zinc: {
+                            850: '#1f1f23',
+                            950: '#09090b',
+                            975: '#060608'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <!-- Lucide Icons & AutoAnimate -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.2/index.min.js"></script>
+    
+    <!-- Socket.IO & SortableJS -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #F8FAFC;
+            --bg-header: #FFFFFF;
+            --bg-subbar: #FFFFFF;
+            --bg-column: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --border-color: #E2E8F0;
+        }
+        html.dark-mode {
+            --bg-main: #09090B;
+            --bg-header: #0E0E12;
+            --bg-subbar: #121216;
+            --bg-column: #121216;
+            --bg-card: #18181C;
+            --text-primary: #F4F4F5;
+            --text-secondary: #A1A1AA;
+            --border-color: #27272A;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .a5-header {
+            background-color: var(--bg-header);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .a5-subbar {
+            background-color: var(--bg-subbar);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .kanban-col {
+            background-color: var(--bg-column);
+            border: 1px solid var(--border-color);
+            min-width: 310px;
+            max-width: 310px;
+            max-height: calc(100vh - 145px);
+            transition: border-color 0.2s;
+        }
+        .kanban-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        .kanban-card:hover {
+            transform: translateY(-2px);
+            border-color: #0284C7;
+            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.12), 0 8px 10px -6px rgba(2, 132, 199, 0.08);
+        }
+        .search-match {
+            outline: 2px solid #0284C7 !important;
+            box-shadow: 0 0 16px rgba(2, 132, 199, 0.45) !important;
+        }
+        .search-dimmed {
+            opacity: 0.2;
+            filter: grayscale(80%);
+        }
+        .sla-pulse {
+            animation: pulse-ring 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.5); }
+            50% { box-shadow: 0 0 0 5px rgba(2, 132, 199, 0); }
+        }
+        /* Scrollbar Premium */
+        ::-webkit-scrollbar { width: 6px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden select-none antialiased">
+
+    <!-- TOP NAVBAR (Design System Linear/SaaS) -->
+    <header class="a5-header px-5 py-2.5 flex flex-wrap items-center justify-between gap-3 z-20">
+        <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div>
+                <div class="flex items-center gap-1.5 leading-none">
+                    <span class="font-bold text-sm tracking-tight text-[#254a93] dark:text-white leading-none">Tecnologia</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                        Toledo Prix
+                    </span>
+                </div>
+                <p class="text-[10px] font-semibold text-[#2aa6c8] dark:text-sky-400 tracking-wide mt-0.5 leading-tight">Balanças e Sistemas</p>
+            </div>
+        </div>
+
+        <!-- BARRA DE PESQUISA COM AUTOCOMPLETE -->
+        <div class="relative flex-1 max-w-md min-w-[240px]" id="searchBoxContainer">
+            <div class="relative flex items-center">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none"></i>
+                <input type="text" id="searchInput" autocomplete="off"
+                    oninput="filterCards()" onfocus="filterCards()"
+                    placeholder="Buscar O.S., cliente, modelo, técnico ou lacre..."
+                    class="w-full pl-9 pr-9 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 placeholder-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition">
+                <button onclick="clearSearch()" id="clearSearchBtn" class="hidden absolute right-2.5 text-slate-400 hover:text-slate-200 font-bold text-xs p-1">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>
+            <div id="searchSuggestionsDropdown"
+                 class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-zinc-900 text-slate-900 dark:text-white rounded-xl shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-80 overflow-y-auto z-50 divide-y divide-slate-100 dark:divide-zinc-800">
+            </div>
+        </div>
+
+        <!-- AÇÕES RÁPIDAS (Ícones Vetoriais Lucide e Botões no Padrão Linear) -->
+        <div class="flex items-center gap-2 flex-wrap">
+            <button onclick="openNewOsModal()" class="bg-sky-500 hover:bg-sky-400 active:scale-[0.98] text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs shadow-sm flex items-center gap-1.5 transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5 stroke-[2.5]"></i>
+                <span>Nova O.S.</span>
+            </button>
+
+            <button onclick="openPendingPhotosModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition" title="Fotos da Recepção">
+                <i data-lucide="camera" class="w-3.5 h-3.5 text-sky-500"></i>
+                <span>Fotos Celular</span>
+                <span id="navPendingPhotosBadge" class="hidden bg-sky-500 text-slate-950 font-black text-[10px] px-1.5 py-0.2 rounded-full leading-tight font-mono">0</span>
+            </button>
+
+            <button onclick="openCallTechModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="megaphone" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span>Chamar Técnico</span>
+            </button>
+
+            <button id="muteTvBtn" onclick="toggleTvMute()" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition" title="Silenciador da TV">
+                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-emerald-500"></i>
+                <span id="muteTvIcon">TV Ativa</span>
+            </button>
+
+            <!-- Dropdown Relatórios CSV -->
+            <div class="relative group">
+                <button class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>Exportar</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+                </button>
+                <div class="absolute right-0 pt-1.5 w-48 hidden group-hover:block z-50">
+                    <div class="bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 rounded-xl shadow-xl border border-slate-200 dark:border-zinc-800 overflow-hidden text-xs">
+                        <a href="/api/export/csv?period=day" class="block px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 transition">Finalizadas Hoje</a>
+                        <a href="/api/export/csv?period=month" class="block px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 transition">Relatório Mensal</a>
+                        <a href="/api/export/csv?period=year" class="block px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 transition">Relatório Anual</a>
+                        <a href="/api/export/csv?period=all" class="block px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 border-t border-slate-100 dark:border-zinc-800 font-semibold transition">Base Completa (CSV)</a>
+                    </div>
+                </div>
+            </div>
+
+            <a href="/painel-tv" target="_blank" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1" title="Painel TV com Música e Voz">
+                <i data-lucide="tv" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>TV</span>
+            </a>
+            <a href="/consulta" target="_blank" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>Balcão</span>
+            </a>
+            <a href="/gerencia" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
+                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>Gerência</span>
+            </a>
+
+            <button onclick="toggleTheme()" id="themeBtn" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 p-1.5 rounded-lg text-xs transition" title="Alternar Tema">
+                <i data-lucide="moon" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- BARRA DE STATUS / CARGA DE BANCADA -->
+    <div class="a5-subbar px-5 py-2 flex items-center justify-between gap-4 overflow-x-auto text-xs">
+        <div class="flex items-center gap-2.5 shrink-0">
+            <span class="font-bold uppercase tracking-wider text-[10px] text-slate-400 dark:text-zinc-500">Carga por Técnico:</span>
+            <div id="techWorkloadBar" class="flex items-center gap-1.5"></div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+            <span class="text-slate-600 dark:text-zinc-300 flex items-center gap-1.5 font-medium">
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                Em Oficina: <strong id="statActive" class="text-sky-500 font-mono font-bold">0</strong>
+            </span>
+            <span class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 px-2.5 py-0.5 rounded-md font-semibold text-xs flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Finalizadas Hoje: <span id="statFinishedToday" class="font-mono font-bold">0</span>
+            </span>
+        </div>
+    </div>
+
+    <!-- BANNER DE REABERTURA DE ORÇAMENTO -->
+    <div id="reopenRequestsBanner" class="hidden px-5 py-2 bg-amber-500/10 border-b border-amber-500/30 text-xs flex flex-wrap items-center justify-between gap-2"></div>
+
+    <!-- TOAST DE NOTIFICAÇÕES EM TEMPO REAL -->
+    <div id="adminNotificationsContainer" class="fixed bottom-4 right-4 z-[70] flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-3"></div>
+
+    <!-- ÁREA DO QUADRO KANBAN -->
+    <main class="flex-1 overflow-x-auto overflow-y-hidden p-4">
+        <div id="boardContainer" class="flex items-start gap-3.5 h-full">
+            <!-- Colunas renderizadas dinamicamente via JS -->
+        </div>
+    </main>
+
+    <!-- MODAL 1: NOVA O.S. -->
+    <div id="newOsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-zinc-800 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 rounded-lg bg-sky-500/10 text-sky-500">
+                        <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white">Cadastrar Nova Ordem de Serviço</h2>
+                </div>
+                <button onclick="closeModal('newOsModal')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <form id="newOsForm" onsubmit="submitNewOs(event)" class="space-y-3.5">
+                <input type="hidden" name="pending_entry_id" id="newOsPendingEntryId" value="">
+                <input type="hidden" name="cnpj_cpf" id="newOsCnpjInput" value="">
+                <input type="hidden" name="trade_name" id="newOsTradeNameInput" value="">
+                <input type="hidden" name="phone" id="newOsPhoneInput" value="">
+                <input type="hidden" name="email" id="newOsEmailInput" value="">
+                <input type="hidden" name="address" id="newOsAddressInput" value="">
+                <input type="hidden" name="city_state" id="newOsCityStateInput" value="">
+                <input type="hidden" name="accessories_json" id="newOsAccessoriesInput" value="[]">
+
+                <!-- INTEGRAÇÃO FOTOS CELULAR & PRÉ-ENTRADA -->
+                <div class="p-3.5 rounded-xl border border-sky-500/30 bg-sky-500/[0.04] space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 rounded-lg bg-sky-500/15 text-sky-500">
+                                <i data-lucide="smartphone" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold uppercase text-slate-900 dark:text-zinc-100 block">Fotos Celular (Recepção)</span>
+                                <span class="text-[10px] text-slate-500 dark:text-zinc-400">Puxe fotos registradas pelo celular ou anexe novas</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="openPendingPhotosModal()" class="text-xs font-semibold px-2 py-1 rounded-lg border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition flex items-center gap-1">
+                                <i data-lucide="folder-search" class="w-3.5 h-3.5 text-sky-500"></i>
+                                <span>Ver Fila (<span id="newOsPendingCount">0</span>)</span>
+                            </button>
+                            <a href="/recepcao-fotos" target="_blank" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 text-sky-600 dark:text-sky-400 border border-sky-500/30 transition flex items-center gap-1">
+                                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                <span>Câmera Mobile</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- CHIPS DE PRÉ-ENTRADAS AGUARDANDO -->
+                    <div id="newOsPendingBox">
+                        <div id="newOsPendingChips" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+                    </div>
+
+                    <!-- PREVIEW DAS FOTOS VINCULADAS -->
+                    <div id="newOsLinkedPhotosBox" class="hidden p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span id="newOsLinkedPhotosLabel" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                                <span>Fotos Vinculadas</span>
+                            </span>
+                            <button type="button" onclick="clearNewOsPendingSelection()" class="text-[11px] font-bold text-red-500 hover:text-red-600 underline">Desvincular</button>
+                        </div>
+                        <div id="newOsLinkedPhotosThumbs" class="flex items-center gap-2 overflow-x-auto py-1"></div>
+                    </div>
+
+                    <!-- UPLOAD MANUAL DIRETO DO PC -->
+                    <div class="pt-1.5 border-t border-slate-200 dark:border-zinc-800/80">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Ou Enviar Fotos Direto do Computador:</label>
+                        <input type="file" name="entry_photos" id="newOsEntryPhotosInput" multiple accept="image/*"
+                            class="w-full text-xs text-slate-500 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-sky-500/15 file:text-sky-600 dark:file:text-sky-400 hover:file:bg-sky-500/25 file:cursor-pointer cursor-pointer border border-slate-200 dark:border-zinc-800 rounded-xl p-1 bg-white dark:bg-zinc-900">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Nº O.S. (Teorema) *</label>
+                        <input type="text" inputmode="numeric" name="os_number" id="newOsNumberInput" required placeholder="Ex: 4582"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500">
+                    </div>
+                    <div class="col-span-2 relative">
+                        <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Cliente / Empresa *</label>
+                        <input type="text" name="client_name" id="newOsClientNameInput" autocomplete="off" required
+                            oninput="onNewOsClientInput(this.value)"
+                            placeholder="Ex: PADARIA CENTRAL"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 uppercase text-xs font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500">
+                        <div id="newOsClientSuggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 max-h-44 overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Equipamento</label>
+                        <select name="equipment_type" id="newOsEquipTypeSelect" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs focus:outline-none focus:border-sky-500">
+                            <option value="Balança Toledo Prix">Balança Toledo Prix</option>
+                            <option value="Balança Comercial">Balança Comercial</option>
+                            <option value="Balança Industrial / Plataforma">Balança Industrial</option>
+                            <option value="Balança Analítica / Precisão">Balança Analítica</option>
+                            <option value="Fatiador de Frios">Fatiador de Frios</option>
+                            <option value="Relógio de Ponto">Relógio de Ponto</option>
+                            <option value="Nobreak">Nobreak</option>
+                        </select>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Modelo / Carga</label>
+                        <input type="text" name="equipment_model" id="newOsModelInput" placeholder="Ex: Prix 4 Uno / 32kg" autocomplete="off"
+                            oninput="onScaleModelInput(this, 'newOsModelSuggestions', 'newOsEquipTypeSelect')"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs focus:outline-none focus:border-sky-500">
+                        <div id="newOsModelSuggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800"></div>
+                    </div>
+                    <input type="hidden" name="shelf_location" value="">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Nº Série (Opcional)</label>
+                        <input type="text" name="serial_number" placeholder="Ex: SN-9988"
+                            class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 font-mono text-xs focus:outline-none focus:border-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Coluna Inicial</label>
+                        <select name="list_id" id="newOsListSelect" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs font-semibold focus:outline-none focus:border-sky-500"></select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Defeito Reclamado pelo Cliente</label>
+                    <input type="text" name="reported_defect" id="newOsDefectInput" placeholder="Ex: Não liga, diferença de peso..."
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs focus:outline-none focus:border-sky-500">
+                    <div class="flex flex-wrap gap-1 mt-1.5">
+                        <button type="button" onclick="appendQuickDefect('newOsDefectInput', 'Diferença de peso')" class="px-2 py-0.5 rounded text-[10px] bg-slate-200 dark:bg-zinc-800 hover:bg-sky-500 hover:text-slate-950 transition font-semibold">Diferença de peso</button>
+                        <button type="button" onclick="appendQuickDefect('newOsDefectInput', 'Não liga')" class="px-2 py-0.5 rounded text-[10px] bg-slate-200 dark:bg-zinc-800 hover:bg-sky-500 hover:text-slate-950 transition font-semibold">Não liga</button>
+                        <button type="button" onclick="appendQuickDefect('newOsDefectInput', 'Falha no teclado')" class="px-2 py-0.5 rounded text-[10px] bg-slate-200 dark:bg-zinc-800 hover:bg-sky-500 hover:text-slate-950 transition font-semibold">Falha teclado</button>
+                        <button type="button" onclick="appendQuickDefect('newOsDefectInput', 'Impressor falhando')" class="px-2 py-0.5 rounded text-[10px] bg-slate-200 dark:bg-zinc-800 hover:bg-sky-500 hover:text-slate-950 transition font-semibold">Impressor</button>
+                    </div>
+                </div>
+
+                <!-- ETIQUETAS DE ENTRADA -->
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Etiquetas Rápidas</label>
+                    <div id="newOsLabelsContainer" class="flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-zinc-800">
+                    <button type="button" onclick="closeModal('newOsModal')" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-zinc-700 transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold shadow-md transition">Criar O.S.</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: DETALHES DA O.S. (CardDetail) -->
+    <div id="cardDetailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-5xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[93vh] overflow-y-auto select-text">
+            <div id="cardDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CHAMAR TÉCNICO -->
+    <div id="callTechModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+                    <i data-lucide="megaphone" class="w-5 h-5"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Chamar Técnico na Recepção (Voz na TV)</h3>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Selecione o Técnico</label>
+                    <select id="callTechSelect" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 font-semibold text-xs focus:outline-none focus:border-sky-500">
+                        <option value="Enzo">TEC. Enzo Gabriel</option>
+                        <option value="Guilherme">TEC. Guilherme</option>
+                        <option value="Wisley">TEC. Wisley</option>
+                        <option value="João Otoni">TEC. João Otoni</option>
+                        <option value="Iago">TEC. Iago</option>
+                        <option value="Antonio">TEC. ANTONIO</option>
+                        <option value="Senhor Jacson">SR. JACSON</option>
+                        <option value="Todos os Técnicos">TODOS OS TÉCNICOS</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider mb-1 text-slate-500 dark:text-zinc-400">Motivo do Chamado</label>
+                    <input type="text" id="callTechReason" value="Comparecer na recepção para atendimento"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs focus:outline-none focus:border-sky-500">
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-zinc-800">
+                    <button onclick="closeModal('callTechModal')" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs font-semibold">Cancelar</button>
+                    <button onclick="sendCallTech()" class="px-5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold shadow">Disparar Chamado</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: FOTOS DA RECEPÇÃO PELO CELULAR -->
+    <div id="pendingPhotosModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-zinc-800 pb-3 mb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white">Fotos da Recepção (Pré-Entrada Teorema)</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Fotografe pelo celular antes de emitir a O.S. no Teorema e vincule depois.</p>
+                </div>
+                <button onclick="closeModal('pendingPhotosModal')" class="text-slate-400 hover:text-slate-200 p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 rounded-xl bg-sky-500/5 border border-sky-500/20 items-center">
+                <div class="md:col-span-2 space-y-2">
+                    <p class="text-xs font-bold uppercase tracking-wider text-sky-500">Link Direto p/ Celular (Wi-Fi Local):</p>
+                    <div class="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-mono text-xs font-bold text-sky-400 select-all break-all">
+                        http://{{ local_ip }}:{{ port }}/recepcao-fotos
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        Aponte a câmera do celular para o QR Code ao lado para abrir a tela de fotos no telefone.
+                    </p>
+                    <a href="/recepcao-fotos" target="_blank" class="inline-block bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow transition">
+                        Abrir Tela no Computador
+                    </a>
+                </div>
+                <div class="flex flex-col items-center justify-center bg-white p-2.5 rounded-xl border border-slate-200">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=http://{{ local_ip }}:{{ port }}/recepcao-fotos"
+                         alt="QR Code Recepção" class="w-28 h-28 object-contain"
+                         onerror="this.style.display='none'">
+                    <span class="text-[10px] font-bold text-slate-500 mt-1">Escaneie no Celular</span>
+                </div>
+            </div>
+
+            <h3 class="text-xs font-bold uppercase text-slate-400 mb-2">Entradas Aguardando O.S.:</h3>
+            <div id="pendingPhotosModalList" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: CONFIRMAÇÃO DE EXCLUSÃO DE O.S. (AUTENTICAÇÃO ADMIN) -->
+    <div id="deleteAuthModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-red-500/30 space-y-4">
+            <div class="flex items-center gap-2.5 text-red-500">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                <div class="min-w-0">
+                    <h3 class="font-bold text-sm leading-tight text-slate-900 dark:text-white">Excluir O.S. Permanentemente</h3>
+                    <p id="deleteAuthOsTitle" class="text-xs text-slate-400 font-medium truncate"></p>
+                </div>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+                Esta ação é irreversível e apagará a O.S. Digite as credenciais de administrador:
+            </p>
+            <form id="deleteAuthForm" onsubmit="submitDeleteWithAuth(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Login Administrador</label>
+                    <input type="text" id="deleteAuthUser" autocomplete="username" required placeholder="admin"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs font-bold focus:outline-none focus:border-red-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Senha Administrador</label>
+                    <input type="password" id="deleteAuthPass" autocomplete="current-password" required placeholder="admin"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-xs font-bold focus:outline-none focus:border-red-500">
+                </div>
+                <div id="deleteAuthError" class="hidden text-xs text-red-400 font-bold p-2.5 rounded-xl bg-red-500/10 border border-red-500/20"></div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-zinc-800">
+                    <button type="button" onclick="closeDeleteAuthModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 text-xs font-bold">Cancelar</button>
+                    <button type="submit" id="deleteAuthSubmitBtn" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold shadow-md">Confirmar Exclusão</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let boardData = { lists: [], labels: [], settings: {}, stats: {} };
+        let selectedNewOsLabels = [];
+
+        function esc(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        // Renderiza ícones Lucide sempre que a UI atualizar
+        function refreshIcons() {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedTheme = localStorage.getItem("a5_theme") || "dark";
+            applyTheme(savedTheme);
+            fetchBoard();
+
+            document.addEventListener("click", (ev) => {
+                const searchBox = document.getElementById("searchBoxContainer");
+                if (searchBox && !searchBox.contains(ev.target)) {
+                    document.getElementById("searchSuggestionsDropdown")?.classList.add("hidden");
+                }
+                const clientSug = document.getElementById("newOsClientSuggestions");
+                const clientInp = document.getElementById("newOsClientNameInput");
+                if (clientSug && clientInp && !clientSug.contains(ev.target) && ev.target !== clientInp) {
+                    clientSug.classList.add("hidden");
+                }
+                const modelSug = document.getElementById("newOsModelSuggestions");
+                const modelInp = document.getElementById("newOsModelInput");
+                if (modelSug && modelInp && !modelSug.contains(ev.target) && ev.target !== modelInp) {
+                    modelSug.classList.add("hidden");
+                }
+                const editModelSug = document.getElementById("editModelSuggestions");
+                const editModelInp = document.getElementById("editModelInput");
+                if (editModelSug && editModelInp && !editModelSug.contains(ev.target) && ev.target !== editModelInp) {
+                    editModelSug.classList.add("hidden");
+                }
+            });
+        });
+
+        socket.on("board_updated", (data) => {
+            boardData = data;
+            renderBoard();
+        });
+
+        socket.on("tv_mute_changed", (data) => {
+            updateMuteButtonUI(data.muted);
+        });
+
+        socket.on("admin_notification", (notif) => {
+            playAdminNotificationBeep();
+            showAdminNotificationToast(notif);
+        });
+
+        socket.on("os_pdf_imported", (data) => {
+            playAdminNotificationBeep();
+            showAdminNotificationToast({
+                type: "pdf_imported",
+                title: "📄 Nova O.S. Teorema!",
+                message: `O.S. ${data.os_number} (${data.client_name}) importada. Etiqueta pronta.`,
+                os_number: data.os_number,
+                label_url: data.label_url
+            });
+            setTimeout(() => {
+                if (confirm(`📄 Nova O.S. ${data.os_number} importada do Teorema!\nCliente: ${data.client_name}\n\nDeseja abrir a etiqueta térmica 60x40mm agora para imprimir?`)) {
+                    window.open(data.label_url, '_blank', 'width=450,height=380');
+                }
+            }, 300);
+        });
+
+        function playAdminNotificationBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.14);
+                gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.45);
+            } catch (e) {}
+        }
+
+        function showAdminNotificationToast(notif) {
+            const container = document.getElementById("adminNotificationsContainer");
+            if (!container || !notif) return;
+            const toast = document.createElement("div");
+            const isReopen = notif.type === "reopen_request";
+            const isReady = notif.type === "tech_finished";
+
+            let borderCls = "border-sky-500/40 bg-zinc-950/95 text-white shadow-sky-500/10";
+            let iconName = "bell";
+            let accentColor = "text-sky-400";
+            let glowBadge = "bg-sky-500/15 border-sky-400/30 text-sky-400";
+
+            if (isReopen) {
+                borderCls = "border-amber-500/50 bg-zinc-950/95 text-amber-50 shadow-amber-500/20";
+                iconName = "unlock";
+                accentColor = "text-amber-400";
+                glowBadge = "bg-amber-500/15 border-amber-400/30 text-amber-400";
+            } else if (isReady) {
+                borderCls = "border-emerald-500/50 bg-zinc-950/95 text-emerald-50 shadow-emerald-500/20";
+                iconName = "check-circle";
+                accentColor = "text-emerald-400";
+                glowBadge = "bg-emerald-500/15 border-emerald-400/30 text-emerald-400";
+            }
+
+            toast.className = `pointer-events-auto rounded-2xl border ${borderCls} p-4 shadow-2xl backdrop-blur-xl transition-all duration-300 flex flex-col gap-2.5`;
+            toast.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center ${glowBadge} border shrink-0">
+                            <i data-lucide="${iconName}" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-mono uppercase tracking-wider font-bold ${accentColor} block">Notificação em Tempo Real</span>
+                            <span class="font-bold text-xs uppercase text-white">${esc(notif.title || 'Notificação da Oficina')}</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="this.closest('.pointer-events-auto').remove()" class="text-zinc-400 hover:text-white p-1 rounded-lg transition hover:bg-white/10">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <p class="text-xs leading-relaxed text-zinc-300">${esc(notif.message || '')}</p>
+                ${isReady ? `
+                    <div class="flex items-center justify-between gap-2 rounded-xl bg-zinc-900/90 text-white p-2.5 border border-emerald-500/30">
+                        <div class="min-w-0">
+                            <div class="text-[9px] font-bold uppercase tracking-wider text-emerald-400">Lacre IPEM A5</div>
+                            <div class="text-base font-bold font-mono tracking-widest text-emerald-300 break-all">${esc(notif.inmetro_seal || 'NÃO INFORMADO')}</div>
+                        </div>
+                        ${notif.inmetro_seal ? `<button type="button" onclick="copySealNumber('${esc(notif.inmetro_seal)}')" class="shrink-0 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition flex items-center gap-1 shadow-sm"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar</button>` : ''}
+                    </div>
+                ` : ''}
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-white/5">
+                    ${isReopen && notif.card_id ? `
+                        <button type="button" onclick="approveReopenRequest(${notif.card_id}, '${esc(notif.os_number)}'); this.closest('.pointer-events-auto').remove();"
+                            class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                            <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+                            <span>Liberar Reabertura</span>
+                        </button>
+                    ` : ''}
+                    ${notif.os_number ? `
+                        <button type="button" onclick="openCardDetail('${esc(notif.os_number)}'); this.closest('.pointer-events-auto').remove();"
+                            class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                            <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            <span>Abrir O.S. ${esc(notif.os_number)}</span>
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            container.appendChild(toast);
+            refreshIcons();
+            setTimeout(() => {
+                if (toast && toast.parentNode) {
+                    toast.classList.add("opacity-0", "translate-y-2");
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, isReady ? 60000 : 18000);
+        }
+
+        // Função global de toast para feedback de ações do usuário
+        function showToast(message, type = "info") {
+            const container = document.getElementById("adminNotificationsContainer");
+            if (!container) return;
+            const toast = document.createElement("div");
+            let borderCls = "border-sky-500/40 bg-zinc-950/95 text-white";
+            let iconName = "info";
+            let iconColor = "text-sky-400";
+            if (type === "success") {
+                borderCls = "border-emerald-500/40 bg-zinc-950/95 text-white";
+                iconName = "check-circle";
+                iconColor = "text-emerald-400";
+            } else if (type === "error") {
+                borderCls = "border-red-500/40 bg-zinc-950/95 text-white";
+                iconName = "alert-circle";
+                iconColor = "text-red-400";
+            }
+            toast.className = `pointer-events-auto rounded-xl border ${borderCls} px-3.5 py-2.5 shadow-xl backdrop-blur-xl transition-all duration-300 flex items-center justify-between gap-3`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-2 text-xs font-semibold">
+                    <i data-lucide="${iconName}" class="w-4 h-4 ${iconColor} shrink-0"></i>
+                    <span>${esc(message)}</span>
+                </div>
+                <button type="button" onclick="this.closest('.pointer-events-auto').remove()" class="text-zinc-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
+            `;
+            container.appendChild(toast);
+            refreshIcons();
+            setTimeout(() => {
+                if (toast && toast.parentNode) {
+                    toast.classList.add("opacity-0");
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 4000);
+        }
+
+        async function copySealNumber(seal) {
+            const text = String(seal || "").trim();
+            if (!text) return;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                } else {
+                    const ta = document.createElement("textarea");
+                    ta.value = text;
+                    ta.style.position = "fixed";
+                    ta.style.left = "-9999px";
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    document.execCommand("copy");
+                    document.body.removeChild(ta);
+                }
+                alert(`Lacre ${text} copiado para a área de transferência!`);
+            } catch (e) {
+                alert("Lacre: " + text);
+            }
+        }
+
+        function updateReopenRequestsBanner() {
+            const banner = document.getElementById("reopenRequestsBanner");
+            if (!banner) return;
+            const pendingReopens = [];
+            (boardData.lists || []).forEach(lst => {
+                (lst.cards || []).forEach(c => {
+                    if (c.reopen_requested === 1) pendingReopens.push(c);
+                });
+            });
+            if (pendingReopens.length === 0) {
+                banner.classList.add("hidden");
+                banner.innerHTML = "";
+                return;
+            }
+            banner.classList.remove("hidden");
+            banner.innerHTML = pendingReopens.map(c => `
+                <div class="flex flex-wrap items-center justify-between gap-2 w-full py-0.5">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-amber-500 text-slate-950 font-black px-2 py-0.5 rounded text-[10px] animate-pulse">REABERTURA SOLICITADA</span>
+                        <span class="font-medium text-slate-800 dark:text-amber-200">
+                            O técnico <strong>${esc(c.reopen_requested_by || c.evaluator_tech || 'Oficina')}</strong> pediu liberação para editar a <strong>O.S. ${esc(c.os_number)} (${esc(c.client_name)})</strong>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="approveReopenRequest(${c.id}, '${esc(c.os_number)}')"
+                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs shadow">
+                            Liberar Edição
+                        </button>
+                        <button type="button" onclick="denyReopenRequest(${c.id})"
+                            class="bg-slate-200 dark:bg-zinc-800 hover:bg-red-500 hover:text-white text-slate-700 dark:text-zinc-300 font-semibold px-2.5 py-1 rounded-lg text-xs">
+                            Recusar
+                        </button>
+                        <button type="button" onclick="openCardDetail('${esc(c.os_number)}')"
+                            class="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-2.5 py-1 rounded-lg text-xs">
+                            Ver O.S.
+                        </button>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function getScaleDivisionAndTolerance(nominal, unit, modelStr) {
+            const u = String(unit || "kg").toLowerCase();
+            const model = String(modelStr || "").toLowerCase();
+
+            if (u === "g") {
+                let div = 0.01;
+                if (model.includes("210") || model.includes("0.0001") || model.includes("4 casas") || model.includes("analitica")) {
+                    div = 0.0001;
+                } else if (model.includes("0.001") || model.includes("semianalit") || model.includes("1mg")) {
+                    div = 0.001;
+                }
+                const maxTol = 2 * div;
+                return {
+                    division: div,
+                    maxTolerance: maxTol,
+                    unit: "g",
+                    divText: `e=${div}g`,
+                    tolText: `±${(maxTol).toFixed(4).replace(/\.?0+$/, "")}g`
+                };
+            }
+
+            const load = parseFloat(nominal);
+            let div = 0.002;
+            if (model.includes("2180") || model.includes("plataforma") || model.includes("industrial")) {
+                if (load <= 50) div = 0.010;
+                else if (load <= 100) div = 0.020;
+                else if (load <= 300) div = 0.100;
+                else if (load <= 500) div = 0.100;
+                else if (load <= 1500) div = 0.500;
+                else div = 1.000;
+            } else {
+                if (load <= 6.0001) div = 0.002;
+                else if (load <= 15.0001) div = 0.005;
+                else if (load <= 32.0001) div = 0.010;
+                else div = 0.020;
+            }
+
+            const maxTol = 2 * div;
+            const tolG = Math.round(maxTol * 1000);
+            return {
+                division: div,
+                maxTolerance: maxTol,
+                unit: "kg",
+                divText: `e=${Math.round(div * 1000)}g`,
+                tolText: `±${tolG}g`
+            };
+        }
+
+        function analyzeWeightDiffAdmin(key, rawVal, modelStr = "", defaultUnit = "kg") {
+            if (!rawVal || String(rawVal).trim() === "") return null;
+            const actual = parseFloat(String(rawVal).replace(",", "."));
+            if (isNaN(actual)) return null;
+
+            const m = key.match(/([\d\.,]+)\s*(kg|g)?/i);
+            if (!m) return null;
+            const nominal = parseFloat(m[1].replace(",", "."));
+            const unit = (m[2] || defaultUnit).toLowerCase();
+            if (isNaN(nominal)) return null;
+
+            const tolInfo = getScaleDivisionAndTolerance(nominal, unit, modelStr);
+            const diff = actual - nominal;
+            const absDiff = Math.abs(diff);
+            const isDiff = absDiff > (tolInfo.maxTolerance + 1e-9);
+
+            let diffText = "";
+            if (unit === "kg") {
+                const diffG = Math.round(diff * 1000);
+                diffText = (diffG > 0 ? `+${diffG}g` : `${diffG}g`);
+            } else {
+                diffText = (diff > 0 ? `+${diff.toFixed(3)}g` : `${diff.toFixed(3)}g`);
+            }
+
+            return {
+                nominal,
+                actual,
+                diff,
+                unit,
+                isDiff,
+                diffText,
+                tolInfo
+            };
+        }
+
+        async function fetchBoard() {
+            try {
+                const res = await fetch("/api/board");
+                if (res.ok) {
+                    boardData = await res.json();
+                    renderBoard();
+                }
+            } catch (err) {
+                console.error("Erro ao carregar quadro:", err);
+            }
+        }
+
+        function renderBoard() {
+            const container = document.getElementById("boardContainer");
+            container.innerHTML = "";
+
+            let activeCards = 0;
+            boardData.lists.forEach(l => {
+                if (l.role !== "finished") activeCards += l.cards.length;
+            });
+            document.getElementById("statActive").innerText = activeCards;
+            document.getElementById("statFinishedToday").innerText = boardData.stats?.finished_today || 0;
+
+            const workloadBar = document.getElementById("techWorkloadBar");
+            workloadBar.innerHTML = "";
+            boardData.lists.filter(l => l.is_tech === 1).forEach(techList => {
+                const count = techList.cards.length;
+                const badgeColor = count >= 5
+                    ? "bg-sky-500/20 text-sky-400 border-sky-500/40"
+                    : (count > 0
+                        ? "bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 border-slate-200 dark:border-zinc-700"
+                        : "bg-transparent text-slate-400 dark:text-zinc-600 border-transparent");
+                workloadBar.innerHTML += `
+                    <span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-semibold border ${badgeColor} flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full ${count > 0 ? 'bg-sky-400' : 'bg-zinc-600'}"></span>
+                        ${esc(techList.title.replace('TEC. ', ''))}: <strong>${count}</strong>
+                    </span>
+                `;
+            });
+
+            boardData.lists.forEach(list => {
+                const col = document.createElement("div");
+                col.className = "kanban-col rounded-xl overflow-hidden flex flex-col shrink-0 shadow-sm";
+                col.dataset.listId = list.id;
+
+                const headerAccent = list.is_tech ? "border-l-2 border-sky-500" : "";
+                const canDeleteEmpty = list.cards.length === 0;
+
+                col.innerHTML = `
+                    <div class="px-3.5 py-2.5 font-bold flex items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 cursor-grab list-handle ${headerAccent}">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                            <span class="text-xs font-bold tracking-wider truncate uppercase text-slate-800 dark:text-zinc-200" ondblclick="renameListById(${list.id})">${esc(list.title)}</span>
+                            <span class="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold shrink-0">${list.cards.length}</span>
+                        </div>
+                        <div class="flex items-center gap-0.5 shrink-0">
+                            <button onclick="openNewOsModal(null, ${list.id})" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-500 dark:text-zinc-400 transition" title="Criar cartão nesta coluna">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            </button>
+                            <button onclick="renameListById(${list.id})" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-400 hover:text-slate-200 transition" title="Renomear coluna">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                            ${canDeleteEmpty ? `
+                            <button onclick="deleteEmptyList(${list.id})" class="p-1 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition" title="Excluir coluna vazia">
+                                <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                            </button>` : ''}
+                        </div>
+                    </div>
+                    <div class="card-list flex-1 overflow-y-auto p-2 space-y-2 min-h-[120px]" data-list-id="${list.id}">
+                        ${list.cards.map(card => renderCardHTML(card)).join("")}
+                    </div>
+                    <div class="p-2 border-t border-slate-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/20">
+                        <button type="button" onclick="openNewOsModal(null, ${list.id})"
+                            class="w-full py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-850 hover:text-sky-500 border border-dashed border-slate-300 dark:border-zinc-800 transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Adicionar Cartão</span>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+
+            const addListCol = document.createElement("div");
+            addListCol.className = "min-w-[280px] shrink-0";
+            addListCol.innerHTML = `
+                <button onclick="createNewListPrompt()" class="w-full py-3 px-4 rounded-xl border border-dashed border-slate-300 dark:border-zinc-800 text-xs font-bold text-slate-400 dark:text-zinc-500 hover:text-sky-400 hover:border-sky-500/40 transition flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Adicionar outra coluna</span>
+                </button>
+            `;
+            container.appendChild(addListCol);
+
+            initSortable();
+            filterCards();
+            updatePendingPhotosUI();
+            updateReopenRequestsBanner();
+            refreshIcons();
+
+            // AutoAnimate suave em todas as listas de cartões
+            if (window.autoAnimate) {
+                document.querySelectorAll(".card-list").forEach(el => autoAnimate(el));
+            }
+        }
+
+        function renderCardHTML(card) {
+            const labelsHTML = (card.labels || []).map(l => `
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                      style="background:${esc(l.color)}; color:${esc(l.text_color || '#fff')}">
+                    ${esc(l.name)}
+                </span>
+            `).join("");
+
+            const hasPhotos = (card.entry_photos?.length || 0)
+                + (card.exit_photos?.length || 0)
+                + (card.label_before_photos?.length || 0)
+                + (card.label_after_photos?.length || 0)
+                + (card.quote_photos?.length || 0);
+
+            const slaWarning = card.sla_expired ? `<span class="text-[10px] font-mono bg-sky-500/10 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold">+24h (${card.hours_in_stage}h)</span>` : "";
+            const timerBadge = card.timer_end_at ? `<span class="text-[10px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold animate-pulse flex items-center gap-1"><i data-lucide="flame" class="w-3 h-3"></i> Estufa</span>` : "";
+            const reopenBadge = card.reopen_requested === 1 ? `<span class="text-[10px] bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded font-black animate-pulse flex items-center gap-1"><i data-lucide="unlock" class="w-3 h-3"></i> Pede Reabertura</span>` : "";
+
+            let hasWeightDiff = false;
+            const wiObj = card.quote_data?.weights_initial || {};
+            for (const [wk, wv] of Object.entries(wiObj)) {
+                const d = analyzeWeightDiffAdmin(wk, wv);
+                if (d && d.isDiff) { hasWeightDiff = true; break; }
+            }
+            const weightDiffBadge = hasWeightDiff ? `<span class="text-[10px] bg-amber-500/15 text-amber-500 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold flex items-center gap-1" title="Balança com diferença de peso"><i data-lucide="scale" class="w-3 h-3"></i> Dif. Peso</span>` : "";
+
+            let quoteBadge = "";
+            if (card.list_role === "pronta" || (card.list_title || "").toUpperCase().includes("PRONTA")) {
+                quoteBadge = `<span class="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Pronta</span>`;
+            } else if (!card.finished_at) {
+                if (card.quote_status === "in_progress") {
+                    quoteBadge = `<span class="text-[10px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold">Em Orç.</span>`;
+                } else if (card.quote_status === "done") {
+                    quoteBadge = `<span class="text-[10px] bg-sky-500 text-slate-950 px-1.5 py-0.5 rounded font-black">Orç. Pronto</span>`;
+                } else if (card.quote_status === "approved") {
+                    quoteBadge = `<span class="text-[10px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-black">Aprovado</span>`;
+                } else if (card.quote_status === "cancelled") {
+                    quoteBadge = `<span class="text-[10px] bg-rose-500/15 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded font-bold">Cancelada</span>`;
+                }
+            }
+
+            const searchStr = `${card.os_number} ${card.client_name} ${card.equipment_type} ${card.equipment_model || ''} ${card.tech_name} ${card.inmetro_seal} ${(card.labels||[]).map(x=>x.name).join(' ')}`;
+
+            let esteiraActionBtn = "";
+            const currentPhase = card.pipeline_phase || "";
+            const listTitleUpper = (card.list_title || "").toUpperCase();
+
+            if (currentPhase === "ORCAMENTOS_FEITOS" || listTitleUpper.includes("ANALISES FEITAS")) {
+                esteiraActionBtn = `
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
+                        <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'enviar_cliente')"
+                            class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black text-[10px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1 shadow">
+                            <i data-lucide="send" class="w-3 h-3"></i>
+                            <span>Enviado ao Cliente</span>
+                        </button>
+                    </div>
+                `;
+            } else if (currentPhase === "ORCAMENTOS_ENVIADOS" || listTitleUpper.includes("ORÇAMENTOS ENVIADOS")) {
+                esteiraActionBtn = `
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
+                        <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'aprovar')"
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[10px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1 shadow">
+                            <i data-lucide="check-circle" class="w-3 h-3"></i>
+                            <span>Aprovado (Avisar TV)</span>
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="kanban-card rounded-xl p-3 cursor-pointer select-none overflow-hidden ${card.reopen_requested === 1 ? 'ring-1 ring-amber-500' : (card.sla_expired ? 'sla-pulse border-sky-500' : '')}"
+                     data-card-id="${card.id}"
+                     data-os-number="${esc(card.os_number)}"
+                     data-search="${esc(searchStr)}"
+                     onclick="openCardDetail(this.dataset.osNumber)">
+
+                    ${labelsHTML ? `<div class="flex flex-wrap gap-1 mb-2">${labelsHTML}</div>` : ''}
+
+                    <div class="flex items-center justify-between gap-1.5 mb-1.5">
+                        <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700/60">
+                            OS ${esc(card.os_number)}
+                        </span>
+                        <div class="flex flex-wrap gap-1 items-center">${reopenBadge}${quoteBadge}${weightDiffBadge}${timerBadge}${slaWarning}</div>
+                    </div>
+
+                    <h4 class="font-bold text-xs uppercase leading-snug text-slate-900 dark:text-zinc-100 mb-0.5 break-words">${esc(card.client_name)}</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-zinc-400 truncate flex items-center gap-1">
+                        <span>${esc(card.equipment_type)}</span>
+                        ${card.equipment_model ? `<span class="opacity-60">•</span><span>${esc(card.equipment_model)}</span>` : ''}
+                    </p>
+
+                    ${card.inmetro_seal ? `
+                        <div class="mt-2 flex items-center justify-between gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 px-2 py-1"
+                             onclick="event.stopPropagation(); copySealNumber(this.dataset.seal)" data-seal="${esc(card.inmetro_seal)}"
+                             title="Clique para copiar o lacre">
+                            <div class="min-w-0">
+                                <div class="text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Lacre IPEM A5</div>
+                                <div class="text-xs font-bold font-mono tracking-wide text-slate-900 dark:text-white truncate">${esc(card.inmetro_seal)}</div>
+                            </div>
+                            <i data-lucide="copy" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i>
+                        </div>
+                    ` : ''}
+
+                    <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between gap-2 text-[11px] text-slate-400 dark:text-zinc-500">
+                        <span class="min-w-0 flex-1 truncate text-[10px] text-slate-400 dark:text-zinc-500">
+                            ${card.created_at ? card.created_at.slice(0, 10) : ''}
+                        </span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            ${card.admin_notes ? `<i data-lucide="file-text" class="w-3 h-3 text-sky-400" title="Possui anotação interna"></i>` : ''}
+                            ${hasPhotos ? `
+                                <span class="flex items-center gap-0.5 text-slate-400" title="${hasPhotos} fotos anexadas">
+                                    <i data-lucide="image" class="w-3 h-3"></i>
+                                    <span class="font-mono text-[10px]">${hasPhotos}</span>
+                                </span>` : ''}
+                            <button onclick="event.stopPropagation(); openThermalLabel(this.closest('.kanban-card').dataset.osNumber)"
+                                class="hover:text-sky-400 transition p-0.5" title="Reimprimir Etiqueta 60x40">
+                                <i data-lucide="printer" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    ${esteiraActionBtn}
+                </div>
+            `;
+        }
+
+        function openThermalLabel(osNumber) {
+            window.open(`/etiqueta/${encodeURIComponent(osNumber)}`, "_blank", "width=450,height=380");
+        }
+
+        async function advanceAdmin(osNumber, action) {
+            try {
+                const res = await fetch(`/api/cards/${encodeURIComponent(osNumber)}/advance-admin`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: action })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    alert("Erro ao avançar O.S.: " + (data.error || "Erro desconhecido."));
+                }
+            } catch (err) {
+                alert("Falha de comunicação: " + err.message);
+            }
+        }
+
+        function initSortable() {
+            document.querySelectorAll(".card-list").forEach(listEl => {
+                new Sortable(listEl, {
+                    group: "shared-cards",
+                    animation: 160,
+                    ghostClass: "opacity-25",
+                    onEnd: async (evt) => {
+                        const cardId = evt.item.dataset.cardId;
+                        const targetListId = evt.to.dataset.listId;
+                        const newPosition = evt.newIndex;
+                        const orderedIds = Array.from(evt.to.children).map(el => el.dataset.cardId);
+
+                        await fetch(`/api/cards/${cardId}/move`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                target_list_id: targetListId,
+                                new_position: newPosition,
+                                ordered_card_ids: orderedIds,
+                                actor: "Priscila (Recepção)"
+                            })
+                        });
+                    }
+                });
+            });
+
+            new Sortable(document.getElementById("boardContainer"), {
+                animation: 160,
+                handle: ".list-handle",
+                draggable: ".kanban-col",
+                onEnd: async () => {
+                    const listIds = Array.from(document.querySelectorAll(".kanban-col")).map(el => el.dataset.listId);
+                    await fetch("/api/lists/reorder", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ list_ids: listIds })
+                    });
+                }
+            });
+        }
+
+        function filterCards() {
+            const input = document.getElementById("searchInput");
+            const q = input.value.trim().toLowerCase();
+            const clearBtn = document.getElementById("clearSearchBtn");
+            const dropdown = document.getElementById("searchSuggestionsDropdown");
+
+            if (clearBtn) clearBtn.classList.toggle("hidden", !q);
+
+            const allCards = document.querySelectorAll(".kanban-card");
+            if (!q) {
+                allCards.forEach(c => {
+                    c.classList.remove("search-match", "search-dimmed");
+                });
+                if (dropdown) dropdown.classList.add("hidden");
+                return;
+            }
+
+            let matches = [];
+            allCards.forEach(c => {
+                const text = (c.dataset.search || "").toLowerCase();
+                if (text.includes(q)) {
+                    c.classList.add("search-match");
+                    c.classList.remove("search-dimmed");
+                    matches.push({
+                        osNumber: c.dataset.osNumber,
+                        client: c.querySelector("h4")?.innerText || "",
+                        col: c.closest(".kanban-col")?.querySelector("span")?.innerText || ""
+                    });
+                } else {
+                    c.classList.remove("search-match");
+                    c.classList.add("search-dimmed");
+                }
+            });
+
+            if (dropdown) {
+                if (matches.length > 0) {
+                    dropdown.classList.remove("hidden");
+                    dropdown.innerHTML = matches.slice(0, 8).map(m => `
+                        <div onclick="selectSearchSuggestion('${esc(m.osNumber)}')" class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer flex items-center justify-between text-xs">
+                            <div class="min-w-0">
+                                <span class="font-mono font-bold text-sky-500">OS ${esc(m.osNumber)}</span>
+                                <span class="font-semibold text-slate-800 dark:text-zinc-200 ml-1.5 uppercase">${esc(m.client)}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 shrink-0">${esc(m.col)}</span>
+                        </div>
+                    `).join("");
+                } else {
+                    dropdown.classList.add("hidden");
+                }
+            }
+        }
+
+        function selectSearchSuggestion(osNumber) {
+            document.getElementById("searchSuggestionsDropdown")?.classList.add("hidden");
+            openCardDetail(osNumber);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById("searchInput");
+            if (input) input.value = "";
+            filterCards();
+        }
+
+        async function updatePendingPhotosUI() {
+            let pending = boardData.pending_entries || [];
+            try {
+                const res = await fetch("/api/pending-entries");
+                if (res.ok) {
+                    const data = await res.json();
+                    pending = data.pending_entries || data.entries || pending;
+                    boardData.pending_entries = pending;
+                }
+            } catch (e) {}
+
+            const navBadge = document.getElementById("navPendingPhotosBadge");
+            if (navBadge) {
+                navBadge.textContent = pending.length;
+                navBadge.classList.toggle("hidden", pending.length === 0);
+            }
+
+            // Atualiza chips dentro do modal Nova O.S.
+            const pendingCountEl = document.getElementById("newOsPendingCount");
+            if (pendingCountEl) pendingCountEl.textContent = pending.length;
+
+            const chipsContainer = document.getElementById("newOsPendingChips");
+            if (chipsContainer) {
+                if (pending.length === 0) {
+                    chipsContainer.innerHTML = `<span class="text-[11px] text-slate-400 italic py-0.5">Nenhuma foto no celular aguardando no momento. Abra a câmera mobile acima para registrar.</span>`;
+                } else {
+                    chipsContainer.innerHTML = pending.map(p => {
+                        const photos = p.photos || p.entry_photos || [];
+                        return `
+                            <button type="button" onclick="applyPendingEntryById(${p.id})"
+                                    class="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-sky-500/30 hover:border-sky-500 text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-[0.98]">
+                                <span class="uppercase text-slate-800 dark:text-zinc-200">${esc(p.trade_name || p.client_name)}</span>
+                                <span class="bg-sky-500 text-slate-950 font-mono font-bold text-[10px] px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
+                                    <i data-lucide="camera" class="w-2.5 h-2.5"></i>
+                                    <span>${photos.length}</span>
+                                </span>
+                            </button>
+                        `;
+                    }).join("");
+                }
+                refreshIcons();
+            }
+
+            // Atualiza lista no modal de Fotos da Recepção
+            const modalList = document.getElementById("pendingPhotosModalList");
+            if (modalList) {
+                if (pending.length === 0) {
+                    modalList.innerHTML = `<div class="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">Nenhuma foto pré-entrada aguardando abertura de O.S. no momento.</div>`;
+                } else {
+                    modalList.innerHTML = pending.map(p => {
+                        const photos = p.photos || p.entry_photos || [];
+                        const thumbs = photos.slice(0, 5).map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}')" class="w-12 h-12 rounded-lg object-cover border border-slate-200 dark:border-zinc-800 cursor-zoom-in">`).join("");
+                        return `
+                            <div class="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 flex flex-col gap-2">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-bold uppercase truncate text-slate-900 dark:text-white">
+                                            ${esc(p.trade_name || p.client_name)}
+                                            ${p.trade_name && p.trade_name !== p.client_name ? `<span class="text-[11px] font-normal text-slate-400 block">${esc(p.client_name)}</span>` : ''}
+                                        </p>
+                                        <p class="text-xs text-sky-500 font-semibold flex items-center gap-1 mt-0.5">
+                                            <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                            <span>${photos.length} foto(s) no celular</span>
+                                            ${p.equipment_model ? `<span class="text-slate-400">• ${esc(p.equipment_model)}</span>` : ''}
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <a href="/comprovante-entrada/${p.id}" target="_blank"
+                                           class="px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 text-xs font-semibold flex items-center gap-1 transition text-slate-700 dark:text-zinc-200"
+                                           title="Imprimir Ordem A4">
+                                            <i data-lucide="printer" class="w-3.5 h-3.5 text-sky-500"></i>
+                                            <span>A4</span>
+                                        </a>
+                                        <button type="button" onclick="applyPendingEntryById(${p.id})"
+                                                class="bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow transition flex items-center gap-1">
+                                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                            <span>Usar na Nova O.S.</span>
+                                        </button>
+                                        <button type="button" onclick="deletePendingEntryFromAdmin(${p.id})"
+                                                class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition" title="Excluir">
+                                            <i data-lucide="trash" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                ${thumbs ? `<div class="flex items-center gap-1.5 overflow-x-auto">${thumbs}</div>` : ''}
+                            </div>
+                        `;
+                    }).join("");
+                    refreshIcons();
+                }
+            }
+        }
+
+        function openPendingPhotosModal() {
+            updatePendingPhotosUI();
+            document.getElementById("pendingPhotosModal")?.classList.remove("hidden");
+            document.getElementById("pendingPhotosModal")?.classList.add("flex");
+            refreshIcons();
+        }
+
+        async function deletePendingEntryFromAdmin(entryId) {
+            if (!confirm("Deseja realmente excluir esta entrada de fotos?")) return;
+            const res = await fetch(`/api/pending-entries/${entryId}`, { method: "DELETE" });
+            if (res.ok) {
+                updatePendingPhotosUI();
+            }
+        }
+
+        function applyPendingEntryById(entryId) {
+            closeModal("pendingPhotosModal");
+            const pendingList = boardData.pending_entries || [];
+            const entry = pendingList.find(p => p.id === entryId);
+            if (!entry) return;
+
+            const form = document.getElementById("newOsForm");
+            document.getElementById("newOsPendingEntryId").value = entry.id;
+            document.getElementById("newOsClientNameInput").value = entry.client_name;
+            if (entry.cnpj_cpf) document.getElementById("newOsCnpjInput").value = entry.cnpj_cpf;
+            if (entry.trade_name) document.getElementById("newOsTradeNameInput").value = entry.trade_name;
+            if (entry.phone) document.getElementById("newOsPhoneInput").value = entry.phone;
+            if (entry.email) document.getElementById("newOsEmailInput").value = entry.email;
+            if (entry.address) document.getElementById("newOsAddressInput").value = entry.address;
+            if (entry.city_state) document.getElementById("newOsCityStateInput").value = entry.city_state;
+            if (entry.accessories_json) document.getElementById("newOsAccessoriesInput").value = typeof entry.accessories_json === 'string' ? entry.accessories_json : JSON.stringify(entry.accessories_json);
+            if (entry.equipment_model && form.equipment_model) form.equipment_model.value = entry.equipment_model;
+            if (entry.equipment_type && form.equipment_type) form.equipment_type.value = entry.equipment_type;
+            if (entry.serial_number && form.serial_number) form.serial_number.value = entry.serial_number;
+            if (entry.reported_defect && form.reported_defect) form.reported_defect.value = entry.reported_defect;
+            if (entry.shelf_location && form.shelf_location) form.shelf_location.value = entry.shelf_location;
+
+            const box = document.getElementById("newOsLinkedPhotosBox");
+            const lbl = document.getElementById("newOsLinkedPhotosLabel");
+            const thumbs = document.getElementById("newOsLinkedPhotosThumbs");
+            const photos = entry.photos || entry.entry_photos || [];
+            if (lbl) lbl.textContent = `✓ ${photos.length} foto(s) de "${entry.client_name}" vinculadas automaticamente!`;
+            if (thumbs) {
+                thumbs.innerHTML = photos.map(u => `<img src="${esc(u)}" class="w-12 h-12 rounded-lg object-cover border border-emerald-500/50 shrink-0">`).join("");
+            }
+            if (box) box.classList.remove("hidden");
+            document.getElementById("newOsClientSuggestions")?.classList.add("hidden");
+
+            const modal = document.getElementById("newOsModal");
+            if (modal.classList.contains("hidden")) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+            document.getElementById("newOsNumberInput")?.focus();
+            refreshIcons();
+        }
+
+        function clearNewOsPendingSelection() {
+            document.getElementById("newOsPendingEntryId").value = "";
+            const box = document.getElementById("newOsLinkedPhotosBox");
+            if (box) box.classList.add("hidden");
+            const thumbs = document.getElementById("newOsLinkedPhotosThumbs");
+            if (thumbs) thumbs.innerHTML = "";
+        }
+
+        function onNewOsClientInput(val) {
+            const q = (val || "").trim().toUpperCase();
+            const sug = document.getElementById("newOsClientSuggestions");
+            const pending = boardData.pending_entries || [];
+            if (!q || pending.length === 0) {
+                sug?.classList.add("hidden");
+                return;
+            }
+            const matched = pending.filter(p => (p.client_name || "").toUpperCase().includes(q));
+            if (matched.length === 0) {
+                sug?.classList.add("hidden");
+                return;
+            }
+            sug.innerHTML = matched.map(p => {
+                const photos = p.photos || p.entry_photos || [];
+                return `
+                    <button type="button" onclick="applyPendingEntryById(${p.id})"
+                            class="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center justify-between text-xs transition">
+                        <span class="font-bold uppercase text-slate-800 dark:text-zinc-200">${esc(p.client_name)}</span>
+                        <span class="text-sky-500 font-semibold flex items-center gap-1 font-mono text-[11px]">
+                            <i data-lucide="camera" class="w-3 h-3"></i>
+                            ${photos.length} fotos no celular
+                        </span>
+                    </button>
+                `;
+            }).join("");
+            sug.classList.remove("hidden");
+            refreshIcons();
+
+            const exact = pending.find(p => (p.client_name || "").trim().toUpperCase() === q);
+            if (exact && !document.getElementById("newOsPendingEntryId").value) {
+                applyPendingEntryById(exact.id);
+            }
+        }
+
+        async function onScaleModelInput(inputEl, suggestionsBoxId, equipTypeSelectId) {
+            const val = (inputEl.value || "").trim();
+            const box = document.getElementById(suggestionsBoxId);
+            if (!box || val.length < 2) {
+                box?.classList.add("hidden");
+                return;
+            }
+            try {
+                const res = await fetch(`/api/scales/search?q=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                const scales = data.scales || [];
+                if (scales.length === 0) {
+                    box.classList.add("hidden");
+                    return;
+                }
+                box.classList.remove("hidden");
+                box.innerHTML = scales.map(sc => `
+                    <div class="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer text-xs"
+                         onclick="selectScaleModel('${inputEl.id}', '${suggestionsBoxId}', '${equipTypeSelectId}', ${JSON.stringify(sc).replace(/"/g, '&quot;')})">
+                        <div class="font-bold text-slate-800 dark:text-zinc-200">${esc(sc.display_name || sc.model_name)}</div>
+                        <div class="text-[10px] text-slate-500 dark:text-zinc-400">${esc(sc.description || sc.capacity_str || '')}</div>
+                    </div>
+                `).join("");
+            } catch (e) {
+                box.classList.add("hidden");
+            }
+        }
+
+        function selectScaleModel(inputId, suggestionsBoxId, equipTypeSelectId, scale) {
+            const inp = document.getElementById(inputId);
+            if (inp) {
+                inp.value = scale.model_name + (scale.capacity_str ? ` / ${scale.capacity_str}` : "");
+            }
+            const box = document.getElementById(suggestionsBoxId);
+            if (box) box.classList.add("hidden");
+            if (equipTypeSelectId && scale.equipment_type) {
+                const sel = document.getElementById(equipTypeSelectId);
+                if (sel) sel.value = scale.equipment_type;
+            }
+        }
+
+        function appendQuickDefect(inputId, defectText) {
+            const inp = document.getElementById(inputId);
+            if (!inp) return;
+            if (inp.value.trim() === "") {
+                inp.value = defectText;
+            } else if (!inp.value.includes(defectText)) {
+                inp.value += " + " + defectText;
+            }
+        }
+
+        async function openNewOsModal(preselectPendingId = null, preselectListId = null) {
+            const form = document.getElementById("newOsForm");
+            if (form) form.reset();
+            selectedNewOsLabels = [];
+
+            const listSelect = document.getElementById("newOsListSelect");
+            if (listSelect) {
+                listSelect.innerHTML = boardData.lists.map(l => `
+                    <option value="${l.id}" ${preselectListId && preselectListId == l.id ? 'selected' : ''}>${esc(l.title)}</option>
+                `).join("");
+            }
+
+            const labelsBox = document.getElementById("newOsLabelsContainer");
+            if (labelsBox) {
+                labelsBox.innerHTML = boardData.labels.map((l, idx) => `
+                    <button type="button" onclick="toggleLabelSelection(${idx}, this)"
+                        class="px-2.5 py-1 rounded-md text-xs font-bold transition opacity-40 hover:opacity-80"
+                        style="background:${esc(l.color)}; color:${esc(l.text_color)}">
+                        ${esc(l.name)}
+                    </button>
+                `).join("");
+            }
+
+            clearNewOsPendingSelection();
+            await updatePendingPhotosUI();
+
+            const modal = document.getElementById("newOsModal");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+
+            if (preselectPendingId) {
+                applyPendingEntryById(preselectPendingId);
+            }
+            refreshIcons();
+        }
+
+        function toggleLabelSelection(idx, btnEl) {
+            const lbl = boardData.labels[idx];
+            if (!lbl) return;
+            const existingIdx = selectedNewOsLabels.findIndex(x => x.name === lbl.name);
+            if (existingIdx >= 0) {
+                selectedNewOsLabels.splice(existingIdx, 1);
+                btnEl.classList.add("opacity-40");
+                btnEl.classList.remove("ring-2", "ring-sky-500", "scale-105");
+            } else {
+                selectedNewOsLabels.push(lbl);
+                btnEl.classList.remove("opacity-40");
+                btnEl.classList.add("ring-2", "ring-sky-500", "scale-105");
+            }
+        }
+
+        async function submitNewOs(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fd = new FormData(form);
+            if (selectedNewOsLabels.length) {
+                fd.append("labels_json", JSON.stringify(selectedNewOsLabels));
+            }
+            try {
+                const res = await fetch("/api/cards", { method: "POST", body: fd });
+                const data = await res.json();
+                if (res.ok) {
+                    closeModal("newOsModal");
+                    showToast(`O.S. ${data.card?.os_number || ''} cadastrada com sucesso!`, "success");
+                    if (data.card?.os_number) {
+                        openThermalLabel(data.card.os_number);
+                    }
+                } else {
+                    showToast(data.error || "Erro ao criar O.S.", "error");
+                }
+            } catch (err) {
+                showToast("Erro ao conectar ao servidor.", "error");
+            }
+        }
+
+        async function openCardDetail(osNumber) {
+            const res = await fetch(`/api/cards/${encodeURIComponent(osNumber)}`);
+            const card = await res.json();
+            if (!res.ok) {
+                alert(card.error || "O.S. não encontrada.");
+                return;
+            }
+            window._lastOpenedCard = card;
+            const qd = card.quote_data || {};
+
+            const renderPhotoGrid = (urls, emptyMsg) => {
+                if (!urls || !urls.length) {
+                    return `<div class="p-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">${emptyMsg}</div>`;
+                }
+                return `<div class="grid grid-cols-2 md:grid-cols-4 gap-2">${urls.map(url => `
+                    <img src="${esc(url)}" onclick="window.open('${esc(url)}')" class="h-28 w-full object-cover rounded-xl border border-slate-200 dark:border-zinc-800 cursor-zoom-in hover:scale-[1.02] transition">
+                `).join("")}</div>`;
+            };
+
+            const activeLabelsNames = (card.labels || []).map(l => l.name);
+            const editLabelsHTML = boardData.labels.map((l, idx) => {
+                const isSelected = activeLabelsNames.includes(l.name);
+                return `
+                    <button type="button" onclick="toggleCardLabelByIdx(${idx})"
+                        class="px-2.5 py-1 rounded-md text-xs font-bold transition ${isSelected ? 'ring-2 ring-sky-500 scale-105' : 'opacity-40 hover:opacity-85'}"
+                        style="background:${esc(l.color)}; color:${esc(l.text_color)}">
+                        ${isSelected ? '✓ ' : ''}${esc(l.name)}
+                    </button>
+                `;
+            }).join("");
+
+            const partsItems = qd.parts_items || [];
+            const partsTableHTML = partsItems.length ? `
+                <table class="w-full text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-zinc-800 text-left text-slate-400">
+                            <th class="py-1.5 w-12 font-mono">QTD</th>
+                            <th class="py-1.5 w-24 font-mono">CÓDIGO</th>
+                            <th class="py-1.5">DESCRIÇÃO</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/60">
+                        ${partsItems.map(p => `
+                            <tr>
+                                <td class="py-1.5 font-bold font-mono">${esc(p.qty)}x</td>
+                                <td class="py-1.5 font-mono text-sky-400 font-bold">${esc(p.code || '-')}</td>
+                                <td class="py-1.5">${esc(p.description || '')}</td>
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            ` : `<p class="text-xs text-slate-400">Nenhuma peça Toledo registrada no orçamento.</p>`;
+
+            const isPronta = card.list_role === "pronta" || (card.list_title || "").toUpperCase().includes("PRONTA");
+            const isApproved = card.quote_status === "approved";
+            const canSendQuote = card.quote_status === "done";
+            const canApproveQuote = card.quote_status === "done" || (card.list_title || "").toUpperCase().includes("ENVIADO");
+            const canReopenQuote = !card.finished_at;
+            const canCancelOs = !card.finished_at;
+
+            const modalContent = document.getElementById("cardDetailContent");
+            modalContent.innerHTML = `
+                <!-- 1. HEADER DO MODAL -->
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 pb-3 mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono text-sm font-bold px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
+                            O.S. ${esc(card.os_number)}
+                        </span>
+                        <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-semibold border border-slate-200 dark:border-zinc-700">
+                            Coluna: ${esc(card.list_title || 'N/A')}
+                        </span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        ${canSendQuote ? `
+                            <button onclick="sendQuoteFromAdmin()"
+                                class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                                <span>Enviar ao Cliente</span>
+                            </button>
+                        ` : ''}
+
+                        ${canApproveQuote ? `
+                            <button onclick="approveQuoteFromAdmin()"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <span>Aprovar Orçamento</span>
+                            </button>
+                        ` : ''}
+
+                        ${isPronta ? `
+                            <button onclick="finalizeCardFromAdmin()"
+                                class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                                <span>Finalizar O.S.</span>
+                            </button>
+                        ` : ''}
+
+                        ${canReopenQuote ? `
+                            <button onclick="reopenQuoteFromAdmin()"
+                                class="${card.reopen_requested === 1 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold animate-pulse' : 'bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-medium'} px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                                <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
+                                <span>${card.reopen_requested === 1 ? 'Liberar Reabertura' : 'Reabrir Orçamento'}</span>
+                            </button>
+                            ${card.reopen_requested === 1 ? `
+                                <button onclick="denyReopenRequest(${card.id})"
+                                    class="bg-slate-100 hover:bg-red-500 hover:text-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-semibold px-2.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    <span>Recusar</span>
+                                </button>
+                            ` : ''}
+                        ` : ''}
+
+                        <button onclick="openThermalLabel('${esc(card.os_number)}')" class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:border-sky-500 transition" title="Etiqueta">
+                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                        </button>
+
+                        <a href="/folha/${encodeURIComponent(card.os_number)}" target="_blank" class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:border-sky-500 transition" title="Folha A4">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                        </a>
+
+                        <button onclick="openDeleteAuthModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition" title="Excluir O.S.">
+                            <i data-lucide="trash" class="w-4 h-4"></i>
+                        </button>
+
+                        <button onclick="closeModal('cardDetailModal')" class="text-slate-400 hover:text-white p-1 ml-1">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. CLIENTE EM DESTAQUE -->
+                <div class="text-center py-3.5 px-4 mb-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+                    <h2 class="text-xl md:text-2xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">
+                        ${esc(card.client_name)}
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+                        <span>${esc(card.equipment_type)}</span>
+                        <span>•</span>
+                        <span>Modelo: <strong class="text-slate-200">${esc(card.equipment_model || 'N/I')}</strong></span>
+                        <span>•</span>
+                        <span>Série: <strong class="text-slate-200 font-mono">${esc(card.serial_number || 'N/I')}</strong></span>
+                    </p>
+                </div>
+
+                <!-- 3. LACRE IPEM A5 -->
+                ${card.inmetro_seal ? `
+                    <div class="mb-4 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                                Lacre IPEM A5:
+                            </span>
+                            <span class="text-base font-bold font-mono tracking-wider text-slate-900 dark:text-white bg-white dark:bg-zinc-900 px-3 py-0.5 rounded-md border border-emerald-500/30">
+                                ${esc(card.inmetro_seal)}
+                            </span>
+                            ${card.finisher_tech ? `<span class="text-xs text-slate-400">Téc: <strong>${esc(card.finisher_tech)}</strong></span>` : ''}
+                        </div>
+                        <button type="button" onclick="copySealNumber('${esc(card.inmetro_seal)}')"
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            Copiar p/ Teorema
+                        </button>
+                    </div>
+                ` : ''}
+
+                <!-- 4. LAUDO & PEÇAS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40 space-y-2.5">
+                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-2">
+                            <h4 class="font-bold text-xs uppercase text-sky-500 flex items-center gap-1.5">
+                                <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                                Laudo Técnico & Solução
+                            </h4>
+                            <button onclick="copyQuoteToClipboard()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 px-2.5 py-1 rounded-md text-[11px] font-bold transition flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i>
+                                Copiar p/ Vendas
+                            </button>
+                        </div>
+                        <div class="text-xs space-y-2">
+                            <p><strong>Defeito Entrada:</strong> ${esc(card.reported_defect || 'Não informado')}</p>
+                            <div class="p-3 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
+                                <strong class="text-sky-400 block mb-1 text-[11px] uppercase tracking-wider">Laudo (Orçamento):</strong>
+                                <span id="copyLaudoText" class="text-xs font-medium text-slate-800 dark:text-zinc-200 leading-relaxed">${esc(qd.technical_report || card.root_cause || 'Aguardando avaliação')}</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
+                                <strong class="text-emerald-500 block mb-0.5 text-[11px] uppercase tracking-wider">Solução Executada:</strong>
+                                <span class="text-xs text-slate-700 dark:text-zinc-300">${esc(qd.solution || card.tech_notes || 'Aguardando finalização')}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40 space-y-2.5">
+                        <h4 class="font-bold text-xs uppercase text-sky-500 flex items-center gap-1.5 border-b border-slate-200 dark:border-zinc-800 pb-2">
+                            <i data-lucide="cpu" class="w-4 h-4"></i>
+                            Peças Toledo Substituídas
+                        </h4>
+                        <div id="copyPartsBox">${partsTableHTML}</div>
+                    </div>
+                </div>
+
+                <!-- 5. ANOTAÇÕES DA RECEPÇÃO -->
+                <div class="mb-4 p-4 rounded-xl border border-amber-500/25 bg-amber-500/5 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-xs uppercase text-amber-500 flex items-center gap-1.5">
+                            <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
+                            Anotações Internas da Recepção (Priscila)
+                        </label>
+                        <button type="button" onclick="saveAdminNotes()"
+                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs transition">
+                            Salvar
+                        </button>
+                    </div>
+                    <textarea id="adminNotesInput" rows="2" placeholder="Observações sobre prazo, contatos com o cliente, etc..."
+                        class="w-full px-3 py-2 rounded-xl border border-amber-500/20 bg-white dark:bg-zinc-950 text-xs focus:outline-none focus:border-amber-500">${esc(card.admin_notes || '')}</textarea>
+                </div>
+
+                <!-- 6. ETIQUETAS -->
+                <div class="mb-4">
+                    <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Etiquetas:</label>
+                    <div class="flex flex-wrap gap-1.5">${editLabelsHTML}</div>
+                </div>
+
+                <!-- 7. FOTOS ANEXADAS -->
+                <div class="mb-4 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40">
+                    <h4 class="font-bold text-xs uppercase text-slate-400 mb-2 flex items-center gap-1.5">
+                        <i data-lucide="images" class="w-4 h-4 text-sky-500"></i>
+                        Galeria de Fotos da O.S.
+                    </h4>
+                    ${renderPhotoGrid([
+                        ...(card.entry_photos || []),
+                        ...(card.quote_photos || []),
+                        ...(card.exit_photos || [])
+                    ], "Nenhuma foto anexada a esta O.S.")}
+                </div>
+            `;
+
+            document.getElementById("cardDetailModal")?.classList.remove("hidden");
+            document.getElementById("cardDetailModal")?.classList.add("flex");
+            refreshIcons();
+        }
+
+        async function saveAdminNotes() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const notes = document.getElementById("adminNotesInput").value;
+            const res = await fetch(`/api/cards/${c.id}/update`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ admin_notes: notes })
+            });
+            if (res.ok) {
+                alert("Anotações salvas com sucesso!");
+            }
+        }
+
+        function openDeleteAuthModal() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            document.getElementById("deleteAuthOsTitle").textContent = `OS ${c.os_number} • ${c.client_name}`;
+            document.getElementById("deleteAuthUser").value = "";
+            document.getElementById("deleteAuthPass").value = "";
+            document.getElementById("deleteAuthError")?.classList.add("hidden");
+            document.getElementById("deleteAuthModal")?.classList.remove("hidden");
+            document.getElementById("deleteAuthModal")?.classList.add("flex");
+            refreshIcons();
+        }
+
+        function closeDeleteAuthModal() {
+            document.getElementById("deleteAuthModal")?.classList.add("hidden");
+            document.getElementById("deleteAuthModal")?.classList.remove("flex");
+        }
+
+        async function submitDeleteWithAuth(e) {
+            e.preventDefault();
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const user = document.getElementById("deleteAuthUser").value.trim();
+            const pass = document.getElementById("deleteAuthPass").value.trim();
+
+            const res = await fetch(`/api/cards/${c.id}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ login: user, senha: pass })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                closeDeleteAuthModal();
+                closeModal("cardDetailModal");
+                alert(`O.S. ${c.os_number} excluída.`);
+            } else {
+                const errDiv = document.getElementById("deleteAuthError");
+                errDiv.textContent = data.error || "Acesso negado.";
+                errDiv.classList.remove("hidden");
+            }
+        }
+
+        async function sendQuoteFromAdmin() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const res = await fetch(`/api/cards/${c.id}/send-quote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: "Priscila (Recepção)" })
+            });
+            if (res.ok) {
+                alert(`Orçamento da O.S. ${c.os_number} enviado com sucesso!`);
+                openCardDetail(c.os_number);
+            }
+        }
+
+        async function finalizeCardFromAdmin() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const res = await fetch(`/api/cards/${c.id}/finalize-admin`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: "Priscila (Recepção)" })
+            });
+            if (res.ok) {
+                alert(`O.S. ${c.os_number} conferida e movida para FINALIZADAS!`);
+                closeModal("cardDetailModal");
+            }
+        }
+
+        async function approveQuoteFromAdmin() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const res = await fetch(`/api/cards/${c.id}/approve-quote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: "Priscila (Recepção)" })
+            });
+            if (res.ok) {
+                alert(`Orçamento da O.S. ${c.os_number} aprovado! Liberado para o técnico.`);
+                openCardDetail(c.os_number);
+            }
+        }
+
+        async function reopenQuoteFromAdmin() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const res = await fetch(`/api/cards/${c.id}/reopen-quote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: "Priscila (Recepção)" })
+            });
+            if (res.ok) {
+                alert(`Orçamento da O.S. ${c.os_number} reaberto com sucesso.`);
+                openCardDetail(c.os_number);
+            }
+        }
+
+        async function approveReopenRequest(cardId, osNumber) {
+            const res = await fetch(`/api/cards/${cardId}/reopen-quote`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: "Priscila (Recepção)" })
+            });
+            if (res.ok) {
+                alert(`Reabertura da O.S. ${osNumber} liberada.`);
+                fetchBoard();
+            }
+        }
+
+        async function denyReopenRequest(cardId) {
+            if (!confirm("Recusar pedido de reabertura desta O.S.?")) return;
+            try {
+                const res = await fetch(`/api/cards/${cardId}/deny-reopen`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ actor: "Priscila (Recepção)" })
+                });
+                if (res.ok) {
+                    showToast("Pedido de reabertura recusado.", "info");
+                    // Otimista: remove do banner imediatamente
+                    (boardData.lists || []).forEach(lst => {
+                        (lst.cards || []).forEach(c => {
+                            if (c.id === cardId) {
+                                c.reopen_requested = 0;
+                                c.reopen_requested_by = "";
+                            }
+                        });
+                    });
+                    updateReopenRequestsBanner();
+                    const modal = document.getElementById("cardDetailModal");
+                    if (modal && !modal.classList.contains("hidden") && window._lastOpenedCard?.id === cardId) {
+                        window._lastOpenedCard.reopen_requested = 0;
+                        openCardDetail(window._lastOpenedCard.os_number);
+                    }
+                    fetchBoard();
+                } else {
+                    const data = await res.json();
+                    showToast(data.error || "Erro ao recusar reabertura", "error");
+                }
+            } catch (err) {
+                showToast("Erro de comunicação ao recusar.", "error");
+            }
+        }
+
+        async function cancelCardFromAdmin() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            if (!confirm(`Deseja realmente CANCELAR a O.S. ${c.os_number}?`)) return;
+            const res = await fetch(`/api/cards/${c.id}/cancel`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: "Priscila (Recepção)", reason: "Cancelado pela Recepção" })
+            });
+            if (res.ok) {
+                alert(`O.S. ${c.os_number} cancelada.`);
+                closeModal("cardDetailModal");
+            }
+        }
+
+        async function copyQuoteToClipboard() {
+            const c = window._lastOpenedCard;
+            if (!c) return;
+            const qd = c.quote_data || {};
+            const partsList = (qd.parts_items || []).map(p => `• ${p.qty}x [${p.code || ''}] ${p.description || ''}`).join("\n");
+            const text = `*ORÇAMENTO TÉCNICO A5 - O.S. ${c.os_number}*\nCliente: ${c.client_name}\nEquipamento: ${c.equipment_type} ${c.equipment_model || ''}\n\n*Laudo Técnico:*\n${qd.technical_report || c.root_cause || 'Aguardando'}\n\n*Peças Necessárias:*\n${partsList || 'Nenhuma peça'}`;
+            try {
+                await navigator.clipboard.writeText(text);
+                alert("Orçamento copiado para a área de transferência!");
+            } catch (e) {
+                alert("Erro ao copiar.");
+            }
+        }
+
+        async function toggleCardLabelByIdx(labelIdx) {
+            const c = window._lastOpenedCard;
+            const label = boardData.labels[labelIdx];
+            if (!c || !label) return;
+
+            const curLabels = c.labels || [];
+            const exists = curLabels.some(l => l.name === label.name);
+            const newLabels = exists
+                ? curLabels.filter(l => l.name !== label.name)
+                : [...curLabels, label];
+
+            const res = await fetch(`/api/cards/${c.id}/update`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ labels_json: JSON.stringify(newLabels) })
+            });
+            if (res.ok) {
+                openCardDetail(c.os_number);
+            }
+        }
+
+        async function createNewListPrompt() {
+            const title = prompt("Digite o nome da nova coluna:");
+            if (!title || !title.trim()) return;
+            const res = await fetch("/api/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: title.trim() })
+            });
+            if (res.ok) fetchBoard();
+        }
+
+        async function renameListById(listId) {
+            const curList = boardData.lists.find(l => l.id == listId);
+            const newTitle = prompt("Renomear coluna:", curList?.title || "");
+            if (!newTitle || !newTitle.trim()) return;
+            await fetch(`/api/lists/${listId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title: newTitle.trim() })
+            });
+            fetchBoard();
+        }
+
+        async function deleteEmptyList(listId) {
+            if (!confirm("Excluir esta coluna vazia?")) return;
+            const res = await fetch(`/api/lists/${listId}`, { method: "DELETE" });
+            if (res.ok) fetchBoard();
+        }
+
+        function openCallTechModal() {
+            const modal = document.getElementById("callTechModal");
+            modal?.classList.remove("hidden");
+            modal?.classList.add("flex");
+            refreshIcons();
+        }
+
+        function sendCallTech() {
+            const tech = document.getElementById("callTechSelect").value;
+            const reason = document.getElementById("callTechReason").value;
+            socket.emit("call_tech_reception", { tech_name: tech, reason: reason });
+            closeModal("callTechModal");
+            alert(`Chamado para ${tech} enviado para a TV!`);
+        }
+
+        function toggleTvMute() {
+            const curMuted = document.getElementById("muteTvBtn").dataset.muted === "1";
+            socket.emit("panic_silence_tv", { muted: !curMuted });
+        }
+
+        function updateMuteButtonUI(isMuted) {
+            const btn = document.getElementById("muteTvBtn");
+            const icon = document.getElementById("muteTvIcon");
+            if (!btn || !icon) return;
+            btn.dataset.muted = isMuted ? "1" : "0";
+            if (isMuted) {
+                icon.innerText = "TV Silenciada";
+                btn.classList.add("bg-red-500/10", "border-red-500/30", "text-red-400");
+            } else {
+                icon.innerText = "TV Ativa";
+                btn.classList.remove("bg-red-500/10", "border-red-500/30", "text-red-400");
+            }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add("hidden");
+                el.classList.remove("flex");
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains("dark-mode");
+            applyTheme(isDark ? "clean" : "dark");
+        }
+
+        function applyTheme(theme) {
+            const html = document.documentElement;
+            if (theme === "dark") {
+                html.classList.add("dark-mode", "dark");
+                html.classList.remove("clean-mode");
+                localStorage.setItem("a5_theme", "dark");
+            } else {
+                html.classList.add("clean-mode");
+                html.classList.remove("dark-mode", "dark");
+                localStorage.setItem("a5_theme", "clean");
+            }
+            refreshIcons();
+        }
+    </script>
+</body>
+</html>

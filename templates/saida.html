@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bancada Mobile QR Code - A5 Tecnologia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .surface-card {
+            background-color: #18181b;
+            border: 1px solid #27272a;
+        }
+        .surface-inner {
+            background-color: #09090b;
+            border: 1px solid #27272a;
+        }
+        /* Tema Clean (Zinc & Light) para Bancada Mobile */
+        html.clean-mode,
+        body.theme-clean {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean .surface-card {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04) !important;
+        }
+        body.theme-clean .surface-inner {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean .text-white { color: #0f172a !important; }
+        body.theme-clean .text-zinc-100 { color: #0f172a !important; }
+        body.theme-clean .text-zinc-200 { color: #1e293b !important; }
+        body.theme-clean .text-zinc-300 { color: #334155 !important; }
+        body.theme-clean .text-zinc-400 { color: #475569 !important; }
+        body.theme-clean .text-slate-100 { color: #0f172a !important; }
+        body.theme-clean .text-slate-200,
+        body.theme-clean .text-slate-300 { color: #1e293b !important; }
+        body.theme-clean .text-slate-400 { color: #475569 !important; }
+        body.theme-clean header {
+            background-color: #ffffff !important;
+            border-bottom-color: #cbd5e1 !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+        }
+        body.theme-clean header h1 {
+            color: #0f172a !important;
+        }
+        body.theme-clean header #headerSub {
+            color: #0284c7 !important;
+        }
+        body.theme-clean #mobileThemeBtn {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean #infoClient {
+            color: #0f172a !important;
+        }
+        body.theme-clean #infoEquip {
+            color: #475569 !important;
+        }
+        body.theme-clean #infoDefect {
+            color: #1e293b !important;
+        }
+
+        /* Bloco "🔒 Em Orçamento com:" e "Finalização" com alto contraste no Clean */
+        body.theme-clean .bg-\[\#081221\] {
+            background-color: #f0f9ff !important;
+            border: 1px solid #bae6fd !important;
+            box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08) !important;
+        }
+        body.theme-clean .bg-\[\#081221\] span {
+            color: #0369a1 !important;
+        }
+        body.theme-clean .bg-\[\#081221\] strong,
+        body.theme-clean .bg-\[\#081221\] #quoteActiveTech {
+            color: #0c4a6e !important;
+        }
+        body.theme-clean .bg-\[\#081221\] #quoteStartedAtText {
+            color: #0284c7 !important;
+        }
+        body.theme-clean .bg-\[\#081221\] button {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+
+        /* Inputs e botões com bg-[#0B0F17] */
+        body.theme-clean .bg-\[\#0B0F17\] {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean input.bg-\[\#0B0F17\],
+        body.theme-clean select.bg-\[\#0B0F17\],
+        body.theme-clean textarea.bg-\[\#0B0F17\] {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.theme-clean #partSearchResults {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+        }
+        body.theme-clean .border-slate-800,
+        body.theme-clean .border-slate-700 {
+            border-color: #cbd5e1 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16 antialiased">
+
+    <!-- HEADER FIXO -->
+    <header class="bg-zinc-950/90 border-b border-zinc-800 px-4 py-3 sticky top-0 z-30 backdrop-blur-md flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div class="min-w-0">
+                <h1 class="font-bold text-sm leading-tight truncate text-slate-900 dark:text-zinc-100">BANCADA TÉCNICA DIGITAL</h1>
+                <p id="headerSub" class="text-[11px] text-[#2aa6c8] dark:text-sky-400 font-semibold truncate leading-tight mt-0.5">A5 Tecnologia • Orçamento & Finalização QR Code</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" onclick="toggleMobileTheme()" id="mobileThemeBtn"
+                class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-bold text-xs px-2.5 py-1.5 rounded-xl shrink-0 flex items-center gap-1"
+                title="Alternar Tema Clean / Dark">
+                <i data-lucide="sun" class="w-3.5 h-3.5"></i>
+                <span>Tema</span>
+            </button>
+            <button type="button" onclick="requestSupport()" class="bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-xl shadow shrink-0 flex items-center gap-1">
+                <i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
+                <span>Pedir Apoio</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-lg mx-auto p-3.5 space-y-4">
+
+        <!-- BUSCA / SELEÇÃO DE O.S. (Preenchido automaticamente via QR Code) -->
+        <div class="surface-card rounded-2xl p-3.5 overflow-hidden">
+            <label class="block text-[11px] font-bold uppercase text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                <i data-lucide="qr-code" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>Número da O.S. (QR Code da Etiqueta)</span>
+            </label>
+            <div class="flex gap-2">
+                <input type="text" inputmode="numeric" id="osInput" value="{{ os_number }}" placeholder="Digite o Nº da O.S."
+                    class="min-w-0 flex-1 surface-inner rounded-xl px-3.5 py-2 font-mono font-bold text-lg text-sky-400 focus:outline-none focus:border-sky-500">
+                <button type="button" onclick="loadOsData()" class="bg-sky-500 hover:bg-sky-400 active:scale-95 text-slate-950 px-5 rounded-xl font-bold text-sm shrink-0 flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                    <span>Carregar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- CABEÇALHO RESUMO DA BALANÇA -->
+        <div id="osCardInfo" class="hidden surface-card rounded-2xl p-4 space-y-3 overflow-hidden">
+            <div class="flex justify-between items-start gap-2">
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <span id="infoStage" class="text-[10px] font-bold uppercase bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-lg"></span>
+                        <span id="infoWorkflowBadge" class="text-[10px] font-black uppercase px-2 py-0.5 rounded-lg"></span>
+                    </div>
+                    <h2 id="infoClient" class="text-lg font-black uppercase mt-1 leading-tight break-words text-white"></h2>
+                    <p id="infoEquip" class="text-xs text-slate-400 break-words"></p>
+                </div>
+                <span id="infoOsBadge" class="bg-sky-600 text-white font-black px-3 py-1 rounded-xl text-sm shrink-0"></span>
+            </div>
+
+            <div class="grid grid-cols-1 gap-2 text-xs">
+                <div class="p-2.5 rounded-xl surface-inner">
+                    <strong class="text-sky-400 block mb-0.5">Defeito Relatado na Entrada:</strong>
+                    <span id="infoDefect" class="text-slate-200 break-words"></span>
+                </div>
+                <div id="infoPrevServiceBox" class="hidden p-2.5 rounded-xl bg-sky-950/30 border border-sky-500/30">
+                    <strong class="text-sky-300 block mb-0.5">🛠️ Serviço Feito Anteriormente (Recepção):</strong>
+                    <span id="infoPrevService" class="text-slate-100 font-semibold break-words"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- ETAPA 1: ESCOLHER TÉCNICO E ASSUMIR O.S. PARA ORÇAMENTO             -->
+        <!-- =================================================================== -->
+        <section id="stageClaim" class="hidden surface-card border-2 border-sky-500/40 rounded-2xl p-5 space-y-4 shadow-xl overflow-hidden">
+            <div class="text-center space-y-1">
+                <span class="inline-block bg-sky-500/15 text-sky-300 border border-sky-500/30 text-xs font-black px-3 py-1 rounded-full uppercase">
+                    1ª Etapa • Iniciar Avaliação
+                </span>
+                <h3 class="text-lg font-black uppercase text-white">Quem vai fazer o Orçamento?</h3>
+                <p class="text-xs text-slate-400">
+                    Ao selecionar seu nome, o cartão mudará automaticamente para a sua bancada no Kanban e abrirá a ficha de orçamento travada para você.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold uppercase text-sky-300 mb-1.5">Selecione o Técnico *</label>
+                <select id="claimTechSelect" class="w-full surface-inner focus:border-sky-500 rounded-xl px-3.5 py-3.5 font-black text-base text-white">
+                    <option value="">Escolha seu nome...</option>
+                </select>
+            </div>
+
+            <button type="button" id="claimBtn" onclick="claimOsForQuote(false)"
+                class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-4 rounded-xl text-base shadow-lg shadow-sky-600/20 transition">
+                🚀 ASSUMIR O.S. E ABRIR ORÇAMENTO
+            </button>
+        </section>
+
+        <!-- AVISO DE TRAVA QUANDO OUTRO CELULAR ABRE UMA O.S. EM ORÇAMENTO -->
+        <section id="stageLockedNotice" class="hidden surface-card border-2 border-sky-500/40 rounded-2xl p-5 space-y-4 text-center overflow-hidden">
+            <div class="text-3xl">🔒</div>
+            <h3 class="text-base font-black uppercase text-sky-400">O.S. em Orçamento na Bancada</h3>
+            <p class="text-xs text-slate-300">
+                Esta balança está vinculada para orçamento com <strong id="lockedTechName" class="text-white underline"></strong>.
+            </p>
+            <div class="space-y-2">
+                <button type="button" onclick="unlockAsCurrentTech()"
+                    class="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-3 rounded-xl text-xs uppercase">
+                    Sou eu mesmo — Continuar Orçamento neste celular
+                </button>
+                <button type="button" onclick="showSwitchTechClaim()"
+                    class="w-full surface-inner hover:border-sky-500/50 text-slate-300 font-bold py-2.5 rounded-xl text-xs">
+                    🔄 Trocar Técnico Avaliador
+                </button>
+            </div>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- ETAPA 2: FOLHA DIGITAL DE ORÇAMENTO                                 -->
+        <!-- =================================================================== -->
+        <form id="stageQuoteForm" onsubmit="submitQuoteForm(event, true)" class="hidden space-y-4">
+
+            <!-- Barra do Técnico Avaliador e Horário de Início -->
+            <div class="bg-[#081221] border border-sky-500/35 rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs overflow-hidden">
+                <div class="min-w-0">
+                    <span class="text-[10px] uppercase text-sky-300 font-bold block">🔒 Em Orçamento com:</span>
+                    <strong id="quoteActiveTech" class="text-sm font-black text-white truncate block"></strong>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase text-slate-400 block">Início</span>
+                        <strong id="quoteStartedAtText" class="text-sky-300"></strong>
+                    </div>
+                    <button type="button" onclick="showSwitchTechClaim()" title="Trocar técnico avaliador"
+                        class="surface-inner hover:border-sky-500/50 text-slate-300 px-2.5 py-1.5 rounded-xl text-[11px] font-bold">
+                        🔄 Trocar
+                    </button>
+                </div>
+            </div>
+
+            <!-- 1. CHECKS DE ACESSÓRIOS (SIM / NÃO) -->
+            <div class="surface-card rounded-2xl p-4 space-y-3 overflow-hidden">
+                <h3 class="font-black text-xs uppercase text-sky-400 border-b border-slate-800 pb-2">
+                    🔌 1. Estado de Entrada & Acessórios (Sim / Não)
+                </h3>
+                <div id="accessoriesList" class="space-y-2"></div>
+            </div>
+
+            <!-- 2. LACRE, SELO E PRESENÇA DE SUJEIRA/INSETOS -->
+            <div class="surface-card rounded-2xl p-4 space-y-3.5 overflow-hidden">
+                <h3 class="font-black text-xs uppercase text-sky-400 border-b border-slate-800 pb-2">
+                    🛡️ 2. Lacre / Selo de Entrada & Higiene
+                </h3>
+
+                <!-- Lacre que veio -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-slate-300">Lacre que veio na balança:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setSealType('incoming_seal', 'IPEM')" data-seal-btn="incoming_seal:IPEM" class="seal-btn py-2 rounded-xl text-xs font-bold surface-inner">IPEM</button>
+                        <button type="button" onclick="setSealType('incoming_seal', 'A5')" data-seal-btn="incoming_seal:A5" class="seal-btn py-2 rounded-xl text-xs font-bold surface-inner">A5</button>
+                        <button type="button" onclick="setSealType('incoming_seal', 'SEM LACRE')" data-seal-btn="incoming_seal:SEM LACRE" class="seal-btn py-2 rounded-xl text-xs font-bold surface-inner">Sem Lacre</button>
+                    </div>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" id="incomingSealNum" placeholder="Nº do Lacre de entrada (se houver)"
+                        class="w-full min-w-0 surface-inner rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-sky-500">
+                </div>
+
+                <!-- Selo que veio (Formatado 00.000.000-0) -->
+                <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <label class="block text-xs font-bold text-slate-300">Selo que veio na balança (Formato: 00.000.000-0):</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setSealType('incoming_stamp', 'IPEM')" data-seal-btn="incoming_stamp:IPEM" class="seal-btn py-2 rounded-xl text-xs font-bold surface-inner">IPEM</button>
+                        <button type="button" onclick="setSealType('incoming_stamp', 'A5')" data-seal-btn="incoming_stamp:A5" class="seal-btn py-2 rounded-xl text-xs font-bold surface-inner">A5</button>
+                        <button type="button" onclick="setSealType('incoming_stamp', 'SEM SELO')" data-seal-btn="incoming_stamp:SEM SELO" class="seal-btn py-2 rounded-xl text-xs font-bold surface-inner">Sem Selo</button>
+                    </div>
+                    <input type="text" inputmode="numeric" maxlength="12" id="incomingStampNum"
+                        oninput="formatStampMask(this)"
+                        placeholder="00.000.000-0 (Nº do Selo de entrada)"
+                        class="w-full min-w-0 surface-inner rounded-xl px-3 py-2 text-sm font-mono font-bold tracking-wider text-sky-300 focus:outline-none focus:border-sky-500">
+                </div>
+
+                <!-- Presença de -->
+                <div class="space-y-1.5 pt-2 border-t border-slate-800/80">
+                    <label class="block text-xs font-bold text-slate-300">Presença de (toque para marcar):</label>
+                    <div id="contaminationContainer" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+
+            <!-- 3. TESTES DE PESOS INICIAL (Suporte Automático a Quilos kg e Gramas g para Balanças Analíticas + Comparador de Diferença) -->
+            <div class="surface-card rounded-2xl p-4 space-y-3 overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                    <h3 class="font-black text-xs uppercase text-sky-400">
+                        ⚖️ 3. Testes de Pesos Inicial
+                    </h3>
+                    <div class="flex items-center gap-1 surface-inner p-1 rounded-xl">
+                        <button type="button" id="unitBtnKg" onclick="setWeightUnit('kg')" class="px-2.5 py-1 rounded-lg text-[10px] font-black transition">Quilos (kg)</button>
+                        <button type="button" id="unitBtnG" onclick="setWeightUnit('g')" class="px-2.5 py-1 rounded-lg text-[10px] font-black transition">Gramas (g) • Analítica</button>
+                    </div>
+                </div>
+                <p id="weightUnitHint" class="text-[11px] text-slate-400">
+                    Informe o peso lido no visor para cada peso padrão. O sistema destaca automaticamente se houver <strong>DIFERENÇA DE PESO</strong> (fora da especificação).
+                </p>
+                <div id="weightsInitialGrid" class="grid grid-cols-2 gap-2"></div>
+                <div id="weightsInitialDiffAlert" class="hidden p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-bold space-y-1"></div>
+            </div>
+
+            <!-- 4. LAUDO TÉCNICO + [F-07] FOTOS DE EVIDÊNCIA / LAUDO P/ ORÇAMENTO -->
+            <div class="surface-card rounded-2xl p-4 space-y-3 overflow-hidden">
+                <label class="block font-black text-xs uppercase text-sky-400">
+                    📋 4. Laudo Técnico (Defeitos Apresentados p/ o Cliente) *
+                </label>
+                <textarea id="technicalReportInput" rows="3" required
+                    placeholder="Descreva os defeitos encontrados que serão passados no orçamento para o cliente..."
+                    class="w-full min-w-0 surface-inner rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-sky-500"></textarea>
+
+                <!-- [F-07] FOTOS DO LAUDO / EVIDÊNCIAS PARA O ORÇAMENTO (SUJEIRA / REVISÃO GERAL, PLACA QUEIMADA, ETC.) -->
+                <div class="pt-2.5 border-t border-slate-800/80 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="block text-xs font-black uppercase text-sky-400">
+                            📸 Fotos do Laudo / Evidências p/ Orçamento
+                        </label>
+                        <span id="quoteLaudoPhotoCounter" class="text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2.5 py-0.5 rounded-full shrink-0">0 foto(s)</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">
+                        Equipamento muito sujo (justificar Revisão Geral), placa queimada, célula oxidada ou peças danificadas:
+                    </p>
+
+                    <input type="file" id="quoteLaudoCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event, 'quote_laudo')">
+                    <input type="file" id="quoteLaudoGalleryInput" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(event, 'quote_laudo')">
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="document.getElementById('quoteLaudoCameraInput').click()"
+                            class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow">
+                            📸 Foto p/ Laudo
+                        </button>
+                        <button type="button" onclick="document.getElementById('quoteLaudoGalleryInput').click()"
+                            class="surface-inner hover:border-sky-500/50 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                            🖼️ Galeria
+                        </button>
+                    </div>
+                    <div id="savedQuotePhotosBox" class="hidden space-y-1">
+                        <span class="text-[10px] font-bold uppercase text-slate-400">Fotos de Laudo já salvas nesta O.S.:</span>
+                        <div id="savedQuotePhotosGrid" class="grid grid-cols-4 gap-2"></div>
+                    </div>
+                    <div id="quoteLaudoPhotoPreviewGrid" class="grid grid-cols-3 gap-2 pt-1"></div>
+                </div>
+            </div>
+
+            <!-- 5. PEÇAS SUBSTITUÍDAS / CÓDIGOS TOLEDO (Corrigido L-02, L-03 e B-01) -->
+            <div class="surface-card rounded-2xl p-4 space-y-3 overflow-hidden">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <h3 class="font-black text-xs uppercase text-sky-400">
+                        ⚙️ 5. Peças p/ Orçamento (Códigos Toledo Prix)
+                    </h3>
+                    <span id="partsCountBadge" class="text-[10px] bg-sky-500/20 text-sky-300 border border-sky-500/30 font-bold px-2.5 py-0.5 rounded-full shrink-0">0 peça(s)</span>
+                </div>
+
+                <!-- Buscador Autocomplete Toledo -->
+                <div class="space-y-2.5 surface-inner p-3 rounded-xl overflow-hidden">
+                    <label class="block text-[11px] font-bold text-slate-300">
+                        🔍 Buscar por Código Toledo ou Nome da Peça:
+                    </label>
+                    <input type="text" id="partSearchInput" oninput="onPartSearchInput()"
+                        placeholder="Ex: 6212356, teclado prix 5, cabeça termica, fonte..."
+                        class="w-full min-w-0 bg-[#0B0F17] border border-slate-700 focus:border-sky-500 rounded-xl px-3 py-2.5 text-sm focus:outline-none">
+
+                    <!-- Lista de Sugestões da Matriz Toledo -->
+                    <div id="partSearchResults" class="hidden max-h-52 overflow-y-auto divide-y divide-slate-800 border border-sky-500/40 rounded-xl bg-[#0B0F17]"></div>
+
+                    <!-- Campos selecionados / adição manual (2 linhas limpas no celular - L-02) -->
+                    <div class="grid grid-cols-12 gap-2 pt-1">
+                        <div class="col-span-4">
+                            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-0.5 truncate">Quantidade</label>
+                            <input type="number" inputmode="numeric" pattern="[0-9]*" id="partQtyInput" value="1" min="1"
+                                class="w-full min-w-0 bg-[#0B0F17] border border-slate-700 rounded-xl px-2.5 py-2 text-sm font-black text-center text-sky-300 focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div class="col-span-8">
+                            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-0.5 truncate">Código Toledo</label>
+                            <input type="text" inputmode="numeric" id="partCodeInput" placeholder="Ex: 6212356"
+                                class="w-full min-w-0 bg-[#0B0F17] border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-sky-300 focus:outline-none focus:border-sky-500">
+                        </div>
+                        <div class="col-span-12">
+                            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-0.5 truncate">Descrição da Peça</label>
+                            <input type="text" id="partDescInput" placeholder="Nome / descrição da peça"
+                                class="w-full min-w-0 bg-[#0B0F17] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500">
+                        </div>
+                    </div>
+                    <button type="button" onclick="addPartToQuote()"
+                        class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-2.5 rounded-xl text-xs transition">
+                        ➕ Adicionar Peça ao Orçamento
+                    </button>
+                </div>
+
+                <!-- Lista de peças já incluídas no orçamento -->
+                <div id="quotePartsList" class="space-y-1.5"></div>
+            </div>
+
+            <!-- 6. SERVIÇOS E TESTES REALIZADOS NO ORÇAMENTO -->
+            <div class="surface-card rounded-2xl p-4 space-y-4 overflow-hidden">
+                <h3 class="font-black text-xs uppercase text-sky-400 border-b border-slate-800 pb-2">
+                    ✅ 6. Serviços & Testes Funcionais (Orçamento)
+                </h3>
+
+                <!-- Checks de Serviços -->
+                <div class="space-y-2 surface-inner p-3 rounded-xl">
+                    <span class="block text-[11px] font-bold uppercase text-slate-400 mb-1">Serviços Previstos / Realizados:</span>
+                    <label class="flex items-center gap-2.5 text-sm font-semibold cursor-pointer">
+                        <input type="checkbox" id="chk_revisao_geral" class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span>Revisão Geral</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 text-sm font-semibold cursor-pointer">
+                        <input type="checkbox" id="chk_limpeza_externa" class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span>Limpeza Externa</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 text-sm font-semibold cursor-pointer">
+                        <input type="checkbox" id="chk_calibracao_afericao" class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span>Calibração / Aferição</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 text-sm font-semibold cursor-pointer">
+                        <input type="checkbox" id="chk_cal_gap_sens" class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span>Cal. Gap Sens</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 text-sm font-semibold cursor-pointer">
+                        <input type="checkbox" id="chk_calibracao_bater_peso" class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span>Calibração / Bater Peso</span>
+                    </label>
+                </div>
+
+                <!-- Testes Funcionais (S / N + observação) -->
+                <div class="space-y-2.5">
+                    <span class="block text-[11px] font-bold uppercase text-slate-400">Checks de Testes (S / N):</span>
+                    <div id="functionalTestsList" class="space-y-2.5"></div>
+                </div>
+
+                <!-- ACIONADOR DE ESTUFA / TESTE NA TV (DURANTE AVALIAÇÃO DO ORÇAMENTO) -->
+                <div class="surface-inner p-3.5 rounded-xl border border-sky-500/30 space-y-2.5 mt-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black uppercase text-sky-400 flex items-center gap-1.5">
+                            <i data-lucide="timer" class="w-4 h-4 text-sky-400"></i>
+                            <span>Cronômetro de Estufa / Teste na TV:</span>
+                        </span>
+                        <span class="text-[10px] text-slate-400">Alerta sonoro na oficina</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 leading-tight">
+                        Se a PCI (placa) ou célula de carga necessita de teste térmico ou secagem na estufa durante o orçamento, acione o alarme da TV:
+                    </p>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="triggerMobileTimer(15)" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 text-sky-700 dark:text-sky-300 py-2.5 rounded-xl text-xs font-bold active:scale-95 border border-slate-300 dark:border-slate-700/60 transition flex items-center justify-center gap-1">
+                            <span>⏱️ 15 min</span>
+                        </button>
+                        <button type="button" onclick="triggerMobileTimer(30)" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 text-sky-700 dark:text-sky-300 py-2.5 rounded-xl text-xs font-bold active:scale-95 border border-slate-300 dark:border-slate-700/60 transition flex items-center justify-center gap-1">
+                            <span>⏱️ 30 min</span>
+                        </button>
+                        <button type="button" onclick="triggerMobileTimer(60)" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 text-sky-700 dark:text-sky-300 py-2.5 rounded-xl text-xs font-bold active:scale-95 border border-slate-300 dark:border-slate-700/60 transition flex items-center justify-center gap-1">
+                            <span>⏱️ 60 min</span>
+                        </button>
+                    </div>
+                    <div id="quoteActiveTimerNotice" class="hidden p-2.5 rounded-xl bg-sky-500/10 border border-sky-400/30 text-sky-800 dark:text-sky-300 text-xs font-bold flex items-center justify-between">
+                        <span class="flex items-center gap-1.5 animate-pulse">
+                            <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-500"></i>
+                            <span id="quoteActiveTimerText">Estufa ativa na TV</span>
+                        </span>
+                        <button type="button" onclick="cancelMobileTimer()" class="text-[10px] text-rose-500 hover:underline font-bold px-2 py-0.5 rounded bg-rose-500/10">
+                            ✕ Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. FOTO DA ETIQUETA ANTES -->
+            <div class="p-4 rounded-2xl surface-card border-sky-500/30 space-y-3 overflow-hidden">
+                <div class="flex items-center justify-between gap-2">
+                    <label class="block text-xs font-black uppercase text-sky-400">
+                        🏷️ 7. Foto da "Etiqueta Antes" (Orçamento)
+                    </label>
+                    <span id="beforePhotoCounter" class="text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2.5 py-0.5 rounded-full shrink-0">0 foto(s)</span>
+                </div>
+                <p class="text-[11px] text-slate-400">
+                    Fotografe a etiqueta de teste inicial (ou estado inicial de impressão da balança):
+                </p>
+
+                <input type="file" id="beforeCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event, 'before')">
+                <input type="file" id="beforeGalleryInput" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(event, 'before')">
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="document.getElementById('beforeCameraInput').click()"
+                        class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow">
+                        📸 Foto Etiqueta Antes
+                    </button>
+                    <button type="button" onclick="document.getElementById('beforeGalleryInput').click()"
+                        class="surface-inner hover:border-sky-500/50 active:scale-95 text-white font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                        🖼️ Galeria
+                    </button>
+                </div>
+                <div id="beforePhotoPreviewGrid" class="grid grid-cols-3 gap-2 pt-1"></div>
+            </div>
+
+            <!-- BOTÕES DE SALVAR RASCUNHO OU FINALIZAR ORÇAMENTO -->
+            <div class="grid grid-cols-1 gap-2.5 pt-1">
+                <button type="button" onclick="submitQuoteForm(event, false)"
+                    class="w-full surface-card hover:border-sky-500/50 text-slate-200 font-bold py-3 rounded-xl text-xs">
+                    💾 Salvar Parcial (Continuar Orçamento Depois)
+                </button>
+                <button type="submit" id="submitQuoteBtn"
+                    class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-4 rounded-2xl text-base shadow-lg shadow-sky-600/25 transition">
+                    ✅ CONCLUIR ORÇAMENTO E ENVIAR P/ PRISCILA
+                </button>
+            </div>
+        </form>
+
+        <!-- =================================================================== -->
+        <!-- ETAPA 3: AGUARDANDO APROVAÇÃO DO CLIENTE (COM SOLICITAÇÃO DE REABRIR)-->
+        <!-- =================================================================== -->
+        <section id="stageWaitingApproval" class="hidden surface-card border-2 border-sky-500/40 rounded-2xl p-5 space-y-4 overflow-hidden">
+            <div class="text-center space-y-1.5">
+                <div class="inline-block bg-sky-500/15 text-sky-300 border border-sky-500/30 text-xs font-black px-3 py-1 rounded-full uppercase">
+                    ⏳ Aguardando Aprovação do Cliente
+                </div>
+                <h3 class="text-lg font-black uppercase text-white">Orçamento Concluído e Enviado!</h3>
+                <p class="text-xs text-slate-400">
+                    A Priscila já recebeu toda a folha digital de orçamento. Assim que o cliente aprovar e ela liberar a O.S., esta mesma página abrirá a <strong>Finalização</strong> automaticamente.
+                </p>
+            </div>
+            <div id="waitingQuoteSummary" class="surface-inner rounded-xl p-3.5 text-xs space-y-2 break-words"></div>
+
+            <!-- Box de status quando o técnico solicita reabertura e aguarda liberação da Priscila -->
+            <div id="reopenRequestStatusBox" class="hidden p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs space-y-1 text-center">
+                <p class="font-black uppercase">🔔 Solicitação de Reabertura Enviada!</p>
+                <p class="text-[11px] text-slate-200">
+                    A Priscila já recebeu uma notificação na tela da recepção. Assim que ela clicar em <strong>Liberar Reabertura</strong> no painel Admin, esta ficha abrirá automaticamente para edição.
+                </p>
+            </div>
+
+            <button type="button" id="reopenMobileBtn" onclick="reopenQuoteFromMobile()"
+                class="w-full surface-inner hover:border-sky-500/50 text-sky-300 font-bold py-2.5 rounded-xl text-xs transition">
+                ✏️ Reabrir Orçamento p/ Editar ou Incluir Peça (Pedir Liberação)
+            </button>
+        </section>
+
+        <!-- =================================================================== -->
+        <!-- ETAPA 4: FINALIZAÇÃO DO SERVIÇO (APÓS APROVAÇÃO DO CLIENTE)          -->
+        <!-- =================================================================== -->
+        <form id="finishForm" onsubmit="submitFinishOs(event)" class="hidden space-y-4">
+
+            <!-- Banner de Orçamento Aprovado + Resumo do que foi aprovado -->
+            <div class="bg-[#081221] border-2 border-sky-500/45 rounded-2xl p-4 space-y-2.5 overflow-hidden">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <span class="bg-sky-500 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full uppercase">
+                        ✅ Cliente Aprovou • Liberado p/ Finalização
+                    </span>
+                    <span id="approvedEvalTech" class="text-[11px] text-sky-300 font-bold"></span>
+                </div>
+                <div id="approvedQuoteSummary" class="text-xs space-y-1.5 surface-inner p-3 rounded-xl break-words"></div>
+            </div>
+
+            <!-- Dados de Finalização -->
+            <div class="surface-card rounded-2xl p-4 space-y-4 overflow-hidden">
+                <h3 class="font-black text-sm uppercase text-sky-400 border-b border-slate-800 pb-2">
+                    🔧 Execução & Fechamento Técnico (Finalização)
+                </h3>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-300 mb-1">Técnico Finalizador *</label>
+                    <div class="flex gap-2">
+                        <select name="tech_name" id="techSelect" required class="min-w-0 flex-1 surface-inner rounded-xl px-3 py-3 font-bold text-sm text-white focus:outline-none focus:border-sky-500">
+                            <option value="">Selecione quem está finalizando...</option>
+                        </select>
+                        <button type="button" onclick="claimForFinalizationBench()" title="Mover cartão para minha bancada agora"
+                            class="bg-sky-600 hover:bg-sky-500 text-white px-3 rounded-xl text-xs font-bold shrink-0">
+                            📌 Puxar p/ Bancada
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SOLUÇÃO (O QUE FOI FEITO) -->
+                <div>
+                    <label class="block text-xs font-black uppercase text-sky-400 mb-1">
+                        🛠️ Solução (Descreva o serviço executado) *
+                    </label>
+                    <textarea name="solution" id="solutionInput" rows="3" required
+                        placeholder="Descreva o que foi feito na balança após a aprovação do cliente..."
+                        class="w-full min-w-0 surface-inner rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-sky-500"></textarea>
+                </div>
+
+                <!-- LACRE IPEM A5 -->
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-300 mb-1 truncate">Lacre Físico A5 *</label>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" name="inmetro_seal" id="inmetroSealInput" required placeholder="Nº Lacre Físico A5"
+                        class="w-full min-w-0 surface-inner rounded-xl px-3 py-2.5 font-bold text-sky-300 focus:outline-none focus:border-sky-500">
+                    <input type="hidden" name="shelf_location" id="shelfInput" value="">
+                </div>
+
+                <!-- TESTES DE PESOS FINAL (Corrigido L-01: min-w-0 flex-1) -->
+                <div class="pt-2 border-t border-slate-800 space-y-2">
+                    <label class="block text-xs font-black uppercase text-sky-400">
+                        ⚖️ Testes de Pesos Final (Saída)
+                    </label>
+                    <div id="weightsFinalGrid" class="grid grid-cols-2 gap-2"></div>
+                </div>
+
+
+
+                <!-- CHECKLIST POP OBRIGATÓRIO -->
+                <div class="space-y-2.5 surface-inner p-3.5 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="pop_calibration" id="popCalibrationChk" required class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span class="text-sm font-semibold">Peso padrão e calibração aferidos (POP) *</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="pop_cleaning" id="popCleaningChk" required class="w-5 h-5 accent-sky-500 rounded shrink-0">
+                        <span class="text-sm font-semibold">Higienização, montagem e pés niveladores OK *</span>
+                    </label>
+                </div>
+
+                <!-- FOTO DA ETIQUETA DEPOIS -->
+                <div class="p-4 rounded-xl surface-inner space-y-3 overflow-hidden">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="block text-xs font-black uppercase text-sky-400">
+                            🏷️ Foto da "Etiqueta Depois" (Finalização)
+                        </label>
+                        <span id="afterLabelPhotoCounter" class="text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2.5 py-0.5 rounded-full shrink-0">0 foto(s)</span>
+                    </div>
+                    <input type="file" id="afterLabelCameraInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event, 'after_label')">
+                    <input type="file" id="afterLabelGalleryInput" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(event, 'after_label')">
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="document.getElementById('afterLabelCameraInput').click()"
+                            class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-2.5 px-3 rounded-xl text-xs">
+                            📸 Foto Etiqueta Depois
+                        </button>
+                        <button type="button" onclick="document.getElementById('afterLabelGalleryInput').click()"
+                            class="bg-[#0B0F17] hover:border-sky-500/50 text-white border border-slate-700 font-bold py-2.5 px-3 rounded-xl text-xs">
+                            🖼️ Galeria
+                        </button>
+                    </div>
+                    <div id="afterLabelPhotoPreviewGrid" class="grid grid-cols-3 gap-2 pt-1"></div>
+                </div>
+
+                <!-- FOTOS DA BALANÇA PRONTA E LACRADA -->
+                <div class="p-4 rounded-xl surface-inner space-y-3 overflow-hidden">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="block text-xs font-black uppercase text-sky-400">
+                            📸 Fotos da Balança Pronta e Lacrada *
+                        </label>
+                        <span id="photoCounter" class="text-[11px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2.5 py-0.5 rounded-full shrink-0">0 foto(s)</span>
+                    </div>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoSelect(event, 'exit')">
+                    <input type="file" id="galleryInput" accept="image/*" multiple class="hidden" onchange="handlePhotoSelect(event, 'exit')">
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" onclick="document.getElementById('cameraInput').click()"
+                            class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md">
+                            📸 Tirar Foto Agora
+                        </button>
+                        <button type="button" onclick="document.getElementById('galleryInput').click()"
+                            class="bg-[#0B0F17] hover:border-sky-500/50 active:scale-95 text-white border border-slate-700 font-bold py-3 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                            🖼️ Abrir Galeria
+                        </button>
+                    </div>
+                    <div id="photoPreviewGrid" class="grid grid-cols-3 gap-2 pt-1"></div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-4 rounded-2xl text-base shadow-lg shadow-sky-600/25 transition">
+                    🏆 FINALIZAR O.S. E DISPARAR NA TV
+                </button>
+            </div>
+        </form>
+
+        <!-- =================================================================== -->
+        <!-- ETAPA 5: O.S. JÁ FINALIZADA                                          -->
+        <!-- =================================================================== -->
+        <section id="stageFinished" class="hidden surface-card border-2 border-sky-500/40 rounded-2xl p-5 space-y-4 overflow-hidden">
+            <div class="text-center space-y-1">
+                <div class="inline-block bg-sky-500/15 text-sky-300 border border-sky-500/30 text-xs font-black px-3 py-1 rounded-full uppercase">
+                    🏆 Manutenção Concluída
+                </div>
+                <h3 class="text-lg font-black uppercase text-white">O.S. Finalizada com Sucesso!</h3>
+            </div>
+            <div id="finishedSummaryBox" class="surface-inner rounded-xl p-4 text-xs space-y-2 break-words"></div>
+        </section>
+
+    </main>
+
+    <script>
+        const socket = io();
+        let currentOs = "";
+        let currentCard = null;
+        let forceClaimSwitchMode = false;
+
+        // [S-01] Escape seguro contra quebra de HTML / XSS
+        function esc(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        // Fotos em memória por categoria
+        let beforePhotos = [];     // Etiqueta Antes (no orçamento)
+        let quotePhotos = [];      // [F-07] Fotos do Laudo / Evidências do Orçamento (sujeira, placa queimada, etc.)
+        let afterLabelPhotos = []; // Etiqueta Depois (na finalização)
+        let capturedPhotos = [];   // Balança pronta e lacrada (na finalização)
+
+        function refreshLucide() {
+            if (window.lucide) {
+                try { lucide.createIcons(); } catch (e) {}
+            }
+        }
+
+        // [L-16] Alternância de Tema Clean e Dark
+        function applyMobileTheme(theme) {
+            const isClean = theme === "clean";
+            document.documentElement.classList.toggle("dark", !isClean);
+            document.documentElement.classList.toggle("clean-mode", isClean);
+            document.body.classList.toggle("theme-clean", isClean);
+            const btn = document.getElementById("mobileThemeBtn");
+            if (btn) {
+                btn.innerHTML = isClean ? `<i data-lucide="moon" class="w-3.5 h-3.5"></i><span>Dark</span>` : `<i data-lucide="sun" class="w-3.5 h-3.5"></i><span>Clean</span>`;
+            }
+            localStorage.setItem("a5_mobile_theme", theme);
+            refreshLucide();
+        }
+        applyMobileTheme(localStorage.getItem("a5_mobile_theme") || "dark");
+        function toggleMobileTheme() {
+            const cur = localStorage.getItem("a5_mobile_theme") || "dark";
+            applyMobileTheme(cur === "clean" ? "dark" : "clean");
+        }
+
+        // [B-01] Cache em memória das peças buscadas para evitar quebra por aspas/polegadas
+        let lastPartSearchResults = [];
+
+        const ACCESSORIES_SPEC = [
+            { key: "cabo_alimentacao", label: "Cabo de Alimentação" },
+            { key: "fonte_externa", label: "Fonte Externa" },
+            { key: "tampa_impressor", label: "Tampa do Impressor" },
+            { key: "rebobinador", label: "Rebobinador" },
+            { key: "prato", label: "Prato" }
+        ];
+        const CONTAMINATION_OPTIONS = ["Poeira", "Sujeira", "Umidade", "Baratas", "Gordura"];
+        const WEIGHTS_INITIAL_KEYS = ["1kg", "40kg", "5kg", "80kg", "10kg", "100kg", "15kg", "200kg", "20kg", "400kg"];
+        const WEIGHTS_FINAL_KEYS = ["1kg", "50kg", "5kg", "80kg", "10kg", "100kg", "15kg", "200kg", "20kg", "400kg"];
+        const WEIGHTS_GRAMS_KEYS = ["1g", "10g", "100g", "500g", "5g", "50g", "20g", "200g", "1000g", "2000g"];
+        const FUNCTIONAL_TESTS_SPEC = [
+            { key: "comunicacao", label: "Comunicação" },
+            { key: "teclado", label: "Teclado" },
+            { key: "impressao", label: "Impressão" },
+            { key: "display_traseiro", label: "Display Traseiro" }
+        ];
+
+        let quoteState = null;
+        let currentWeightUnit = "kg";
+        let partSearchTimer = null;
+
+        function formatStampMask(inp) {
+            if (!inp) return;
+            const digits = (inp.value || "").replace(/\D/g, "").slice(0, 9);
+            let out = "";
+            if (digits.length > 0) out += digits.slice(0, 2);
+            if (digits.length > 2) out += "." + digits.slice(2, 5);
+            if (digits.length > 5) out += "." + digits.slice(5, 8);
+            if (digits.length > 8) out += "-" + digits.slice(8, 9);
+            inp.value = out;
+        }
+
+        function parseWeightNominal(key) {
+            const m = String(key || "").trim().match(/^(\d+(?:\.\d+)?)\s*(kg|g)$/i);
+            if (!m) return null;
+            return { nominal: parseFloat(m[1]), unit: m[2].toLowerCase(), key };
+        }
+
+        // Metrologia Toledo / Inmetro: Limite oficial de até 2 incrementos (±2e) em oficina
+        function getScaleDivisionAndTolerance(nominal, unit, modelStr) {
+            const u = String(unit || "kg").toLowerCase();
+            const model = String(modelStr || "").toLowerCase();
+
+            if (u === "g") {
+                let div = 0.01; // Padrão Marte 510g (divisão 0,01g)
+                if (model.includes("210") || model.includes("0.0001") || model.includes("4 casas") || model.includes("analitica")) {
+                    div = 0.0001;
+                } else if (model.includes("0.001") || model.includes("semianalit") || model.includes("1mg")) {
+                    div = 0.001;
+                }
+                const maxTol = 2 * div;
+                return {
+                    division: div,
+                    maxTolerance: maxTol,
+                    unit: "g",
+                    divText: `e=${div}g`,
+                    tolText: `±${(maxTol).toFixed(4).replace(/\.?0+$/, "")}g`
+                };
+            }
+
+            // Unidade em kg
+            const load = parseFloat(nominal);
+            let div = 0.002;
+            if (model.includes("2180") || model.includes("plataforma") || model.includes("industrial")) {
+                if (load <= 50) div = 0.010;
+                else if (load <= 100) div = 0.020;
+                else if (load <= 300) div = 0.100;
+                else if (load <= 500) div = 0.100;
+                else if (load <= 1500) div = 0.500;
+                else div = 1.000;
+            } else {
+                // Linha Toledo Prix comercial (Prix 3, 4, 5, 6, 7, 2090, 9094)
+                if (load <= 6.0001) {
+                    div = 0.002; // Faixa 0 a 6kg: 2g
+                } else if (load <= 15.0001) {
+                    div = 0.005; // Faixa 6 a 15kg: 5g
+                } else if (load <= 32.0001) {
+                    div = 0.010; // Faixa 15 a 32kg: 10g
+                } else if (load <= 100.0001) {
+                    div = 0.020; // 20g
+                } else {
+                    div = 0.050; // 50g
+                }
+            }
+
+            const maxTol = 2 * div;
+            const divG = Math.round(div * 1000);
+            const tolG = Math.round(maxTol * 1000);
+
+            return {
+                division: div,
+                maxTolerance: maxTol,
+                unit: "kg",
+                divText: `e=${divG}g`,
+                tolText: `±${tolG}g`
+            };
+        }
+
+        function analyzeWeightEntry(key, rawVal, modelOverride = "", unitOverride = "") {
+            const strVal = String(rawVal || "").trim();
+            if (!strVal) return null;
+            const info = parseWeightNominal(key);
+            if (!info) return null;
+            const cleanNum = strVal.replace(",", ".").replace(/[^0-9.-]/g, "");
+            const measured = parseFloat(cleanNum);
+            if (isNaN(measured)) return null;
+
+            const activeModel = modelOverride || currentCard?.equipment_model || "";
+            const activeUnit = unitOverride || info.unit || currentWeightUnit || "kg";
+            const tolInfo = getScaleDivisionAndTolerance(info.nominal, activeUnit, activeModel);
+
+            const diff = measured - info.nominal;
+            const absDiff = Math.abs(diff);
+
+            // Regra oficial: até 2 incrementos (<= 2e) está DENTRO DA TOLERÂNCIA!
+            // 3 ou mais incrementos (> 2e) está FORA DA TOLERÂNCIA (DIFERENÇA DE PESO).
+            const isOutsideTolerance = (absDiff - tolInfo.maxTolerance) > 1e-6;
+
+            const hasUnitSuffix = /(kg|g)\s*$/i.test(strVal);
+            const displayVal = hasUnitSuffix ? strVal : `${strVal}${info.unit}`;
+
+            let diffText = "";
+            if (info.unit === "kg") {
+                const diffG = diff * 1000;
+                const sign = diff > 0 ? "+" : "";
+                diffText = `${sign}${diffG.toFixed(1).replace(".0", "")}g`;
+            } else {
+                const sign = diff > 0 ? "+" : "";
+                diffText = `${sign}${diff.toFixed(3).replace(/\.?0+$/, "")}g`;
+            }
+
+            let message = "";
+            if (isOutsideTolerance) {
+                message = `${key} - ${displayVal} DIFERENÇA DE PESO (Erro ${diffText} > tolerância ${tolInfo.tolText} • ${tolInfo.divText})`;
+            } else if (absDiff > 1e-6) {
+                message = `${key} - ${displayVal} OK (Dentro da tolerância: ${diffText} ≤ ${tolInfo.tolText} • ${tolInfo.divText})`;
+            } else {
+                message = `${key} - ${displayVal} OK (Exato • ${tolInfo.divText})`;
+            }
+
+            return {
+                key,
+                nominal: info.nominal,
+                measured,
+                unit: info.unit,
+                isDiff: isOutsideTolerance,
+                absDiff,
+                diffText,
+                tolText: tolInfo.tolText,
+                divText: tolInfo.divText,
+                displayVal,
+                message
+            };
+        }
+
+        function renderWeightGrids(unit) {
+            currentWeightUnit = unit === "g" ? "g" : "kg";
+            const initKeys = currentWeightUnit === "g" ? WEIGHTS_GRAMS_KEYS : WEIGHTS_INITIAL_KEYS;
+            const finalKeys = currentWeightUnit === "g" ? WEIGHTS_GRAMS_KEYS : WEIGHTS_FINAL_KEYS;
+            const placeholder = currentWeightUnit === "g" ? "0,00g" : "0,000";
+
+            const btnKg = document.getElementById("unitBtnKg");
+            const btnG = document.getElementById("unitBtnG");
+            if (btnKg && btnG) {
+                if (currentWeightUnit === "g") {
+                    btnG.className = "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-sky-500 text-slate-950 transition";
+                    btnKg.className = "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase text-slate-400 transition";
+                } else {
+                    btnKg.className = "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-sky-500 text-slate-950 transition";
+                    btnG.className = "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase text-slate-400 transition";
+                }
+            }
+
+            const wiEl = document.getElementById("weightsInitialGrid");
+            if (wiEl) {
+                wiEl.innerHTML = initKeys.map(wk => `
+                    <div data-wi-box="${wk}" class="flex flex-col surface-inner rounded-xl px-2.5 py-2 overflow-hidden border border-transparent transition">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-black text-sky-400 w-12 shrink-0">${wk}:</span>
+                            <input type="text" inputmode="decimal" data-wi-key="${wk}" placeholder="${placeholder}"
+                                oninput="onWeightInitialInput()"
+                                class="min-w-0 flex-1 bg-transparent text-xs font-bold text-white focus:outline-none">
+                        </div>
+                        <span data-wi-status="${wk}" class="hidden text-[9px] font-black uppercase mt-1 leading-tight"></span>
+                    </div>
+                `).join("");
+            }
+
+            const wfEl = document.getElementById("weightsFinalGrid");
+            if (wfEl) {
+                wfEl.innerHTML = finalKeys.map(wk => `
+                    <div class="flex items-center gap-1.5 surface-inner rounded-xl px-2.5 py-2 overflow-hidden">
+                        <span class="text-xs font-black text-sky-400 w-12 shrink-0">${wk}:</span>
+                        <input type="text" inputmode="decimal" data-wf-key="${wk}" placeholder="${placeholder}"
+                            class="min-w-0 flex-1 bg-transparent text-xs font-bold text-white focus:outline-none">
+                    </div>
+                `).join("");
+            }
+        }
+
+        function setWeightUnit(unit) {
+            if (quoteState) {
+                quoteState.weights_initial = quoteState.weights_initial || {};
+                document.querySelectorAll("[data-wi-key]").forEach(inp => {
+                    const k = inp.getAttribute("data-wi-key");
+                    if (k) quoteState.weights_initial[k] = inp.value.trim();
+                });
+                quoteState.weight_unit = unit;
+            }
+            renderWeightGrids(unit);
+            if (quoteState && quoteState.weights_initial) {
+                document.querySelectorAll("[data-wi-key]").forEach(inp => {
+                    const k = inp.getAttribute("data-wi-key");
+                    if (k) inp.value = quoteState.weights_initial[k] || "";
+                });
+            }
+            evaluateWeightsInitialDiff();
+        }
+
+        function onWeightInitialInput() {
+            if (quoteState) {
+                quoteState.weights_initial = quoteState.weights_initial || {};
+                document.querySelectorAll("[data-wi-key]").forEach(inp => {
+                    const k = inp.getAttribute("data-wi-key");
+                    if (k) quoteState.weights_initial[k] = inp.value.trim();
+                });
+            }
+            evaluateWeightsInitialDiff();
+        }
+
+        function evaluateWeightsInitialDiff() {
+            const diffs = [];
+            document.querySelectorAll("[data-wi-key]").forEach(inp => {
+                const wk = inp.getAttribute("data-wi-key");
+                const box = document.querySelector(`[data-wi-box="${wk}"]`);
+                const statusEl = document.querySelector(`[data-wi-status="${wk}"]`);
+                const res = analyzeWeightEntry(wk, inp.value);
+                if (!res) {
+                    if (box) box.classList.remove("border-amber-500/60", "border-emerald-500/40");
+                    if (statusEl) { statusEl.className = "hidden text-[9px] font-black uppercase mt-1 leading-tight"; statusEl.textContent = ""; }
+                    return;
+                }
+                if (res.isDiff) {
+                    diffs.push(res.message);
+                    if (box) {
+                        box.classList.add("border-amber-500/60");
+                        box.classList.remove("border-emerald-500/40");
+                    }
+                    if (statusEl) {
+                        statusEl.className = "text-[9px] font-black uppercase mt-1 leading-tight text-amber-400";
+                        statusEl.textContent = `⚠️ FORA DA TOLERÂNCIA: ${res.diffText} > ${res.tolText} (${res.divText})`;
+                    }
+                } else {
+                    if (box) {
+                        box.classList.add("border-emerald-500/40");
+                        box.classList.remove("border-amber-500/60");
+                    }
+                    if (statusEl) {
+                        statusEl.className = "text-[9px] font-black uppercase mt-1 leading-tight text-emerald-400";
+                        statusEl.textContent = res.absDiff > 1e-6
+                            ? `✓ Na tolerância: ${res.diffText} ≤ ${res.tolText} (${res.divText})`
+                            : `✓ Dentro da especificação (${res.divText})`;
+                    }
+                }
+            });
+
+            const alertBox = document.getElementById("weightsInitialDiffAlert");
+            if (alertBox) {
+                if (diffs.length > 0) {
+                    alertBox.innerHTML = `<div class="font-black text-amber-300 mb-1">⚠️ FORA DA TOLERÂNCIA (DIFERENÇA DE PESO DETECTADA • > 2 INCREMENTOS):</div>` +
+                        diffs.map(d => `<div class="pl-2">• ${esc(d)}</div>`).join("");
+                    alertBox.classList.remove("hidden");
+                } else {
+                    alertBox.innerHTML = "";
+                    alertBox.classList.add("hidden");
+                }
+            }
+        }
+
+        window.onload = () => {
+            applyMobileTheme(localStorage.getItem("a5_mobile_theme") || "dark");
+            buildStaticForms();
+            const initialOs = document.getElementById("osInput").value.trim();
+            if (initialOs) loadOsData();
+        };
+
+        // [B-08] Atualiza automaticamente quando o estágio da O.S. mudar no servidor
+        socket.on("board_updated", (board) => {
+            if (!currentOs || !currentCard) return;
+            if (currentCard.mobile_stage === "waiting_approval" || currentCard.mobile_stage === "claim") {
+                loadOsData(true);
+                return;
+            }
+            if (board && Array.isArray(board.lists)) {
+                for (const lst of board.lists) {
+                    const found = (lst.cards || []).find(c => String(c.os_number) === String(currentOs));
+                    if (found) {
+                        currentCard.timer_end_at = found.timer_end_at;
+                        checkQuoteTimerStatus(currentCard);
+                        if (found.mobile_stage !== currentCard.mobile_stage) {
+                            loadOsData(true);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+
+        function buildStaticForms() {
+            // 1. Acessórios Sim/Não
+            const accEl = document.getElementById("accessoriesList");
+            accEl.innerHTML = ACCESSORIES_SPEC.map(item => `
+                <div class="flex items-center justify-between gap-2 surface-inner px-3 py-2 rounded-xl overflow-hidden">
+                    <span class="text-xs font-bold text-slate-200 min-w-0 truncate">${item.label}</span>
+                    <div class="flex gap-1.5 shrink-0">
+                        <button type="button" onclick="setAccessory('${item.key}', 'S')" data-acc-btn="${item.key}:S"
+                            class="px-3.5 py-1 rounded-xl text-xs font-black border border-slate-700 bg-[#0B0F17]">Sim</button>
+                        <button type="button" onclick="setAccessory('${item.key}', 'N')" data-acc-btn="${item.key}:N"
+                            class="px-3.5 py-1 rounded-xl text-xs font-black border border-slate-700 bg-[#0B0F17]">Não</button>
+                    </div>
+                </div>
+            `).join("");
+
+            // 2. Presença de
+            const contEl = document.getElementById("contaminationContainer");
+            contEl.innerHTML = CONTAMINATION_OPTIONS.map(opt => `
+                <button type="button" onclick="toggleContamination('${opt}')" data-cont-btn="${opt}"
+                    class="px-3 py-1.5 rounded-xl text-xs font-bold surface-inner">
+                    ${opt}
+                </button>
+            `).join("");
+
+            // 3. e 4. Pesos Inicial e Final (kg ou g)
+            renderWeightGrids("kg");
+
+            // 5. Testes Funcionais ([L-04]: flex-wrap gap-2 + shrink-0 rounded-xl)
+            const ftEl = document.getElementById("functionalTestsList");
+            ftEl.innerHTML = FUNCTIONAL_TESTS_SPEC.map(t => `
+                <div class="surface-inner p-2.5 rounded-xl space-y-2 overflow-hidden">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-slate-200">${t.label}</span>
+                        <div class="flex gap-1.5 shrink-0">
+                            <button type="button" onclick="setFuncTest('${t.key}', 'S')" data-ft-btn="${t.key}:S"
+                                class="px-3 py-1 rounded-xl text-xs font-black border border-slate-700 bg-[#0B0F17] shrink-0">( S ) OK</button>
+                            <button type="button" onclick="setFuncTest('${t.key}', 'N')" data-ft-btn="${t.key}:N"
+                                class="px-3 py-1 rounded-xl text-xs font-black border border-slate-700 bg-[#0B0F17] shrink-0">( N ) Defeito</button>
+                        </div>
+                    </div>
+                    <input type="text" data-ft-note="${t.key}" placeholder="Observação de ${t.label.toLowerCase()} (opcional)"
+                        class="w-full min-w-0 bg-[#0B0F17] border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none focus:border-sky-500">
+                </div>
+            `).join("");
+        }
+
+        async function loadOsData(silent = false) {
+            const osNum = document.getElementById("osInput").value.trim();
+            if (!osNum) return;
+
+            const res = await fetch(`/api/cards/${encodeURIComponent(osNum)}`);
+            if (!res.ok) {
+                if (!silent) alert("O.S. não encontrada! Verifique o número digitado.");
+                return;
+            }
+            const card = await res.json();
+            currentOs = card.os_number;
+            currentCard = card;
+            forceClaimSwitchMode = false;
+            renderCardScreen(card);
+        }
+
+        function populateTechSelects(card) {
+            const techs = (card.tech_lists && card.tech_lists.length)
+                ? card.tech_lists.map(t => t.title)
+                : [
+                    "TEC. Enzo Gabriel", "TEC. Guilherme", "TEC. Wisley",
+                    "TEC. João Otoni", "TEC. Iago", "TEC. ANTONIO", "SR. JACSON"
+                ];
+            const optionsHtml = `<option value="">Selecione o técnico...</option>` +
+                techs.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+
+            document.getElementById("claimTechSelect").innerHTML = optionsHtml;
+            document.getElementById("techSelect").innerHTML = optionsHtml;
+
+            const savedTech = localStorage.getItem("a5_active_tech") || "";
+            if (card.evaluator_tech) {
+                document.getElementById("claimTechSelect").value = card.evaluator_tech;
+            } else if (savedTech && techs.includes(savedTech)) {
+                document.getElementById("claimTechSelect").value = savedTech;
+            }
+
+            if (card.finisher_tech) {
+                document.getElementById("techSelect").value = card.finisher_tech;
+            } else if (card.tech_name && techs.includes(card.tech_name)) {
+                document.getElementById("techSelect").value = card.tech_name;
+            } else if (savedTech && techs.includes(savedTech)) {
+                document.getElementById("techSelect").value = savedTech;
+            }
+        }
+
+        function renderCardScreen(card) {
+            populateTechSelects(card);
+
+            document.getElementById("infoStage").textContent = card.list_title;
+            document.getElementById("infoClient").textContent = card.client_name;
+            document.getElementById("infoEquip").textContent = `${card.equipment_type} • ${card.equipment_model || 'Modelo N/I'} • N/S: ${card.serial_number || 'N/I'}`;
+            document.getElementById("infoOsBadge").textContent = `O.S. ${card.os_number}`;
+            document.getElementById("infoDefect").textContent = card.reported_defect || "Sem observações na entrada.";
+
+            const prevBox = document.getElementById("infoPrevServiceBox");
+            if (card.previous_service) {
+                document.getElementById("infoPrevService").textContent = card.previous_service;
+                prevBox.classList.remove("hidden");
+            } else {
+                prevBox.classList.add("hidden");
+            }
+
+            const wfBadge = document.getElementById("infoWorkflowBadge");
+            const stageLabels = {
+                claim: ["1. Aguardando Técnico", "bg-sky-500 text-slate-950"],
+                quoting: ["2. Em Orçamento", "bg-sky-600 text-white"],
+                waiting_approval: ["3. Aguardando Cliente", "bg-slate-800 text-sky-300 border border-sky-500/30"],
+                finalization: ["4. Aprovado p/ Finalizar", "bg-sky-500 text-slate-950"],
+                finished: ["5. Finalizada", "bg-sky-700 text-white"]
+            };
+            const [lblText, lblCls] = stageLabels[card.mobile_stage] || stageLabels.claim;
+            wfBadge.className = `text-[10px] font-black uppercase px-2 py-0.5 rounded-lg ${lblCls}`;
+            wfBadge.textContent = lblText;
+
+            document.getElementById("osCardInfo").classList.remove("hidden");
+
+            ["stageClaim", "stageLockedNotice", "stageQuoteForm", "stageWaitingApproval", "finishForm", "stageFinished"].forEach(id => {
+                document.getElementById(id).classList.add("hidden");
+            });
+
+            if (card.mobile_stage === "claim" || forceClaimSwitchMode) {
+                document.getElementById("stageClaim").classList.remove("hidden");
+            } else if (card.mobile_stage === "quoting") {
+                const savedTech = localStorage.getItem("a5_active_tech") || "";
+                const evalTech = card.evaluator_tech || card.tech_name || "";
+                if (evalTech && savedTech && savedTech.toUpperCase() !== evalTech.toUpperCase()) {
+                    document.getElementById("lockedTechName").textContent = evalTech;
+                    document.getElementById("stageLockedNotice").classList.remove("hidden");
+                } else {
+                    openQuoteFormWithData(card);
+                }
+            } else if (card.mobile_stage === "waiting_approval") {
+                document.getElementById("waitingQuoteSummary").innerHTML = buildQuoteSummaryHTML(card);
+                const reqBox = document.getElementById("reopenRequestStatusBox");
+                const reopenBtn = document.getElementById("reopenMobileBtn");
+                if (reqBox && reopenBtn) {
+                    if (card.reopen_requested) {
+                        reqBox.classList.remove("hidden");
+                        reopenBtn.textContent = "🔔 Reenviar notificação de reabertura p/ Priscila";
+                    } else {
+                        reqBox.classList.add("hidden");
+                        reopenBtn.textContent = "✏️ Solicitar Reabertura do Orçamento (Pedir Liberação)";
+                    }
+                }
+                document.getElementById("stageWaitingApproval").classList.remove("hidden");
+            } else if (card.mobile_stage === "finalization") {
+                openFinalizationWithData(card);
+            } else if (card.mobile_stage === "finished") {
+                document.getElementById("finishedSummaryBox").innerHTML = buildQuoteSummaryHTML(card, true);
+                document.getElementById("stageFinished").classList.remove("hidden");
+            }
+            refreshLucide();
+        }
+
+        function unlockAsCurrentTech() {
+            if (!currentCard) return;
+            const evalTech = currentCard.evaluator_tech || currentCard.tech_name || "";
+            if (evalTech) localStorage.setItem("a5_active_tech", evalTech);
+            document.getElementById("stageLockedNotice").classList.add("hidden");
+            openQuoteFormWithData(currentCard);
+        }
+
+        // [F-01] Permite trocar o técnico avaliador caso tenha sido selecionado por engano
+        function showSwitchTechClaim() {
+            forceClaimSwitchMode = true;
+            ["stageLockedNotice", "stageQuoteForm"].forEach(id => document.getElementById(id).classList.add("hidden"));
+            document.getElementById("stageClaim").classList.remove("hidden");
+        }
+
+        // [F-01 / Admin Gate] Solicita reabertura do orçamento para a Priscila (só reabre após liberação no Admin)
+        async function reopenQuoteFromMobile() {
+            if (!currentCard) return;
+            const actorName = localStorage.getItem("a5_active_tech") || currentCard.evaluator_tech || currentCard.tech_name || "Técnico (QR Mobile)";
+            const res = await fetch(`/api/cards/${currentCard.id}/request-reopen`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ actor: actorName })
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || "Não foi possível solicitar a reabertura do orçamento.");
+                return;
+            }
+            currentCard = data.card;
+            alert("🔔 Solicitação enviada para a Priscila! Assim que ela liberar no painel da recepção, a folha de orçamento abrirá automaticamente na sua tela.");
+            renderCardScreen(currentCard);
+        }
+
+        // =========================================================================
+        // ETAPA 1 -> ASSUMIR O.S. PARA ORÇAMENTO
+        // =========================================================================
+        async function claimOsForQuote() {
+            const tech = document.getElementById("claimTechSelect").value.trim();
+            if (!tech) {
+                alert("Selecione seu nome para assumir o orçamento!");
+                return;
+            }
+            const btn = document.getElementById("claimBtn");
+            btn.disabled = true;
+            btn.textContent = "⏳ Movendo cartão para sua bancada...";
+
+            try {
+                const res = await fetch("/api/saida/assumir", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        os_number: currentOs,
+                        tech_name: tech,
+                        phase: "quote",
+                        force_switch: forceClaimSwitchMode ? "1" : "0"
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Não foi possível assumir a O.S.");
+                    return;
+                }
+                forceClaimSwitchMode = false;
+                localStorage.setItem("a5_active_tech", data.card.evaluator_tech || tech);
+                currentCard = data.card;
+                renderCardScreen(currentCard);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "🚀 ASSUMIR O.S. E ABRIR ORÇAMENTO";
+            }
+        }
+
+        // =========================================================================
+        // ETAPA 2 -> PREENCHIMENTO DA FOLHA DE ORÇAMENTO DIGITAL
+        // =========================================================================
+        function detectCardWeightUnit(card, qState) {
+            const qs = qState || card?.quote_data || {};
+            if (qs.weight_unit === "g" || qs.weight_unit === "kg") return qs.weight_unit;
+            const wi = qs.weights_initial || {};
+            const wf = qs.weights_final || {};
+            if (WEIGHTS_GRAMS_KEYS.some(k => String(wi[k] || "").trim() || String(wf[k] || "").trim())) return "g";
+            const eqType = String(card?.equipment_type || "").toLowerCase();
+            const eqModel = String(card?.equipment_model || "").toLowerCase();
+            if (eqType.includes("anal") || eqType.includes("precis") || eqModel.includes("marte") || eqModel.includes("shimadzu") || eqModel.includes("ohaus") || eqModel.includes("geha") || eqModel.includes("bel ")) return "g";
+            if (/\b\d+\s*g\b/i.test(eqModel)) return "g";
+            return "kg";
+        }
+
+        function openQuoteFormWithData(card) {
+            quoteState = JSON.parse(JSON.stringify(card.quote_data || {}));
+            document.getElementById("quoteActiveTech").textContent = card.evaluator_tech || card.tech_name || "Técnico";
+            document.getElementById("quoteStartedAtText").textContent = formatDateTimeBR(card.quote_started_at || card.moved_at);
+
+            ACCESSORIES_SPEC.forEach(item => {
+                const val = quoteState.accessories?.[item.key] || "";
+                updateAccessoryButtons(item.key, val);
+            });
+
+            updateSealButtons("incoming_seal", quoteState.incoming_seal?.type || "");
+            document.getElementById("incomingSealNum").value = quoteState.incoming_seal?.number || "";
+            updateSealButtons("incoming_stamp", quoteState.incoming_stamp?.type || "");
+            const stampInp = document.getElementById("incomingStampNum");
+            stampInp.value = quoteState.incoming_stamp?.number || "";
+            if (stampInp.value) formatStampMask(stampInp);
+
+            updateContaminationButtons();
+
+            const detectedUnit = detectCardWeightUnit(card, quoteState);
+            quoteState.weight_unit = detectedUnit;
+            renderWeightGrids(detectedUnit);
+
+            const activeInitKeys = detectedUnit === "g" ? WEIGHTS_GRAMS_KEYS : WEIGHTS_INITIAL_KEYS;
+            activeInitKeys.forEach(wk => {
+                const inp = document.querySelector(`[data-wi-key="${wk}"]`);
+                if (inp) inp.value = quoteState.weights_initial?.[wk] || "";
+            });
+            evaluateWeightsInitialDiff();
+
+            document.getElementById("technicalReportInput").value = quoteState.technical_report || "";
+
+            renderQuotePartsList();
+
+            const sc = quoteState.service_checks || {};
+            document.getElementById("chk_revisao_geral").checked = !!sc.revisao_geral;
+            document.getElementById("chk_limpeza_externa").checked = !!sc.limpeza_externa;
+            document.getElementById("chk_calibracao_afericao").checked = !!sc.calibracao_afericao;
+            document.getElementById("chk_cal_gap_sens").checked = !!sc.cal_gap_sens;
+            document.getElementById("chk_calibracao_bater_peso").checked = !!sc.calibracao_bater_peso;
+
+            FUNCTIONAL_TESTS_SPEC.forEach(t => {
+                const ft = quoteState.functional_tests?.[t.key] || { status: "", note: "" };
+                updateFuncTestButtons(t.key, ft.status || "");
+                const noteInp = document.querySelector(`[data-ft-note="${t.key}"]`);
+                if (noteInp) noteInp.value = ft.note || "";
+            });
+
+            renderPhotoPreviews("before");
+            renderPhotoPreviews("quote_laudo");
+            const savedQBox = document.getElementById("savedQuotePhotosBox");
+            const savedQGrid = document.getElementById("savedQuotePhotosGrid");
+            if (savedQBox && savedQGrid) {
+                const existingQPhotos = card.quote_photos || [];
+                if (existingQPhotos.length > 0) {
+                    savedQGrid.innerHTML = existingQPhotos.map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}')" class="w-full h-16 object-cover rounded-lg border border-sky-500/40">`).join("");
+                    savedQBox.classList.remove("hidden");
+                } else {
+                    savedQBox.classList.add("hidden");
+                }
+            }
+            checkQuoteTimerStatus(card);
+            document.getElementById("stageQuoteForm").classList.remove("hidden");
+        }
+
+        function setAccessory(key, val) {
+            quoteState.accessories[key] = val;
+            updateAccessoryButtons(key, val);
+        }
+
+        function updateAccessoryButtons(key, val) {
+            ["S", "N"].forEach(opt => {
+                const btn = document.querySelector(`[data-acc-btn="${key}:${opt}"]`);
+                if (!btn) return;
+                if (val === opt) {
+                    btn.className = opt === "S"
+                        ? "px-3.5 py-1 rounded-xl text-xs font-black border border-sky-400 bg-sky-500 text-slate-950"
+                        : "px-3.5 py-1 rounded-xl text-xs font-black border border-slate-500 bg-slate-700 text-white";
+                } else {
+                    btn.className = "px-3.5 py-1 rounded-xl text-xs font-black border border-slate-800 bg-[#0B0F17] text-slate-400";
+                }
+            });
+        }
+
+        function setSealType(field, type) {
+            quoteState[field].type = type;
+            updateSealButtons(field, type);
+        }
+
+        function updateSealButtons(field, type) {
+            ["IPEM", "A5", "SEM LACRE", "SEM SELO"].forEach(opt => {
+                const btn = document.querySelector(`[data-seal-btn="${field}:${opt}"]`);
+                if (!btn) return;
+                if (type === opt) {
+                    btn.className = "seal-btn py-2 rounded-xl text-xs font-black border border-sky-400 bg-sky-500 text-slate-950";
+                } else {
+                    btn.className = "seal-btn py-2 rounded-xl text-xs font-bold surface-inner text-slate-300";
+                }
+            });
+        }
+
+        function toggleContamination(item) {
+            const list = quoteState.contamination || [];
+            const idx = list.indexOf(item);
+            if (idx >= 0) list.splice(idx, 1);
+            else list.push(item);
+            quoteState.contamination = list;
+            updateContaminationButtons();
+        }
+
+        function updateContaminationButtons() {
+            const list = quoteState.contamination || [];
+            CONTAMINATION_OPTIONS.forEach(opt => {
+                const btn = document.querySelector(`[data-cont-btn="${opt}"]`);
+                if (!btn) return;
+                if (list.includes(opt)) {
+                    btn.className = "px-3 py-1.5 rounded-xl text-xs font-black border border-sky-400 bg-sky-500 text-slate-950";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold surface-inner text-slate-300";
+                }
+            });
+        }
+
+        function setFuncTest(key, status) {
+            if (!quoteState.functional_tests[key]) quoteState.functional_tests[key] = { status: "", note: "" };
+            quoteState.functional_tests[key].status = status;
+            updateFuncTestButtons(key, status);
+        }
+
+        function updateFuncTestButtons(key, status) {
+            ["S", "N"].forEach(opt => {
+                const btn = document.querySelector(`[data-ft-btn="${key}:${opt}"]`);
+                if (!btn) return;
+                if (status === opt) {
+                    btn.className = opt === "S"
+                        ? "px-3 py-1 rounded-xl text-xs font-black border border-sky-400 bg-sky-500 text-slate-950 shrink-0"
+                        : "px-3 py-1 rounded-xl text-xs font-black border border-slate-500 bg-slate-700 text-white shrink-0";
+                } else {
+                    btn.className = "px-3 py-1 rounded-xl text-xs font-black border border-slate-800 bg-[#0B0F17] text-slate-400 shrink-0";
+                }
+            });
+        }
+
+        // =========================================================================
+        // BUSCADOR DE PEÇAS TOLEDO (2.662 CÓDIGOS DO PDF) - [B-01] e [L-03]
+        // =========================================================================
+        function onPartSearchInput() {
+            clearTimeout(partSearchTimer);
+            const q = document.getElementById("partSearchInput").value.trim();
+            const resultsBox = document.getElementById("partSearchResults");
+            if (q.length < 2) {
+                resultsBox.classList.add("hidden");
+                return;
+            }
+            partSearchTimer = setTimeout(async () => {
+                const res = await fetch(`/api/parts/search?q=${encodeURIComponent(q)}&limit=25`);
+                const data = await res.json();
+                lastPartSearchResults = data.parts || [];
+                if (!lastPartSearchResults.length) {
+                    resultsBox.innerHTML = `<div class="p-3 text-xs text-slate-400">Nenhuma peça encontrada para "${esc(q)}". Você pode digitar o código/nome abaixo manualmente.</div>`;
+                } else {
+                    resultsBox.innerHTML = lastPartSearchResults.map((p, idx) => `
+                        <button type="button" onclick="selectToledoPartByIndex(${idx})"
+                            class="w-full text-left px-3 py-2.5 hover:bg-sky-900/40 active:bg-sky-800/60 flex items-center justify-between gap-2 overflow-hidden">
+                            <span class="min-w-0 flex-1 text-xs text-white font-semibold break-words">${esc(p.description)}</span>
+                            <span class="bg-sky-500/20 text-sky-300 border border-sky-500/30 font-black text-[11px] px-2 py-0.5 rounded-lg shrink-0">${esc(p.code)}</span>
+                        </button>
+                    `).join("");
+                }
+                resultsBox.classList.remove("hidden");
+            }, 140);
+        }
+
+        function selectToledoPartByIndex(idx) {
+            const part = lastPartSearchResults[idx];
+            if (!part) return;
+            selectToledoPart(part.code, part.description);
+        }
+
+        function selectToledoPart(code, description) {
+            document.getElementById("partCodeInput").value = code;
+            document.getElementById("partDescInput").value = description;
+            document.getElementById("partSearchResults").classList.add("hidden");
+            document.getElementById("partSearchInput").value = "";
+        }
+
+        function addPartToQuote() {
+            const qty = parseInt(document.getElementById("partQtyInput").value, 10) || 1;
+            const code = document.getElementById("partCodeInput").value.trim();
+            const desc = document.getElementById("partDescInput").value.trim();
+            if (!code && !desc) {
+                alert("Pesquise uma peça Toledo acima ou informe o código/descrição!");
+                return;
+            }
+            quoteState.parts_items = quoteState.parts_items || [];
+            quoteState.parts_items.push({ qty, code, description: desc });
+
+            document.getElementById("partQtyInput").value = "1";
+            document.getElementById("partCodeInput").value = "";
+            document.getElementById("partDescInput").value = "";
+            renderQuotePartsList();
+        }
+
+        function removePartFromQuote(idx) {
+            quoteState.parts_items.splice(idx, 1);
+            renderQuotePartsList();
+        }
+
+        function renderQuotePartsList() {
+            const items = quoteState.parts_items || [];
+            document.getElementById("partsCountBadge").textContent = `${items.length} peça(s)`;
+            const container = document.getElementById("quotePartsList");
+            if (!items.length) {
+                container.innerHTML = `<div class="text-center py-3 text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">Nenhuma peça adicionada ainda.</div>`;
+                return;
+            }
+            container.innerHTML = items.map((p, idx) => `
+                <div class="flex items-center justify-between gap-2 surface-inner px-3 py-2 rounded-xl text-xs overflow-hidden">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <span class="bg-sky-500/20 text-sky-300 font-black px-2 py-0.5 rounded-lg shrink-0">${esc(p.qty)}x</span>
+                        ${p.code ? `<span class="bg-slate-800 text-sky-300 border border-sky-500/30 font-black px-2 py-0.5 rounded-lg shrink-0">${esc(p.code)}</span>` : ''}
+                        <span class="font-semibold text-slate-200 min-w-0 flex-1 break-words">${esc(p.description || '')}</span>
+                    </div>
+                    <button type="button" onclick="removePartFromQuote(${idx})" class="text-slate-400 hover:text-white font-black px-2 py-1 rounded-lg shrink-0">✕</button>
+                </div>
+            `).join("");
+        }
+
+        function collectQuoteFormData() {
+            quoteState.incoming_seal.number = document.getElementById("incomingSealNum").value.trim();
+            quoteState.incoming_stamp.number = document.getElementById("incomingStampNum").value.trim();
+            quoteState.weight_unit = currentWeightUnit || "kg";
+            quoteState.weights_initial = quoteState.weights_initial || {};
+
+            document.querySelectorAll("[data-wi-key]").forEach(inp => {
+                const wk = inp.getAttribute("data-wi-key");
+                if (wk) quoteState.weights_initial[wk] = inp.value.trim();
+            });
+
+            quoteState.technical_report = document.getElementById("technicalReportInput").value.trim();
+
+            quoteState.service_checks = {
+                revisao_geral: document.getElementById("chk_revisao_geral").checked,
+                limpeza_externa: document.getElementById("chk_limpeza_externa").checked,
+                calibracao_afericao: document.getElementById("chk_calibracao_afericao").checked,
+                cal_gap_sens: document.getElementById("chk_cal_gap_sens").checked,
+                calibracao_bater_peso: document.getElementById("chk_calibracao_bater_peso").checked,
+            };
+
+            FUNCTIONAL_TESTS_SPEC.forEach(t => {
+                const noteInp = document.querySelector(`[data-ft-note="${t.key}"]`);
+                if (!quoteState.functional_tests[t.key]) quoteState.functional_tests[t.key] = { status: "", note: "" };
+                quoteState.functional_tests[t.key].note = noteInp ? noteInp.value.trim() : "";
+            });
+
+            return quoteState;
+        }
+
+        async function submitQuoteForm(e, finalize) {
+            if (e) e.preventDefault();
+            const payload = collectQuoteFormData();
+
+            if (finalize && !payload.technical_report) {
+                alert("⚠️ Preencha o Laudo Técnico (defeitos apresentados) antes de concluir o orçamento!");
+                return;
+            }
+
+            const btn = document.getElementById("submitQuoteBtn");
+            btn.disabled = true;
+            btn.textContent = finalize ? "⏳ Enviando orçamento p/ Recepção..." : "⏳ Salvando rascunho...";
+
+            const formData = new FormData();
+            formData.set("os_number", currentOs);
+            formData.set("tech_name", currentCard?.evaluator_tech || currentCard?.tech_name || localStorage.getItem("a5_active_tech") || "");
+            formData.set("quote_data_json", JSON.stringify(payload));
+            formData.set("finalize", finalize ? "1" : "0");
+
+            beforePhotos.forEach(item => {
+                formData.append("label_before_photos", item.file, item.file.name);
+            });
+            quotePhotos.forEach(item => {
+                formData.append("quote_photos", item.file, item.file.name);
+            });
+
+            try {
+                const res = await fetch("/api/saida/orcamento", { method: "POST", body: formData });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Erro ao salvar orçamento.");
+                    return;
+                }
+                beforePhotos = [];
+                quotePhotos = [];
+                currentCard = data.card;
+                if (finalize) {
+                    alert("✅ Orçamento enviado para a Priscila! A tela de finalização abrirá assim que o cliente aprovar.");
+                } else {
+                    alert("💾 Rascunho do orçamento salvo!");
+                }
+                renderCardScreen(currentCard);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "✅ CONCLUIR ORÇAMENTO E ENVIAR P/ PRISCILA";
+            }
+        }
+
+        // =========================================================================
+        // ETAPA 4 -> FINALIZAÇÃO DO SERVIÇO (APÓS APROVAÇÃO)
+        // =========================================================================
+        function openFinalizationWithData(card) {
+            const qd = card.quote_data || {};
+            document.getElementById("approvedEvalTech").textContent = card.evaluator_tech ? `Orçado por: ${card.evaluator_tech}` : "";
+            document.getElementById("approvedQuoteSummary").innerHTML = buildQuoteSummaryHTML(card);
+
+            document.getElementById("solutionInput").value = qd.solution || "";
+            document.getElementById("inmetroSealInput").value = card.inmetro_seal || "";
+            document.getElementById("shelfInput").value = card.shelf_location || "";
+
+            const detectedUnit = detectCardWeightUnit(card, qd);
+            renderWeightGrids(detectedUnit);
+
+            const activeFinalKeys = detectedUnit === "g" ? WEIGHTS_GRAMS_KEYS : WEIGHTS_FINAL_KEYS;
+            activeFinalKeys.forEach(wk => {
+                const inp = document.querySelector(`[data-wf-key="${wk}"]`);
+                if (inp) inp.value = qd.weights_final?.[wk] || "";
+            });
+
+            document.getElementById("popCalibrationChk").checked = !!card.pop_calibration;
+            document.getElementById("popCleaningChk").checked = !!card.pop_cleaning;
+
+            renderPhotoPreviews("after_label");
+            renderPhotoPreviews("exit");
+            document.getElementById("finishForm").classList.remove("hidden");
+        }
+
+        async function claimForFinalizationBench() {
+            const tech = document.getElementById("techSelect").value.trim();
+            if (!tech) {
+                alert("Selecione seu nome no campo Técnico Finalizador primeiro!");
+                return;
+            }
+            const res = await fetch("/api/saida/assumir", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ os_number: currentOs, tech_name: tech, phase: "finalization" })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                localStorage.setItem("a5_active_tech", tech);
+                currentCard = data.card;
+                document.getElementById("infoStage").textContent = tech;
+                alert(`📌 O.S. ${currentOs} movida para a bancada ${tech}!`);
+            }
+        }
+
+        function buildQuoteSummaryHTML(card, includeFinal = false) {
+            const qd = card.quote_data || {};
+            const parts = (qd.parts_items || []).map(p => `${esc(p.qty)}x [${esc(p.code || 'S/C')}] ${esc(p.description)}`).join("<br>") || esc(card.parts_used || "Nenhuma peça informada");
+            const quoteImgs = (card.quote_photos || []).map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}')" class="w-16 h-16 object-cover rounded-xl border border-sky-500/40" title="Foto do Laudo">`).join("");
+            const beforeImgs = (card.label_before_photos || []).map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}')" class="w-16 h-16 object-cover rounded-xl border border-sky-500/40" title="Etiqueta Antes">`).join("");
+            const afterImgs = (card.label_after_photos || []).map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}')" class="w-16 h-16 object-cover rounded-xl border border-sky-500/40" title="Etiqueta Depois">`).join("");
+
+            const wiObj = qd.weights_initial || {};
+            const weightDiffLines = [];
+            Object.entries(wiObj).forEach(([wk, val]) => {
+                const res = analyzeWeightEntry(wk, val, card.equipment_model, qd.weight_unit);
+                if (res && res.isDiff) {
+                    weightDiffLines.push(`<span class="inline-block bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg px-2 py-0.5 text-[10px] font-black">${esc(res.message)}</span>`);
+                }
+            });
+
+            return `
+                <div class="space-y-3">
+                    <!-- DESTAQUE PRINCIPAL: LAUDO TÉCNICO BEM VISÍVEL -->
+                    <div class="p-4 bg-sky-950/70 border-2 border-sky-500/60 rounded-2xl space-y-2 shadow-lg">
+                        <div class="flex items-center justify-between gap-2 border-b border-sky-500/30 pb-2">
+                            <span class="text-xs font-black uppercase text-sky-300 tracking-wider flex items-center gap-1.5">
+                                📋 <span>Laudo Técnico (Orçamento):</span>
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-200 bg-sky-500/20 border border-sky-500/30 px-2 py-0.5 rounded-lg">
+                                Téc: <strong>${esc(card.evaluator_tech || card.tech_name || '-')}</strong>
+                            </span>
+                        </div>
+                        <div class="text-sm md:text-base font-black text-white leading-relaxed break-words">
+                            ${esc(qd.technical_report || card.root_cause || 'Aguardando avaliação técnica')}
+                        </div>
+                    </div>
+
+                    ${weightDiffLines.length ? `
+                        <div class="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs space-y-1">
+                            <strong class="block text-[11px] font-black uppercase">⚠️ Balança Fora da Tolerância (Diferença de Peso):</strong>
+                            <div class="flex flex-wrap gap-1">${weightDiffLines.join("")}</div>
+                        </div>
+                    ` : ''}
+
+                    <!-- PEÇAS ORÇADAS -->
+                    <div class="p-3.5 rounded-xl surface-inner border border-slate-800 space-y-1.5">
+                        <span class="text-[11px] font-black uppercase text-slate-400 block">⚙️ Peças Orçadas:</span>
+                        <div class="text-xs text-slate-200 font-semibold leading-relaxed">${parts}</div>
+                    </div>
+
+                    ${includeFinal ? `
+                        <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 space-y-1.5">
+                            <div class="flex items-center justify-between text-[11px] text-emerald-300 font-black uppercase border-b border-emerald-500/20 pb-1">
+                                <span>🛠️ Solução Executada:</span>
+                                <span>Téc: <strong>${esc(card.finisher_tech || card.tech_name || '-')}</strong></span>
+                            </div>
+                            <div class="text-xs text-white font-bold leading-relaxed">${esc(qd.solution || card.tech_notes || '-')}</div>
+                            <div class="text-xs text-emerald-400 font-mono font-black pt-1">🛡️ Lacre IPEM A5: ${esc(card.inmetro_seal || '-')}</div>
+                        </div>
+                    ` : ''}
+
+                    ${(quoteImgs || beforeImgs || afterImgs) ? `
+                        <div class="pt-1 flex gap-2 flex-wrap">
+                            ${quoteImgs}${beforeImgs}${afterImgs}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function getPhotoBucketArray(bucket) {
+            if (bucket === "before") return beforePhotos;
+            if (bucket === "quote_laudo") return quotePhotos;
+            if (bucket === "after_label") return afterLabelPhotos;
+            return capturedPhotos;
+        }
+
+        // =========================================================================
+        // COMPRESSOR E PROCESSADOR DE FOTOS NO CELULAR (LAUDO, ANTES, DEPOIS E SAÍDA)
+        // =========================================================================
+        async function handlePhotoSelect(event, bucket) {
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+
+            const targetArr = getPhotoBucketArray(bucket);
+
+            for (const file of files) {
+                try {
+                    const compressedBlob = await compressImage(file, 1280, 0.82);
+                    const finalFile = new File(
+                        [compressedBlob],
+                        `${bucket}_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`,
+                        { type: "image/jpeg" }
+                    );
+                    targetArr.push({
+                        file: finalFile,
+                        previewUrl: URL.createObjectURL(compressedBlob)
+                    });
+                } catch (err) {
+                    targetArr.push({
+                        file: file,
+                        previewUrl: URL.createObjectURL(file)
+                    });
+                }
+            }
+
+            event.target.value = "";
+            renderPhotoPreviews(bucket);
+        }
+
+        function compressImage(file, maxDimension, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height && width > maxDimension) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else if (height > maxDimension) {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+
+                        const canvas = document.createElement("canvas");
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error("Falha ao comprimir imagem"));
+                        }, "image/jpeg", quality);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderPhotoPreviews(bucket = "exit") {
+            const cfg = {
+                before: { arr: beforePhotos, grid: "beforePhotoPreviewGrid", counter: "beforePhotoCounter" },
+                quote_laudo: { arr: quotePhotos, grid: "quoteLaudoPhotoPreviewGrid", counter: "quoteLaudoPhotoCounter" },
+                after_label: { arr: afterLabelPhotos, grid: "afterLabelPhotoPreviewGrid", counter: "afterLabelPhotoCounter" },
+                exit: { arr: capturedPhotos, grid: "photoPreviewGrid", counter: "photoCounter" }
+            }[bucket];
+            if (!cfg) return;
+
+            const grid = document.getElementById(cfg.grid);
+            const counter = document.getElementById(cfg.counter);
+            if (counter) counter.textContent = `${cfg.arr.length} foto(s)`;
+            if (!grid) return;
+
+            grid.innerHTML = cfg.arr.map((item, idx) => `
+                <div class="relative rounded-xl overflow-hidden border border-sky-500/40 h-24 surface-inner">
+                    <img src="${item.previewUrl}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removePhoto('${bucket}', ${idx})"
+                        class="absolute top-1 right-1 bg-slate-900/90 border border-slate-600 text-white w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shadow">
+                        ✕
+                    </button>
+                </div>
+            `).join("");
+        }
+
+        function removePhoto(bucket, index) {
+            const targetArr = getPhotoBucketArray(bucket);
+            targetArr.splice(index, 1);
+            renderPhotoPreviews(bucket);
+        }
+
+        function checkQuoteTimerStatus(card) {
+            const notice = document.getElementById("quoteActiveTimerNotice");
+            const txt = document.getElementById("quoteActiveTimerText");
+            if (!notice || !txt) return;
+            const timerEnd = card?.timer_end_at || currentCard?.timer_end_at;
+            if (timerEnd) {
+                const endMs = new Date(timerEnd).getTime();
+                const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                if (diffSec > 0) {
+                    const mins = Math.floor(diffSec / 60);
+                    const secs = String(diffSec % 60).padStart(2, "0");
+                    txt.textContent = `Estufa/Teste ativa na TV (${mins}m ${secs}s restantes)`;
+                    notice.classList.remove("hidden");
+                    return;
+                }
+            }
+            notice.classList.add("hidden");
+        }
+
+        setInterval(() => {
+            if (currentCard?.timer_end_at) {
+                checkQuoteTimerStatus(currentCard);
+            }
+        }, 1000);
+
+        async function triggerMobileTimer(minutes) {
+            if (!currentOs) return;
+            try {
+                const res = await fetch("/api/timer/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: currentOs, minutes, label: "Estufa de Placa" })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (currentCard) currentCard.timer_end_at = data.end_time;
+                    checkQuoteTimerStatus(currentCard);
+                    alert(`⏱️ Cronômetro de Estufa de ${minutes} minutos iniciado na TV da Oficina!`);
+                } else {
+                    alert(data.error || "Erro ao acionar cronômetro.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao acionar cronômetro de estufa.");
+            }
+        }
+
+        async function cancelMobileTimer() {
+            if (!currentOs) return;
+            if (!confirm("Deseja cancelar o cronômetro da TV para esta O.S.?")) return;
+            try {
+                const res = await fetch("/api/timer/cancel", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: currentOs })
+                });
+                if (res.ok) {
+                    if (currentCard) currentCard.timer_end_at = null;
+                    checkQuoteTimerStatus(currentCard);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function requestSupport() {
+            const tech = document.getElementById("techSelect").value || document.getElementById("claimTechSelect").value || localStorage.getItem("a5_active_tech") || "Técnico na bancada";
+            const osNum = currentOs || document.getElementById("osInput").value || "S/N";
+            socket.emit("request_bench_support", { tech_name: tech, os_number: osNum });
+            alert("📢 Solicitação de apoio anunciada na TV da oficina!");
+        }
+
+        async function submitFinishOs(e) {
+            e.preventDefault();
+
+            if (capturedPhotos.length === 0 && afterLabelPhotos.length === 0) {
+                alert("⚠️ Tire pelo menos 1 foto (Etiqueta Depois ou Balança Pronta) antes de finalizar!");
+                return;
+            }
+
+            const btn = document.getElementById("submitBtn");
+            btn.disabled = true;
+            btn.textContent = "⏳ Enviando fotos e finalizando...";
+
+            const weightsFinal = {};
+            document.querySelectorAll("[data-wf-key]").forEach(inp => {
+                const wk = inp.getAttribute("data-wf-key");
+                if (wk) weightsFinal[wk] = inp.value.trim();
+            });
+
+            const formData = new FormData(e.target);
+            formData.set("os_number", currentOs);
+            formData.set("weights_final_json", JSON.stringify(weightsFinal));
+            formData.set("root_cause", currentCard?.quote_data?.technical_report || formData.get("solution") || "");
+
+            formData.delete("exit_photos");
+            capturedPhotos.forEach((item) => {
+                formData.append("exit_photos", item.file, item.file.name);
+            });
+            afterLabelPhotos.forEach((item) => {
+                formData.append("label_after_photos", item.file, item.file.name);
+            });
+
+            try {
+                const res = await fetch("/api/saida/finalizar", { method: "POST", body: formData });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    alert(data.error || "Erro ao finalizar O.S.");
+                    btn.disabled = false;
+                    btn.textContent = "🏆 FINALIZAR O.S. E DISPARAR NA TV";
+                    return;
+                }
+
+                alert(`🎉 Parabéns! O.S. ${currentOs} finalizada com sucesso!`);
+                capturedPhotos = [];
+                afterLabelPhotos = [];
+                loadOsData(true);
+            } catch (err) {
+                alert("Falha de conexão com o Wi-Fi da recepção. Tente novamente.");
+                btn.disabled = false;
+                btn.textContent = "🏆 FINALIZAR O.S. E DISPARAR NA TV";
+            }
+        }
+
+        function formatDateTimeBR(isoStr) {
+            if (!isoStr) return "-";
+            try {
+                const d = new Date(isoStr);
+                return d.toLocaleDateString("pt-BR") + " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            } catch (e) {
+                return isoStr;
+            }
+        }
+    </script>
+</body>
+</html>

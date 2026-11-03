@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Recepção de Balcão • A5 Tecnologia</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen pb-16 antialiased transition-colors">
+
+    <!-- CABEÇALHO MOBILE -->
+    <header class="bg-white dark:bg-zinc-900/90 border-b border-slate-200 dark:border-zinc-800 backdrop-blur-md px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+        <div class="flex items-center space-x-2.5 min-w-0">
+            <svg viewBox="0 0 48 32" class="w-[36px] h-[24px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div class="min-w-0">
+                <h1 class="text-xs font-bold tracking-tight text-slate-900 dark:text-white leading-tight truncate">RECEPÇÃO DE BALCÃO</h1>
+                <p class="text-[10px] text-[#2aa6c8] dark:text-sky-400 font-semibold tracking-wider truncate">Consulta CNPJ • Fotos • Emissão de Ordem A4</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button onclick="toggleTheme()" id="themeToggleBtn" title="Alternar Tema"
+                    class="p-2 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 transition">
+                <i data-lucide="moon" class="w-4 h-4"></i>
+            </button>
+            <a href="/admin" class="bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                <span>Painel</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-lg mx-auto px-4 pt-4 space-y-4">
+
+        <!-- BANNER INFORMATIVO -->
+        <div class="rounded-xl p-3 border border-sky-500/25 bg-sky-500/5 text-xs space-y-1">
+            <div class="flex items-center justify-between">
+                <span class="font-bold uppercase text-[11px] text-sky-500 flex items-center gap-1.5">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                    Entrada Rápida com CNPJ
+                </span>
+                <span class="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Zero Fila</span>
+            </div>
+            <p class="text-slate-600 dark:text-zinc-300 leading-tight text-[11px]">
+                1. Digite o <b>CNPJ</b> para preencher os dados do cliente na hora.<br>
+                2. Tire as fotos e marque os <b>Acessórios</b>.<br>
+                3. Imprima a <b>Ordem A4</b> para o cliente assinar. O Teorema é gerado em seguida!
+            </p>
+        </div>
+
+        <!-- FORMULÁRIO DE ENTRADA -->
+        <form id="preEntryForm" onsubmit="submitPreEntry(event)" class="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-3.5">
+            <input type="hidden" id="entryIdInput" value="">
+            <input type="hidden" id="addressInput" value="">
+            <input type="hidden" id="cityStateInput" value="">
+            <input type="hidden" id="emailInput" value="">
+
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+                    <i data-lucide="user-check" class="w-4 h-4 text-sky-500"></i>
+                    <span>Dados do Cliente & Balança</span>
+                </h2>
+                <button type="button" id="clearTargetBtn" onclick="resetFormTarget()" class="hidden text-[11px] font-semibold text-amber-500 underline">
+                    Cancelar vínculo
+                </button>
+            </div>
+
+            <!-- CAMPO CNPJ / CPF COM BUSCA AUTOMÁTICA -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase">
+                        CNPJ ou CPF do Cliente
+                    </label>
+                    <span id="cnpjStatusBadge" class="hidden text-[10px] font-bold font-mono"></span>
+                </div>
+                <div class="relative flex items-center">
+                    <input type="text" id="cnpjInput" placeholder="Digite o CNPJ (ex: 84083807000125)"
+                           oninput="onCnpjInput(this)"
+                           class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500">
+                    <button type="button" onclick="triggerCnpjLookup()" id="btnSearchCnpj"
+                            class="absolute right-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                        <span>Buscar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- RAZÃO SOCIAL / NOME -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">
+                    Razão Social / Nome do Cliente *
+                </label>
+                <input type="text" id="clientNameInput" required
+                       placeholder="Nome completo ou Razão Social"
+                       class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3.5 py-2 text-xs font-bold uppercase text-slate-900 dark:text-white focus:outline-none focus:border-sky-500">
+            </div>
+
+            <!-- NOME FANTASIA E TELEFONE -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Nome Fantasia</label>
+                    <input type="text" id="tradeNameInput" placeholder="Ex: Supermercado..."
+                           class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs uppercase text-slate-900 dark:text-white focus:outline-none focus:border-sky-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Telefone / Whats</label>
+                    <input type="text" id="phoneInput" placeholder="(92) 99999-9999"
+                           class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-sky-500">
+                </div>
+            </div>
+
+            <!-- ENDEREÇO RESUMIDO (INFORMATIVO) -->
+            <div id="addressPreviewBox" class="hidden bg-slate-100 dark:bg-zinc-800/60 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700/60 text-[11px] leading-tight">
+                <span class="text-slate-400 uppercase text-[9px] font-bold block mb-0.5">Endereço Localizado:</span>
+                <span id="addressPreviewText" class="font-medium text-slate-800 dark:text-slate-200"></span>
+            </div>
+
+            <!-- EQUIPAMENTO, MODELO E DEFEITO -->
+            <div class="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200 dark:border-zinc-800/80">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Equipamento</label>
+                    <select id="equipTypeInput" class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500">
+                        <option value="Balança Toledo Prix">Balança Toledo Prix</option>
+                        <option value="Balança Comercial">Balança Comercial</option>
+                        <option value="Balança Industrial / Plataforma">Balança Industrial</option>
+                        <option value="Balança Analítica / Precisão">Balança Analítica</option>
+                        <option value="Fatiador de Frios">Fatiador de Frios</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Modelo / Carga</label>
+                    <input type="text" id="modelInput" placeholder="Ex: Prix 4 Uno / 32kg"
+                           class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Defeito Reclamado pelo Cliente</label>
+                <input type="text" id="defectInput" placeholder="Ex: Não liga, diferença de peso, visor falhando..."
+                       class="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500">
+            </div>
+
+            <!-- CHECKLIST DE ACESSÓRIOS (EXATAMENTE COMO NO TEOREMA) -->
+            <div class="bg-slate-50 dark:bg-zinc-950/70 p-3 rounded-xl border border-slate-200 dark:border-zinc-800 space-y-2">
+                <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                    <i data-lucide="check-square" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    Acessórios Entregues no Balcão:
+                </span>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accPrato" checked class="w-3.5 h-3.5 accent-sky-500 rounded">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Prato Inox</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accFonte" class="w-3.5 h-3.5 accent-sky-500 rounded">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Fonte Externa</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accCabo" class="w-3.5 h-3.5 accent-sky-500 rounded">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Cabo Força</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accBateria" class="w-3.5 h-3.5 accent-sky-500 rounded">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Bateria Int.</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accTampa" class="w-3.5 h-3.5 accent-sky-500 rounded">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Tampa Impressor</span>
+                    </label>
+                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input type="checkbox" id="accRebobinador" class="w-3.5 h-3.5 accent-sky-500 rounded">
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">Rebobinador</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- FOTOS DA BALANÇA -->
+            <div class="pt-1">
+                <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1.5">Fotos da Balança *</label>
+                <label class="flex flex-col items-center justify-center border-2 border-dashed border-sky-500/40 hover:border-sky-500 bg-sky-500/5 rounded-2xl p-4 cursor-pointer transition active:scale-[0.99]">
+                    <i data-lucide="camera" class="w-7 h-7 text-sky-500 mb-1"></i>
+                    <span class="text-xs font-bold text-sky-500 uppercase tracking-wide">Abrir Câmera / Tirar Fotos</span>
+                    <span class="text-[10px] text-slate-400 mt-0.5">Tire as fotos da carcaça, lacre e número de série</span>
+                    <input type="file" id="cameraInput" accept="image/*" capture="environment" multiple class="hidden" onchange="handlePhotosSelected(event)">
+                </label>
+
+                <!-- Botão Galeria -->
+                <div class="mt-2 flex justify-between items-center text-xs">
+                    <label class="text-sky-500 font-semibold cursor-pointer flex items-center gap-1 hover:underline">
+                        <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                        <span>Escolher da Galeria</span>
+                        <input type="file" accept="image/*" multiple class="hidden" onchange="handlePhotosSelected(event)">
+                    </label>
+                    <span id="photoCounterBadge" class="font-mono text-slate-400 font-semibold">0 foto(s)</span>
+                </div>
+
+                <!-- Miniaturas das fotos -->
+                <div id="photoPreviewGrid" class="grid grid-cols-4 gap-2 mt-2"></div>
+            </div>
+
+            <!-- BOTÃO SALVAR ENTRADA -->
+            <button type="submit" id="submitBtn"
+                    class="w-full bg-sky-500 hover:bg-sky-400 active:scale-[0.99] text-slate-950 font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-md transition flex items-center justify-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>Salvar Entrada & Emitir Ordem A4</span>
+            </button>
+        </form>
+
+        <!-- LISTA DE FOTOS AGUARDANDO TEOREMA -->
+        <section class="bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-sky-500"></i>
+                        <span>Aguardando Número do Teorema</span>
+                    </h2>
+                    <p class="text-[10px] text-slate-400">Entradas salvas prontas para vincular ao Teorema no PC.</p>
+                </div>
+                <span id="pendingCountBadge" class="bg-sky-500/10 text-sky-500 font-mono text-xs font-bold px-2 py-0.5 rounded-full border border-sky-500/25">0</span>
+            </div>
+
+            <div id="pendingListContainer" class="space-y-2"></div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE SUCESSO E IMPRESSÃO DA ORDEM TEOREMA A4 -->
+    <div id="successModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <div class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="check" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Entrada Registrada com Sucesso!</h3>
+            <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                Cliente: <strong id="modalSuccessClient" class="text-slate-900 dark:text-white"></strong>
+            </p>
+
+            <div class="my-5 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700/60 text-xs text-left space-y-1">
+                <div class="text-[10px] font-bold uppercase text-slate-400">Próximos Passos:</div>
+                <div class="text-[11px] text-slate-700 dark:text-slate-300">
+                    1. Imprima a via do cliente em <strong>Folha A4</strong> para assinatura.<br>
+                    2. No Teorema, gere a O.S. oficial para imprimir a <strong>Etiqueta Térmica</strong>.
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <button type="button" id="modalPrintBtn" onclick="openA4Sheet()"
+                        class="w-full py-3 px-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs uppercase tracking-wide transition flex items-center justify-center gap-2 shadow-md">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span>Imprimir Ordem de Serviço A4</span>
+                </button>
+                <button type="button" onclick="closeSuccessModal()"
+                        class="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-xs font-semibold transition">
+                    ➕ Fazer Nova Entrada
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toastBox" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden font-bold text-xs px-4 py-2.5 rounded-xl shadow-2xl transition"></div>
+
+    <script>
+        let stagedBlobs = [];
+        let pendingEntries = [];
+        let lastCreatedEntryId = null;
+
+        function esc(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function refreshIcons() {
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toastBox');
+            t.textContent = msg;
+            t.className = `fixed bottom-4 left-1/2 -translate-x-1/2 z-50 font-bold text-xs px-4 py-2.5 rounded-xl shadow-2xl transition ${
+                isError ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-slate-950'
+            }`;
+            t.classList.remove('hidden');
+            setTimeout(() => t.classList.add('hidden'), 3500);
+        }
+
+        // =====================================================================
+        // BUSCA AUTOMÁTICA DE CNPJ
+        // =====================================================================
+        let cnpjTimeout = null;
+
+        function onCnpjInput(input) {
+            const clean = input.value.replace(/\D/g, '');
+            if (clean.length === 14) {
+                clearTimeout(cnpjTimeout);
+                cnpjTimeout = setTimeout(() => triggerCnpjLookup(), 300);
+            }
+        }
+
+        async function triggerCnpjLookup() {
+            const raw = document.getElementById('cnpjInput').value;
+            const clean = raw.replace(/\D/g, '');
+            if (clean.length !== 14) {
+                showToast('Digite os 14 números do CNPJ!', true);
+                return;
+            }
+
+            const status = document.getElementById('cnpjStatusBadge');
+            const btn = document.getElementById('btnSearchCnpj');
+            status.textContent = 'Consultando Receita...';
+            status.className = 'text-[10px] font-bold text-sky-400 block';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/cnpj/${clean}`);
+                const data = await res.json();
+
+                if (!res.ok || !data.success) {
+                    throw new Error(data.error || 'CNPJ não localizado');
+                }
+
+                const c = data.client;
+                document.getElementById('clientNameInput').value = c.client_name || '';
+                document.getElementById('tradeNameInput').value = c.trade_name || c.client_name || '';
+                document.getElementById('phoneInput').value = c.phone || '';
+                document.getElementById('emailInput').value = c.email || '';
+                document.getElementById('addressInput').value = c.address || '';
+                document.getElementById('cityStateInput').value = c.city_state || '';
+
+                if (c.address || c.city_state) {
+                    document.getElementById('addressPreviewText').textContent = `${c.address} (${c.city_state})`;
+                    document.getElementById('addressPreviewBox').classList.remove('hidden');
+                }
+
+                status.textContent = data.source === 'local_database' ? '✓ Memória A5' : '✓ Receita Federal';
+                status.className = 'text-[10px] font-bold text-emerald-400 block font-mono';
+                showToast(`✓ Dados de "${c.trade_name || c.client_name}" carregados!`);
+            } catch (err) {
+                status.textContent = '✕ Não localizado';
+                status.className = 'text-[10px] font-bold text-rose-400 block';
+                showToast(err.message || 'Falha ao buscar CNPJ', true);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // =====================================================================
+        // CAPTURA DE FOTOS
+        // =====================================================================
+        function handlePhotosSelected(event) {
+            const files = Array.from(event.target.files || []);
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const previewUrl = URL.createObjectURL(file);
+                stagedBlobs.push({ file, previewUrl });
+            });
+            event.target.value = '';
+            renderPhotoPreviews();
+        }
+
+        function removeStagedPhoto(index) {
+            if (stagedBlobs[index]) {
+                URL.revokeObjectURL(stagedBlobs[index].previewUrl);
+                stagedBlobs.splice(index, 1);
+                renderPhotoPreviews();
+            }
+        }
+
+        function renderPhotoPreviews() {
+            const grid = document.getElementById('photoPreviewGrid');
+            const counter = document.getElementById('photoCounterBadge');
+            counter.textContent = `${stagedBlobs.length} foto(s)`;
+
+            if (stagedBlobs.length === 0) {
+                grid.innerHTML = '';
+                return;
+            }
+
+            grid.innerHTML = stagedBlobs.map((item, idx) => `
+                <div class="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-800 bg-black">
+                    <img src="${item.previewUrl}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removeStagedPhoto(${idx})"
+                            class="absolute top-1 right-1 bg-rose-600 hover:bg-rose-500 text-white p-1 rounded-full shadow-md transition">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            `).join('');
+            refreshIcons();
+        }
+
+        // =====================================================================
+        // SUBMIT DA ENTRADA
+        // =====================================================================
+        async function submitPreEntry(e) {
+            e.preventDefault();
+            const clientName = document.getElementById('clientNameInput').value.trim().toUpperCase();
+            if (!clientName) {
+                showToast('Informe o Nome do Cliente!', true);
+                return;
+            }
+            if (stagedBlobs.length === 0) {
+                showToast('Tire pelo menos 1 foto da balança!', true);
+                return;
+            }
+
+            // Coleta acessórios marcados
+            const accList = [];
+            if (document.getElementById('accPrato').checked) accList.push('prato');
+            if (document.getElementById('accFonte').checked) accList.push('fonte');
+            if (document.getElementById('accCabo').checked) accList.push('cabo');
+            if (document.getElementById('accBateria').checked) accList.push('bateria');
+            if (document.getElementById('accTampa').checked) accList.push('tampa');
+            if (document.getElementById('accRebobinador').checked) accList.push('rebobinador');
+
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<span>Salvando e registrando entrada...</span>`;
+
+            try {
+                const fd = new FormData();
+                fd.append('entry_id', document.getElementById('entryIdInput').value);
+                fd.append('client_name', clientName);
+                fd.append('cnpj_cpf', document.getElementById('cnpjInput').value.replace(/\D/g, ''));
+                fd.append('trade_name', document.getElementById('tradeNameInput').value.trim().toUpperCase());
+                fd.append('phone', document.getElementById('phoneInput').value.trim());
+                fd.append('email', document.getElementById('emailInput').value.trim());
+                fd.append('address', document.getElementById('addressInput').value.trim());
+                fd.append('city_state', document.getElementById('cityStateInput').value.trim());
+                fd.append('equipment_type', document.getElementById('equipTypeInput').value);
+                fd.append('equipment_model', document.getElementById('modelInput').value.trim());
+                fd.append('reported_defect', document.getElementById('defectInput').value.trim());
+                fd.append('accessories_json', JSON.stringify(accList));
+
+                stagedBlobs.forEach(item => fd.append('entry_photos', item.file));
+
+                const res = await fetch('/api/pending-entries', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    throw new Error(data.error || 'Erro ao salvar entrada');
+                }
+
+                lastCreatedEntryId = data.entry ? data.entry.id : null;
+
+                // Limpa fotos
+                stagedBlobs.forEach(item => URL.revokeObjectURL(item.previewUrl));
+                stagedBlobs = [];
+                renderPhotoPreviews();
+                document.getElementById('preEntryForm').reset();
+                document.getElementById('addressPreviewBox').classList.add('hidden');
+                document.getElementById('cnpjStatusBadge').classList.add('hidden');
+
+                if (data.board && Array.isArray(data.board.pending_entries)) {
+                    pendingEntries = data.board.pending_entries;
+                    renderPendingList();
+                } else {
+                    await loadPendingEntries();
+                }
+
+                // Abre modal de sucesso com botão da O.S. A4
+                document.getElementById('modalSuccessClient').textContent = clientName;
+                document.getElementById('successModal').classList.remove('hidden');
+                document.getElementById('successModal').classList.add('flex');
+                refreshIcons();
+
+            } catch (err) {
+                showToast(err.message || 'Falha ao salvar entrada', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i><span>Salvar Entrada & Emitir Ordem A4</span>`;
+                refreshIcons();
+            }
+        }
+
+        function openA4Sheet() {
+            if (lastCreatedEntryId) {
+                window.open(`/comprovante-entrada/${lastCreatedEntryId}`, '_blank');
+            }
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('successModal').classList.add('hidden');
+            document.getElementById('successModal').classList.remove('flex');
+        }
+
+        // =====================================================================
+        // LISTAGEM DE PRÉ-ENTRADAS AGUARDANDO TEOREMA
+        // =====================================================================
+        async function loadPendingEntries() {
+            try {
+                const res = await fetch('/api/pending-entries');
+                const data = await res.json();
+                pendingEntries = data.pending_entries || [];
+                renderPendingList();
+            } catch (err) {
+                console.error('Erro ao carregar pré-entradas:', err);
+            }
+        }
+
+        function renderPendingList() {
+            const container = document.getElementById('pendingListContainer');
+            document.getElementById('pendingCountBadge').textContent = pendingEntries.length;
+
+            if (pendingEntries.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-6 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl text-xs text-slate-400">
+                        Nenhuma balança aguardando no balcão.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = pendingEntries.map(e => `
+                <div class="p-3 bg-slate-50 dark:bg-zinc-950/60 rounded-xl border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-bold text-xs uppercase text-slate-900 dark:text-white truncate">
+                            ${esc(e.trade_name || e.client_name)}
+                        </div>
+                        <div class="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                            ${esc(e.equipment_model || e.equipment_type || 'Balança')} • ${(e.photos || []).length} foto(s)
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <a href="/comprovante-entrada/${e.id}" target="_blank"
+                           class="p-2 rounded-lg bg-sky-500/10 text-sky-500 hover:bg-sky-500/20 text-xs font-bold transition flex items-center gap-1"
+                           title="Imprimir Ordem A4">
+                            <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                            <span class="text-[11px]">A4</span>
+                        </a>
+                        <button type="button" onclick="removePendingEntry(${e.id}, '${esc(e.client_name)}')"
+                                class="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition" title="Excluir">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            refreshIcons();
+        }
+
+        async function removePendingEntry(entryId, clientName) {
+            if (!confirm(`Remover pré-entrada de "${clientName}"?`)) return;
+            try {
+                await fetch(`/api/pending-entries/${entryId}`, { method: 'DELETE' });
+                await loadPendingEntries();
+                showToast('Pré-entrada removida.');
+            } catch (err) {
+                showToast('Erro ao remover', true);
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            refreshIcons();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPendingEntries();
+            refreshIcons();
+            const socket = io();
+            socket.on('board_updated', () => loadPendingEntries());
+        });
+    </script>
+</body>
+</html>

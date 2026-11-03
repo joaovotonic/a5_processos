@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta Rápida de Balcão • A5 Tecnologia</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.2/index.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 min-h-screen antialiased transition-colors">
+
+    <!-- HEADER MINIMALISTA SAAS -->
+    <header class="bg-white dark:bg-zinc-900/90 border-b border-slate-200 dark:border-zinc-800 px-6 py-3 sticky top-0 z-30 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+            </svg>
+            <div>
+                <h1 class="text-sm font-bold text-[#254a93] dark:text-white flex items-center gap-1.5 leading-none">
+                    <i data-lucide="search" class="w-4 h-4 text-sky-400"></i>
+                    <span>Consulta Rápida de Balcão</span>
+                </h1>
+                <p class="text-[10px] font-semibold text-[#2aa6c8] dark:text-sky-400 tracking-wide mt-0.5 leading-tight">A5 Tecnologia • Balanças e Sistemas</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="toggleConsultaTheme()" id="consultaThemeBtn"
+                    class="text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 p-2 rounded-lg transition" title="Alternar Tema">
+                <i data-lucide="moon" class="w-4 h-4"></i>
+            </button>
+            <a href="/admin" class="text-xs font-bold bg-sky-500 hover:bg-sky-400 text-slate-950 px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                <span>Painel Admin</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-6 space-y-5">
+        <!-- BARRA DE BUSCA -->
+        <div class="relative bg-white dark:bg-zinc-900 p-3 rounded-2xl shadow-sm border border-slate-200 dark:border-zinc-800">
+            <div class="relative flex items-center">
+                <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-3.5 pointer-events-none"></i>
+                <input type="text" id="qInput" oninput="renderList()" autofocus
+                    placeholder="Digite o Nº da O.S., Nome do Cliente, Modelo da Balança ou Lacre IPEM A5..."
+                    class="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl text-slate-900 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition">
+            </div>
+        </div>
+
+        <!-- GRID DE RESULTADOS -->
+        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </main>
+
+    <script>
+        const socket = io();
+        let allCards = [];
+
+        function esc(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function refreshIcons() {
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch("/api/board");
+                const data = await res.json();
+                allCards = [];
+                data.lists.forEach(l => {
+                    l.cards.forEach(c => {
+                        c.stage_name = l.title;
+                        allCards.push(c);
+                    });
+                });
+                renderList();
+            } catch (e) {}
+        }
+
+        loadData();
+        socket.on("board_updated", loadData);
+
+        function renderList() {
+            const q = document.getElementById("qInput").value.trim().toLowerCase();
+            const container = document.getElementById("resultsGrid");
+
+            const filtered = allCards.filter(c => {
+                const str = `${c.os_number} ${c.client_name} ${c.equipment_type} ${c.equipment_model} ${c.inmetro_seal}`.toLowerCase();
+                return str.includes(q);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full p-8 text-center border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl text-xs text-slate-400">
+                        Nenhum equipamento encontrado com os termos pesquisados.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(c => {
+                const photos = [...(c.entry_photos || []), ...(c.quote_photos || []), ...(c.label_before_photos || []), ...(c.label_after_photos || []), ...(c.exit_photos || [])];
+                return `
+                    <div class="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-zinc-800 flex flex-col justify-between overflow-hidden hover:border-sky-500/40 transition">
+                        <div>
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                                <span class="font-mono text-xs font-bold px-2.5 py-1 rounded bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700">
+                                    OS ${esc(c.os_number)}
+                                </span>
+                                <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20 truncate max-w-[200px]">
+                                    ${esc(c.stage_name)}
+                                </span>
+                            </div>
+
+                            <h3 class="font-bold text-sm uppercase text-slate-900 dark:text-white break-words">${esc(c.client_name)}</h3>
+                            <p class="text-xs text-slate-500 dark:text-zinc-400 mb-3 break-words">${esc(c.equipment_type)} ${c.equipment_model ? '• ' + esc(c.equipment_model) : ''}</p>
+
+                            <div class="text-xs space-y-1.5 bg-slate-50 dark:bg-zinc-950/60 p-3 rounded-lg border border-slate-200 dark:border-zinc-800/80">
+                                <div class="flex items-center gap-1.5">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+                                    <span>Técnico: <strong>${esc(c.tech_name || 'Fila')}</strong></span>
+                                </div>
+                                ${c.inmetro_seal ? `
+                                    <div class="flex items-center gap-1.5 text-emerald-500 font-bold font-mono">
+                                        <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0"></i>
+                                        <span>Lacre IPEM A5: ${esc(c.inmetro_seal)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        ${photos.length ? `
+                            <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-zinc-800/80 flex gap-2 overflow-x-auto">
+                                ${photos.map(url => `
+                                    <img src="${esc(url)}" onclick="window.open('${esc(url)}')" class="w-14 h-14 object-cover rounded-lg border border-slate-200 dark:border-zinc-800 cursor-zoom-in shrink-0 hover:scale-105 transition">
+                                `).join("")}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join("");
+
+            refreshIcons();
+            if (window.autoAnimate) autoAnimate(container);
+        }
+
+        function applyConsultaTheme(theme) {
+            const isDark = theme === "dark";
+            document.documentElement.classList.toggle("dark", isDark);
+            const btn = document.getElementById("consultaThemeBtn");
+            if (btn) {
+                btn.innerHTML = isDark ? `<i data-lucide="sun" class="w-4 h-4"></i>` : `<i data-lucide="moon" class="w-4 h-4"></i>`;
+                refreshIcons();
+            }
+            localStorage.setItem("a5_consulta_theme", theme);
+        }
+
+        function toggleConsultaTheme() {
+            const cur = localStorage.getItem("a5_consulta_theme") || "dark";
+            applyConsultaTheme(cur === "dark" ? "clean" : "dark");
+        }
+
+        applyConsultaTheme(localStorage.getItem("a5_consulta_theme") || localStorage.getItem("a5_theme") || "dark");
+    </script>
+</body>
+</html>
