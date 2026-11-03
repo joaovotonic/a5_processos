@@ -653,7 +653,7 @@ def approve_card_quote(card_id, actor=RECEPTION_ACTOR):
         old_title = old_list["title"] if old_list else ""
 
         apr_list = conn.execute(
-            "SELECT * FROM lists WHERE role = 'aprovada' OR UPPER(title) LIKE '%APROVADA%' ORDER BY position ASC LIMIT 1"
+            "SELECT * FROM lists WHERE role = 'aprovada' OR UPPER(title) LIKE '%APROVAD%' ORDER BY position ASC LIMIT 1"
         ).fetchone()
 
         target_list_id = apr_list["id"] if apr_list else card_row["list_id"]

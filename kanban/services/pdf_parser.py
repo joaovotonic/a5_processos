@@ -30,14 +30,21 @@ def extract_text_from_pdf(pdf_path: str) -> str:
         logger.warning(f"Falha ao ler PDF com pdfplumber ({pdf_path}): {e}")
 
     # Tentativa 2 (fallback): pypdf
-    if not text:
-        try:
-            import pypdf
-            reader = pypdf.PdfReader(pdf_path)
-            pages_text = [p.extract_text() or "" for p in reader.pages]
-            text = "\n".join(pages_text).strip()
-        except Exception as e:
-            logger.warning(f"Falha ao ler PDF com pypdf ({pdf_path}): {e}")
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(pdf_path)
+        pages_text = [p.extract_text() or "" for p in reader.pages]
+        pypdf_text = "\n".join(pages_text).strip()
+        if pypdf_text:
+            text = (text + "\n" + pypdf_text) if text else pypdf_text
+
+        # Também extrai metadados caso estejam presentes no cabeçalho
+        if reader.metadata:
+            meta_str = " ".join(str(v) for v in reader.metadata.values() if v)
+            if meta_str:
+                text = (text + "\n" + meta_str) if text else meta_str
+    except Exception as e:
+        logger.warning(f"Falha ao ler PDF com pypdf ({pdf_path}): {e}")
 
     return text
 
@@ -160,3 +167,4 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
                 break
 
     return data
+

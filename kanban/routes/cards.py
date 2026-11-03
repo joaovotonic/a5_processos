@@ -434,32 +434,76 @@ def director_call():
     return jsonify({"success": True})
 
 
-@bp.route("/scan", methods=["POST"])
-def api_scan_qr():
-    """
-    Processa a leitura do QR Code na esteira móvel:
-    Payload esperado: { "os_id": "...", "tecnico": "..." }
-    """
-    from ..services.esteira import process_qr_scan
+@bp.route("/esteira/claim-orcamento", methods=["POST"])
+def api_claim_orcamento():
+    from ..services.esteira import claim_orcamento
     data = json_body()
-    os_query = (data.get("os_id") or data.get("os_number") or request.form.get("os_id") or request.form.get("os_number") or "").strip()
-    tech_name = (data.get("tecnico") or data.get("tech_name") or request.form.get("tecnico") or "").strip()
+    os_number = data.get("os_number") or ""
+    tech_name = data.get("tecnico") or ""
+    return jsonify(claim_orcamento(os_number, tech_name))
 
-    result = process_qr_scan(os_query, tech_name)
-    return jsonify(result)
+
+@bp.route("/esteira/concluir-orcamento", methods=["POST"])
+def api_concluir_orcamento():
+    from ..services.esteira import concluir_orcamento
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    return jsonify(concluir_orcamento(os_number))
+
+
+@bp.route("/esteira/adm-enviar-cliente", methods=["POST"])
+def api_adm_enviar_cliente():
+    from ..services.esteira import adm_enviar_cliente
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    return jsonify(adm_enviar_cliente(os_number))
+
+
+@bp.route("/esteira/adm-aprovar", methods=["POST"])
+def api_adm_aprovar():
+    from ..services.esteira import adm_aprovar
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    return jsonify(adm_aprovar(os_number))
 
 
 @bp.route("/cards/<path:os_number>/advance-admin", methods=["POST"])
 def api_advance_admin(os_number):
-    """
-    Ações diretas da Adm no Kanban:
-    - action='enviar_cliente': move de ORCAMENTOS_FEITOS para ORCAMENTOS_ENVIADOS
-    - action='aprovar': move de ORCAMENTOS_ENVIADOS para APROVADOS (com aviso na TV)
-    """
+    """Avança a O.S. na esteira via ação da recepção."""
     from ..services.esteira import advance_admin_pipeline
     data = json_body()
-    action = data.get("action") or request.form.get("action") or ""
-    actor = data.get("actor") or "Priscila (Recepção)"
+    action = data.get("action") or ""
+    return jsonify(advance_admin_pipeline(os_number, action))
 
-    result = advance_admin_pipeline(os_number, action, actor)
-    return jsonify(result)
+
+@bp.route("/esteira/claim-manutencao", methods=["POST"])
+def api_claim_manutencao():
+    from ..services.esteira import claim_manutencao
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    tech_name = data.get("tecnico") or ""
+    return jsonify(claim_manutencao(os_number, tech_name))
+
+
+@bp.route("/esteira/finalizar-balanca", methods=["POST"])
+def api_finalizar_balanca():
+    from ..services.esteira import finalizar_balanca
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    return jsonify(finalizar_balanca(os_number))
+
+
+@bp.route("/cards/<path:os_number>/delete", methods=["POST", "DELETE"])
+@bp.route("/cards/<path:os_number>", methods=["DELETE"])
+def api_delete_card(os_number):
+    """Exclui a O.S. do sistema Kanban da A5 Tecnologia."""
+    from ..services.esteira import delete_card_by_os
+    return jsonify(delete_card_by_os(os_number))
+
+
+@bp.route("/cards/manual", methods=["POST"])
+def api_create_manual_card():
+    """Cria uma O.S. (banner) manualmente direto no Kanban."""
+    from ..services.esteira import create_manual_os
+    data = json_body()
+    return jsonify(create_manual_os(data))

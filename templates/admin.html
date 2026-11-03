@@ -164,12 +164,6 @@
                 <span>Nova O.S.</span>
             </button>
 
-            <button onclick="openPendingPhotosModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition" title="Fotos da Recepção">
-                <i data-lucide="camera" class="w-3.5 h-3.5 text-sky-500"></i>
-                <span>Fotos Celular</span>
-                <span id="navPendingPhotosBadge" class="hidden bg-sky-500 text-slate-950 font-black text-[10px] px-1.5 py-0.2 rounded-full leading-tight font-mono">0</span>
-            </button>
-
             <button onclick="openCallTechModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 font-medium px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 transition">
                 <i data-lucide="megaphone" class="w-3.5 h-3.5 text-amber-500"></i>
                 <span>Chamar Técnico</span>
@@ -201,13 +195,9 @@
                 <i data-lucide="tv" class="w-3.5 h-3.5 text-sky-400"></i>
                 <span>TV</span>
             </a>
-            <a href="/consulta" target="_blank" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
-                <i data-lucide="search" class="w-3.5 h-3.5 text-sky-400"></i>
-                <span>Balcão</span>
-            </a>
-            <a href="/gerencia" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
-                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-sky-400"></i>
-                <span>Gerência</span>
+            <a href="/diretoria" target="_blank" class="bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-500 dark:text-amber-400 px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5" title="Painel da Diretoria e Relatórios">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i>
+                <span>Diretoria</span>
             </a>
 
             <button onclick="toggleTheme()" id="themeBtn" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 p-1.5 rounded-lg text-xs transition" title="Alternar Tema">
@@ -1019,23 +1009,23 @@
             const currentPhase = card.pipeline_phase || "";
             const listTitleUpper = (card.list_title || "").toUpperCase();
 
-            if (currentPhase === "ORCAMENTOS_FEITOS" || listTitleUpper.includes("ANALISES FEITAS")) {
+            if (currentPhase === "ORCAMENTOS_FEITOS" || listTitleUpper.includes("FEITAS") || listTitleUpper.includes("FEITOS")) {
                 esteiraActionBtn = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
                         <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'enviar_cliente')"
-                            class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black text-[10px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1 shadow">
-                            <i data-lucide="send" class="w-3 h-3"></i>
-                            <span>Enviado ao Cliente</span>
+                            class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black text-[11px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                            <span>OK (Enviar ao Cliente)</span>
                         </button>
                     </div>
                 `;
-            } else if (currentPhase === "ORCAMENTOS_ENVIADOS" || listTitleUpper.includes("ORÇAMENTOS ENVIADOS")) {
+            } else if (currentPhase === "ORCAMENTOS_ENVIADOS" || listTitleUpper.includes("ENVIADOS") || listTitleUpper.includes("ENVIADO")) {
                 esteiraActionBtn = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
                         <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'aprovar')"
-                            class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[10px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1 shadow">
-                            <i data-lucide="check-circle" class="w-3 h-3"></i>
-                            <span>Aprovado (Avisar TV)</span>
+                            class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[11px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                            <span>APROVADO (Avisar TV)</span>
                         </button>
                     </div>
                 `;
@@ -1090,6 +1080,10 @@
                                 class="hover:text-sky-400 transition p-0.5" title="Reimprimir Etiqueta 60x40">
                                 <i data-lucide="printer" class="w-3 h-3"></i>
                             </button>
+                            <button onclick="event.stopPropagation(); deleteCardDirect(this.closest('.kanban-card').dataset.osNumber)"
+                                class="hover:text-rose-500 text-slate-400 transition p-0.5" title="Excluir O.S.">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                            </button>
                         </div>
                     </div>
                     ${esteiraActionBtn}
@@ -1103,17 +1097,46 @@
 
         async function advanceAdmin(osNumber, action) {
             try {
-                const res = await fetch(`/api/cards/${encodeURIComponent(osNumber)}/advance-admin`, {
+                const url = action === "aprovar" ? "/api/esteira/adm-aprovar" : "/api/esteira/adm-enviar-cliente";
+                const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action: action })
+                    body: JSON.stringify({ os_number: osNumber, action: action })
                 });
                 const data = await res.json();
-                if (!res.ok || !data.success) {
+                if (res.ok && data.success) {
+                    showToast(action === "aprovar" ? `O.S. ${osNumber} aprovada! Aviso na TV emitido.` : `O.S. ${osNumber} enviada ao cliente!`, "success");
+                    if (window._lastOpenedCard && window._lastOpenedCard.os_number === osNumber) {
+                        closeModal("cardDetailModal");
+                    }
+                } else {
                     alert("Erro ao avançar O.S.: " + (data.error || "Erro desconhecido."));
                 }
             } catch (err) {
                 alert("Falha de comunicação: " + err.message);
+            }
+        }
+
+        async function deleteCardDirect(osNumber) {
+            if (!osNumber) return;
+            if (!confirm(`Tem certeza que deseja excluir permanentemente a O.S. ${osNumber} do sistema?`)) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/cards/${encodeURIComponent(osNumber)}`, {
+                    method: "DELETE"
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showToast(`O.S. ${osNumber} excluída com sucesso!`, "success");
+                    if (window._lastOpenedCard && window._lastOpenedCard.os_number === osNumber) {
+                        closeModal("cardDetailModal");
+                    }
+                } else {
+                    alert("Erro ao excluir O.S.: " + (data.error || "Erro desconhecido."));
+                }
+            } catch (err) {
+                alert("Falha de rede: " + err.message);
             }
         }
 
@@ -1593,10 +1616,12 @@
                 </table>
             ` : `<p class="text-xs text-slate-400">Nenhuma peça Toledo registrada no orçamento.</p>`;
 
-            const isPronta = card.list_role === "pronta" || (card.list_title || "").toUpperCase().includes("PRONTA");
-            const isApproved = card.quote_status === "approved";
-            const canSendQuote = card.quote_status === "done";
-            const canApproveQuote = card.quote_status === "done" || (card.list_title || "").toUpperCase().includes("ENVIADO");
+            const isPronta = card.list_role === "pronta" || (card.list_title || "").toUpperCase().includes("PRONTA") || (card.list_title || "").toUpperCase().includes("FINALIZADA");
+            const isApproved = card.quote_status === "approved" || card.pipeline_phase === "APROVADOS";
+            const phase = card.pipeline_phase || "";
+            const lTitle = (card.list_title || "").toUpperCase();
+            const canSendQuote = phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS") || card.quote_status === "done";
+            const canApproveQuote = phase === "ORCAMENTOS_ENVIADOS" || lTitle.includes("ENVIADOS") || lTitle.includes("ENVIADO");
             const canReopenQuote = !card.finished_at;
             const canCancelOs = !card.finished_at;
 
@@ -1615,18 +1640,18 @@
 
                     <div class="flex flex-wrap items-center gap-2">
                         ${canSendQuote ? `
-                            <button onclick="sendQuoteFromAdmin()"
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'enviar_cliente')"
                                 class="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
                                 <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                                <span>Enviar ao Cliente</span>
+                                <span>OK (Enviar ao Cliente)</span>
                             </button>
                         ` : ''}
 
                         ${canApproveQuote ? `
-                            <button onclick="approveQuoteFromAdmin()"
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'aprovar')"
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
                                 <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                                <span>Aprovar Orçamento</span>
+                                <span>APROVADO (Avisar TV)</span>
                             </button>
                         ` : ''}
 
@@ -1653,16 +1678,12 @@
                             ` : ''}
                         ` : ''}
 
-                        <button onclick="openThermalLabel('${esc(card.os_number)}')" class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:border-sky-500 transition" title="Etiqueta">
+                        <button onclick="openThermalLabel('${esc(card.os_number)}')" class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:border-sky-500 transition" title="Etiqueta 60x40">
                             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
                         </button>
 
-                        <a href="/folha/${encodeURIComponent(card.os_number)}" target="_blank" class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:border-sky-500 transition" title="Folha A4">
-                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-                        </a>
-
-                        <button onclick="openDeleteAuthModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition" title="Excluir O.S.">
-                            <i data-lucide="trash" class="w-4 h-4"></i>
+                        <button onclick="deleteCardDirect(window._lastOpenedCard?.os_number)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition" title="Excluir O.S.">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
 
                         <button onclick="closeModal('cardDetailModal')" class="text-slate-400 hover:text-white p-1 ml-1">

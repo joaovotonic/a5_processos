@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>O.S. {{ card.os_number }} - Esteira A5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-card {
+            background: rgba(18, 18, 23, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .tech-btn {
+            background: rgba(24, 24, 27, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.15s ease-in-out;
+        }
+        .tech-btn:active {
+            transform: scale(0.96);
+            background: #0284c7 !important;
+            border-color: #38bdf8 !important;
+            color: #ffffff !important;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.02); }
+        }
+        .glow-pulse { animation: pulseGlow 1.8s infinite ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 pb-8 max-w-md mx-auto">
+
+    <!-- CABEÇALHO -->
+    <header class="flex items-center justify-between pb-3 border-b border-white/5">
+        <div class="flex items-center gap-2.5">
+            <svg viewBox="0 0 48 32" class="w-8 h-6 shrink-0 drop-shadow" xmlns="http://www.w3.org/2000/svg">
+                <rect width="48" height="32" rx="7" fill="#254a93"/>
+                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="16" fill="#ffffff" text-anchor="middle" dominant-baseline="central">A5</text>
+            </svg>
+            <div>
+                <h1 class="text-xs font-black uppercase tracking-wider text-white">ESTEIRA DE PRODUÇÃO</h1>
+                <p class="text-[10px] text-sky-400 font-bold">A5 Tecnologia • Chave QR Code</p>
+            </div>
+        </div>
+
+        <a href="/admin" class="text-[10px] font-bold text-zinc-400 hover:text-white px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800">
+            Painel Kanban
+        </a>
+    </header>
+
+    <!-- CARD PRINCIPAL: DADOS DA BALANÇA -->
+    <main class="space-y-4 my-auto py-2">
+        <div class="glass-card rounded-3xl p-5 space-y-3.5 shadow-2xl relative overflow-hidden">
+            <!-- Faixa superior com Número da O.S. e Status -->
+            <div class="flex items-center justify-between border-b border-white/5 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-black px-2.5 py-1 rounded-xl bg-sky-500 text-slate-950 shadow-sm">
+                        O.S. {{ card.os_number }}
+                    </span>
+                    <span class="text-[10px] font-bold text-zinc-400 font-mono">{{ card.created_at[:10] }}</span>
+                </div>
+                <span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                    {{ card.list_title }}
+                </span>
+            </div>
+
+            <!-- Dados do Cliente e Equipamento -->
+            <div class="space-y-1">
+                <span class="text-[10px] font-black uppercase text-amber-400 block tracking-wider">Cliente:</span>
+                <h2 class="text-base font-black text-white leading-tight uppercase break-words">{{ card.client_name }}</h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+                <div class="bg-zinc-900/60 p-2.5 rounded-2xl border border-white/5">
+                    <span class="text-[9px] font-bold uppercase text-zinc-400 block">Equipamento:</span>
+                    <strong class="text-zinc-200 block truncate">{{ card.equipment_model or card.equipment_type }}</strong>
+                </div>
+                <div class="bg-zinc-900/60 p-2.5 rounded-2xl border border-white/5">
+                    <span class="text-[9px] font-bold uppercase text-zinc-400 block">Nº de Série:</span>
+                    <strong class="text-zinc-200 block font-mono truncate">{{ card.serial_number or 'Não informado' }}</strong>
+                </div>
+            </div>
+
+            {% if card.reported_defect %}
+                <div class="bg-zinc-900/80 p-2.5 rounded-2xl border border-white/5 text-xs">
+                    <span class="text-[9px] font-bold uppercase text-zinc-400 block mb-0.5">Defeito Informado:</span>
+                    <p class="text-zinc-300 font-medium leading-relaxed">{{ card.reported_defect }}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- ============================================================================== -->
+        <!-- ÁREA DE AÇÃO DA ESTEIRA (DINÂMICA DE ACORDO COM O ESTADO ATUAL)                -->
+        <!-- ============================================================================== -->
+
+        <!-- CASO 1: O.S. ESTÁ EM 'ORÇAMENTOS' (AGUARDANDO TÉCNICO INICIAR) -->
+        {% if card.state == 'AGUARDANDO_TECNICO_ORCAMENTO' %}
+            <div class="glass-card rounded-3xl p-5 space-y-3.5 border border-sky-500/30 shadow-xl">
+                <div class="text-center space-y-1">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-sky-400 block">1º PASSO DA ESTEIRA</span>
+                    <h3 class="text-sm font-black text-white">Qual técnico vai fazer este orçamento?</h3>
+                    <p class="text-[11px] text-zinc-400">Clique no seu nome para puxar a balança e iniciar o tempo de diagnóstico:</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    {% for tech in card.technicians %}
+                        <button type="button" onclick="claimOrcamento('{{ tech }}')"
+                            class="tech-btn p-3 rounded-2xl text-xs font-black text-zinc-100 flex items-center justify-center gap-1.5 shadow">
+                            <i data-lucide="user" class="w-3.5 h-3.5 text-sky-400"></i>
+                            <span>{{ tech }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+        <!-- CASO 2: O.S. ESTÁ NO NOME DO TÉCNICO EM ORÇAMENTO (FINALIZAR ORÇAMENTO) -->
+        {% elif card.state == 'EM_ORCAMENTO_BANCADA' %}
+            <div class="glass-card rounded-3xl p-5 space-y-4 border border-amber-500/30 text-center shadow-xl">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-block">
+                        EM ORÇAMENTO COM: {{ card.tech_name | upper }}
+                    </span>
+                    <h3 class="text-base font-black text-white pt-1">Diagnóstico em Andamento</h3>
+                    <p class="text-xs text-zinc-400">Ao concluir a análise das peças e o valor, finalize para enviar para a Recepção:</p>
+                </div>
+
+                <!-- Botão Gigante de Finalizar Orçamento -->
+                <button type="button" onclick="concluirOrcamento()"
+                    class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-sky-600/30 flex items-center justify-center gap-2.5 glow-pulse">
+                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    <span>ORÇAMENTO OK</span>
+                </button>
+            </div>
+
+        <!-- CASO 3: ORÇAMENTO FEITO OU ENVIADO AO CLIENTE (AGUARDANDO APROVAÇÃO) -->
+        {% elif card.state in ('ORCAMENTOS_FEITOS', 'ORCAMENTOS_ENVIADOS') %}
+            <div class="glass-card rounded-3xl p-6 space-y-3 border border-zinc-700 text-center">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-sm font-black text-white">Orçamento em Análise</h3>
+                    <p class="text-xs text-zinc-300">
+                        {% if card.state == 'ORCAMENTOS_FEITOS' %}
+                            O orçamento foi concluído pelo técnico e está com a Priscila na recepção para envio ao cliente.
+                        {% else %}
+                            O orçamento já foi enviado ao cliente. Aguardando aprovação comercial para liberar o conserto.
+                        {% endif %}
+                    </p>
+                </div>
+                <span class="text-[10px] font-mono text-zinc-400 block pt-1">Tempo líquido pausado até aprovação</span>
+            </div>
+
+        <!-- CASO 4: O.S. APROVADA PELO CLIENTE (PUXAR PARA MANUTENÇÃO) -->
+        {% elif card.state == 'APROVADOS' %}
+            <div class="glass-card rounded-3xl p-5 space-y-3.5 border border-emerald-500/40 shadow-xl">
+                <div class="text-center space-y-1">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-block animate-bounce">
+                        🎉 ORÇAMENTO APROVADO!
+                    </span>
+                    <h3 class="text-sm font-black text-white pt-1">Quem vai fazer a manutenção?</h3>
+                    <p class="text-[11px] text-zinc-400">Selecione seu nome para puxar a balança para a sua bancada:</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    {% for tech in card.technicians %}
+                        <button type="button" onclick="claimManutencao('{{ tech }}')"
+                            class="tech-btn p-3 rounded-2xl text-xs font-black text-zinc-100 flex items-center justify-center gap-1.5 shadow">
+                            <i data-lucide="wrench" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            <span>{{ tech }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+        <!-- CASO 5: O.S. EM MANUTENÇÃO COM O TÉCNICO (FINALIZAR BALANÇA) -->
+        {% elif card.state == 'EM_MANUTENCAO_BANCADA' %}
+            <div class="glass-card rounded-3xl p-5 space-y-4 border border-emerald-500/40 text-center shadow-xl">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-block">
+                        EM MANUTENÇÃO COM: {{ card.tech_name | upper }}
+                    </span>
+                    <h3 class="text-base font-black text-white pt-1">Conserto em Andamento</h3>
+                    <p class="text-xs text-zinc-400">Ao concluir a calibração, selagem e limpeza, aperte para finalizar a balança:</p>
+                </div>
+
+                <!-- Botão Gigante de Finalizar Balança -->
+                <button type="button" onclick="finalizarBalanca()"
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-950 font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2.5 glow-pulse">
+                    <i data-lucide="trophy" class="w-5 h-5"></i>
+                    <span>FINALIZAR BALANÇA</span>
+                </button>
+            </div>
+
+        <!-- CASO 6: BALANÇA FINALIZADA -->
+        {% elif card.state == 'FINALIZADAS' %}
+            <div class="glass-card rounded-3xl p-6 space-y-3 border border-emerald-500/50 text-center shadow-2xl bg-emerald-950/20">
+                <div class="w-14 h-14 mx-auto rounded-3xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <i data-lucide="check-check" class="w-8 h-8"></i>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-base font-black text-white">Balança Pronta e Finalizada!</h3>
+                    <p class="text-xs text-zinc-300">Serviço concluído por <strong class="text-emerald-400">{{ card.tech_name }}</strong>.</p>
+                </div>
+                <div class="bg-zinc-900/80 p-3 rounded-2xl border border-white/5 text-xs text-zinc-300 font-mono">
+                    Tempo Líquido: <strong class="text-emerald-400 text-sm">{{ card.tempo_liquido_str }}</strong>
+                </div>
+            </div>
+
+        {% else %}
+            <div class="glass-card rounded-3xl p-5 text-center text-xs text-zinc-400">
+                O.S. localizada na lista: <strong class="text-white">{{ card.list_title }}</strong>
+            </div>
+        {% endif %}
+
+    </main>
+
+    <!-- RODAPÉ -->
+    <footer class="text-center text-[11px] text-zinc-500 pt-3">
+        <span>A5 Tecnologia • Manaus/AM • Sistema Autorizado Prix</span>
+    </footer>
+
+    <!-- SCRIPT DE AÇÕES DA ESTEIRA -->
+    <script>
+        lucide.createIcons();
+
+        const osNumber = "{{ card.os_number }}";
+
+        // Beep de sucesso e vibração
+        function triggerHapticAndSound() {
+            try {
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.16);
+            } catch (e) {}
+        }
+
+        // 1. Técnico assume Orçamento
+        async function claimOrcamento(techName) {
+            triggerHapticAndSound();
+            try {
+                const res = await fetch("/api/esteira/claim-orcamento", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: osNumber, tecnico: techName })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    location.reload();
+                } else {
+                    alert("Erro: " + (data.error || "Não foi possível assumir o orçamento."));
+                }
+            } catch (err) {
+                alert("Falha de rede: " + err.message);
+            }
+        }
+
+        // 2. Técnico conclui Orçamento
+        async function concluirOrcamento() {
+            triggerHapticAndSound();
+            try {
+                const res = await fetch("/api/esteira/concluir-orcamento", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: osNumber })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    location.reload();
+                } else {
+                    alert("Erro: " + (data.error || "Não foi possível concluir o orçamento."));
+                }
+            } catch (err) {
+                alert("Falha de rede: " + err.message);
+            }
+        }
+
+        // 3. Técnico assume Manutenção
+        async function claimManutencao(techName) {
+            triggerHapticAndSound();
+            try {
+                const res = await fetch("/api/esteira/claim-manutencao", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: osNumber, tecnico: techName })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    location.reload();
+                } else {
+                    alert("Erro: " + (data.error || "Não foi possível puxar a balança."));
+                }
+            } catch (err) {
+                alert("Falha de rede: " + err.message);
+            }
+        }
+
+        // 4. Técnico finaliza a balança
+        async function finalizarBalanca() {
+            triggerHapticAndSound();
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            try {
+                const res = await fetch("/api/esteira/finalizar-balanca", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: osNumber })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    alert("Erro: " + (data.error || "Não foi possível finalizar a balança."));
+                }
+            } catch (err) {
+                alert("Falha de rede: " + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

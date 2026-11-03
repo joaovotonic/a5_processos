@@ -10,22 +10,18 @@ os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
 os.makedirs(ARQUIVADOS_PDFS_DIR, exist_ok=True)
 
-# Listas padrões da A5 Tecnologia na ordem operacional
+# Listas padrões da Esteira de Produção da A5 Tecnologia
 INITIAL_LISTS = [
     {"title": "ORÇAMENTOS", "is_tech": 0, "role": "orcamento"},
-    {"title": "APROVADAS", "is_tech": 0, "role": "aprovada"},
+    {"title": "TEC. João Otoni", "is_tech": 1, "role": "tech"},
     {"title": "TEC. Enzo Gabriel", "is_tech": 1, "role": "tech"},
     {"title": "TEC. Guilherme", "is_tech": 1, "role": "tech"},
     {"title": "TEC. Wisley", "is_tech": 1, "role": "tech"},
-    {"title": "TEC. João Otoni", "is_tech": 1, "role": "tech"},
     {"title": "TEC. Iago", "is_tech": 1, "role": "tech"},
     {"title": "TEC. ANTONIO", "is_tech": 1, "role": "tech"},
-    {"title": "SR. JACSON", "is_tech": 1, "role": "tech"},
-    {"title": "ANALISES FEITAS", "is_tech": 0, "role": "processo"},
-    {"title": "ORÇAMENTOS ENVIADOS", "is_tech": 0, "role": "processo"},
-    {"title": "ORÇAMENTOS NÃO AUTORIZADOS", "is_tech": 0, "role": "nao_autorizado"},
-    {"title": "PENDÊNCIAS", "is_tech": 0, "role": "pendencia"},
-    {"title": "BALANÇAS PRONTAS", "is_tech": 0, "role": "pronta"},
+    {"title": "ORÇAMENTOS FEITOS", "is_tech": 0, "role": "orcamentos_feitos"},
+    {"title": "ORÇAMENTOS ENVIADOS", "is_tech": 0, "role": "orcamentos_enviados"},
+    {"title": "APROVADOS", "is_tech": 0, "role": "aprovados"},
     {"title": "FINALIZADAS", "is_tech": 0, "role": "finalizada"}
 ]
 
@@ -67,6 +63,7 @@ def get_db_connection():
             ).fetchone()
             if has_cards:
                 _ensure_cards_columns(conn.cursor())
+                _ensure_esteira_lists(conn.cursor())
                 _ensure_scale_models(conn.cursor())
                 conn.commit()
         except Exception:
@@ -237,9 +234,20 @@ def init_db():
 
         # Migração automática para bancos existentes (adiciona colunas novas sem perder dados)
         _ensure_cards_columns(cursor)
+        _ensure_esteira_lists(cursor)
         _ensure_scale_models(cursor)
 
     perform_daily_backup()
+
+
+def _ensure_esteira_lists(cursor):
+    """Garante que as colunas da esteira estejam alinhadas com o fluxo exato de produção."""
+    cursor.execute("UPDATE lists SET title = 'ORÇAMENTOS FEITOS', role = 'orcamentos_feitos' WHERE title = 'ANALISES FEITAS' OR role = 'orcamentos_feitos';")
+    cursor.execute("UPDATE lists SET title = 'ORÇAMENTOS ENVIADOS', role = 'orcamentos_enviados' WHERE title = 'ORÇAMENTOS ENVIADOS';")
+    cursor.execute("UPDATE lists SET title = 'APROVADOS', role = 'aprovados' WHERE title = 'APROVADAS' OR title = 'APROVADOS';")
+    cursor.execute("UPDATE lists SET title = 'FINALIZADAS', role = 'finalizada' WHERE title = 'BALANÇAS PRONTAS' OR title = 'FINALIZADAS';")
+    # Remove colunas desnecessárias do kanban antigo se existirem
+    cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'ORÇAMENTOS NÃO AUTORIZADOS', 'PENDÊNCIAS');")
 
 
 def _ensure_cards_columns(cursor):
