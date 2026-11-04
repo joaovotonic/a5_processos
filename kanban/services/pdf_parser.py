@@ -73,10 +73,12 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
         "filename": filename
     }
 
-    # 1. Extração do Número da O.S.
+    # 1. Extração do Número da O.S. (Suporta Teorema com 10 dígitos, ex: 0000026791)
     os_patterns = [
-        r"(?:ORDEM\s+DE\s+SERVI[ÇC]O|O\.?S\.?|NUMERO|N[°ºo]\.?)\s*[:#\s]?\s*(\d{3,8})",
-        r"(?:O\.?S\.?)\s*[:#\s]?\s*([A-Z0-9\-\/]{3,12})",
+        r"Ordem\s+de\s+Servi[çc]o\s*:\s*(\d{3,14})",
+        r"(?:ORDEM\s+DE\s+SERVI[ÇC]O|O\.?S\.?|NUMERO|N[°ºo]\.?)\s*[:#\s]?\s*(\d{3,14})",
+        r"\b(0{2,6}\d{4,10})\b",
+        r"(?:O\.?S\.?)\s*[:#\s]?\s*([A-Z0-9\-\/]{3,14})",
         r"N[º°]\s*(\d+)",
     ]
     for pat in os_patterns:
@@ -85,14 +87,15 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
             data["os_number"] = m.group(1).strip()
             break
 
-    # Se não achou no texto, procura no nome do arquivo (ex: OS_12345.pdf ou 12345.pdf)
+    # Se não achou no texto, procura no nome do arquivo (ex: OS_0000026791.pdf ou 026791.pdf)
     if not data["os_number"]:
-        m = re.search(r"(?:OS|ORDEM)?[_\-\s]?(\d{3,8})", name_no_ext, re.IGNORECASE)
+        m = re.search(r"(?:OS|ORDEM)?[_\-\s]?(\d{3,14})", name_no_ext, re.IGNORECASE)
         if m:
             data["os_number"] = m.group(1).strip()
 
     # 2. Extração do Nome do Cliente / Razão Social
     client_patterns = [
+        r"Cliente\s*:\s*([^\n\r]+)",
         r"(?:CLIENTE|RAZ[ÃA]O\s+SOCIAL|NOME\/RAZ[ÃA]O|DESTINAT[ÁA]RIO)\s*[:#]?\s*([^\n\r]+)",
         r"(?:SR\(A\)|NOME)\s*[:#]?\s*([^\n\r]+)",
     ]
@@ -118,19 +121,20 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
 
     # 3. Extração do Modelo / Equipamento / Marca
     model_patterns = [
+        r"MARCA\s*(?:\/|E)?\s*MODELO\s*:\s*([^\n\r]+)",
         r"(?:MODELO|EQUIPAMENTO|BALAN[ÇC]A|APARELHO|DESCRI[ÇC][ÃA]O)\s*[:#]?\s*([^\n\r]+)",
-        r"(PRIX\s+[0-9A-Z\s\+\-]+)",
-        r"(TOLEDO\s+[0-9A-Z\s\+\-]+)",
-        r"(ELGIN\s+[0-9A-Z\s\+\-]+)",
-        r"(FILIZOLA\s+[0-9A-Z\s\+\-]+)",
-        r"(URANO\s+[0-9A-Z\s\+\-]+)",
-        r"(RAMUZA\s+[0-9A-Z\s\+\-]+)",
+        r"(PRIX\s+[0-9A-Z\s\+\-\/]+)",
+        r"(TOLEDO\s+[0-9A-Z\s\+\-\/]+)",
+        r"(ELGIN\s+[0-9A-Z\s\+\-\/]+)",
+        r"(FILIZOLA\s+[0-9A-Z\s\+\-\/]+)",
+        r"(URANO\s+[0-9A-Z\s\+\-\/]+)",
+        r"(RAMUZA\s+[0-9A-Z\s\+\-\/]+)",
     ]
     for pat in model_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
             candidate = _clean(m.group(1))
-            candidate = re.split(r"(?:SERIE|S[ÉE]RIE|N\/S|COR|CAPACIDADE|DEFEITO)", candidate, flags=re.IGNORECASE)[0]
+            candidate = re.split(r"(?:PATRIM[ÔO]NIO|END\.?\s*REDE|CAPACIDADE|N[º°]\s*INMETRO|PORT\.|L\.RETIRADO|SELO|SERIE|S[ÉE]RIE|N\/S|COR|DEFEITO)", candidate, flags=re.IGNORECASE)[0]
             candidate = _clean(candidate)
             if len(candidate) > 1:
                 data["equipment_model"] = candidate.upper()
@@ -140,8 +144,9 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
     if "PRIX" in text.upper() and not data["equipment_model"]:
         data["equipment_model"] = "TOLEDO PRIX"
 
-    # 4. Extração do Número de Série
+    # 4. Extração do Número de Equipamento / Série
     serial_patterns = [
+        r"N[º°o]?\s*EQUIP(?:AMENTO|\.)?\s*:\s*([A-Z0-9\-\.]{3,20})",
         r"(?:S[ÉE]RIE|N[°ºo]?\s*S[ÉE]RIE|N\/S|SERIAL|CHASSI)\s*[:#]?\s*([A-Z0-9\-\.]{3,20})",
     ]
     for pat in serial_patterns:
@@ -152,19 +157,31 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
                 data["serial_number"] = candidate.upper()
                 break
 
-    # 5. Extração do Defeito Reclamado
-    defect_patterns = [
-        r"(?:DEFEITO(?:\s+RELATADO|\s+RECLAMADO)?|PROBLEMA|RECLAMA[ÇC][ÃA]O|SOLICITA[ÇC][ÃA]O|MOTIVO)\s*[:#]?\s*([^\n\r]+(?:\n[^\n\r]+)?)",
-    ]
-    for pat in defect_patterns:
-        m = re.search(pat, text, re.IGNORECASE)
-        if m:
-            candidate = _clean(m.group(1))
-            candidate = re.split(r"(?:OBS|OBSERVA[ÇC][ÃA]O|LAUDO|T[ÉE]CNICO|VALOR)", candidate, flags=re.IGNORECASE)[0]
-            candidate = _clean(candidate)
-            if len(candidate) > 3:
-                data["reported_defect"] = candidate
-                break
+    # 5. Extração do Defeito Reclamado do Teorema (preserva multilinhas limpas)
+    m_def = re.search(
+        r"Defeito\s*:\s*([\s\S]*?)(?=(?:Reduzido|S\s*E\s*R\s*V\s*I\s*Ç\s*O\s*S|Vl\s*Total|Descri[çc][ãa]o:|\.\s*[\r\n]|\Z))",
+        text,
+        re.IGNORECASE
+    )
+    if m_def:
+        raw_lines = [l.strip() for l in m_def.group(1).strip().split("\n")]
+        clean_lines = [l for l in raw_lines if l and l != "."]
+        if clean_lines:
+            data["reported_defect"] = "\n".join(clean_lines)
+
+    if not data["reported_defect"] or data["reported_defect"] == "Defeito informado na O.S. física Teorema":
+        defect_patterns = [
+            r"(?:DEFEITO(?:\s+RELATADO|\s+RECLAMADO)?|PROBLEMA|RECLAMA[ÇC][ÃA]O|SOLICITA[ÇC][ÃA]O|MOTIVO)\s*[:#]?\s*([^\n\r]+(?:\n[^\n\r]+)?)",
+        ]
+        for pat in defect_patterns:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                candidate = _clean(m.group(1))
+                candidate = re.split(r"(?:OBS|OBSERVA[ÇC][ÃA]O|LAUDO|T[ÉE]CNICO|VALOR)", candidate, flags=re.IGNORECASE)[0]
+                candidate = _clean(candidate)
+                if len(candidate) > 3:
+                    data["reported_defect"] = candidate
+                    break
 
     return data
 

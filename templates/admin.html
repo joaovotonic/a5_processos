@@ -387,9 +387,9 @@
         </div>
     </div>
 
-    <!-- MODAL 2: DETALHES DA O.S. (CardDetail) -->
+    <!-- MODAL 2: DETALHES DA O.S. (CardDetail - Foco em Fase & Defeito) -->
     <div id="cardDetailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-5xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[93vh] overflow-y-auto select-text">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[93vh] overflow-y-auto select-text">
             <div id="cardDetailContent"></div>
         </div>
     </div>
@@ -1571,69 +1571,86 @@
                 return;
             }
             window._lastOpenedCard = card;
-            const qd = card.quote_data || {};
 
-            const renderPhotoGrid = (urls, emptyMsg) => {
-                if (!urls || !urls.length) {
-                    return `<div class="p-4 text-center text-xs text-slate-400 border border-dashed border-slate-200 dark:border-zinc-800 rounded-xl">${emptyMsg}</div>`;
-                }
-                return `<div class="grid grid-cols-2 md:grid-cols-4 gap-2">${urls.map(url => `
-                    <img src="${esc(url)}" onclick="window.open('${esc(url)}')" class="h-28 w-full object-cover rounded-xl border border-slate-200 dark:border-zinc-800 cursor-zoom-in hover:scale-[1.02] transition">
-                `).join("")}</div>`;
-            };
-
-            const activeLabelsNames = (card.labels || []).map(l => l.name);
-            const editLabelsHTML = boardData.labels.map((l, idx) => {
-                const isSelected = activeLabelsNames.includes(l.name);
-                return `
-                    <button type="button" onclick="toggleCardLabelByIdx(${idx})"
-                        class="px-2.5 py-1 rounded-md text-xs font-bold transition ${isSelected ? 'ring-2 ring-sky-500 scale-105' : 'opacity-40 hover:opacity-85'}"
-                        style="background:${esc(l.color)}; color:${esc(l.text_color)}">
-                        ${isSelected ? '✓ ' : ''}${esc(l.name)}
-                    </button>
-                `;
-            }).join("");
-
-            const partsItems = qd.parts_items || [];
-            const partsTableHTML = partsItems.length ? `
-                <table class="w-full text-xs border-collapse">
-                    <thead>
-                        <tr class="border-b border-slate-200 dark:border-zinc-800 text-left text-slate-400">
-                            <th class="py-1.5 w-12 font-mono">QTD</th>
-                            <th class="py-1.5 w-24 font-mono">CÓDIGO</th>
-                            <th class="py-1.5">DESCRIÇÃO</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/60">
-                        ${partsItems.map(p => `
-                            <tr>
-                                <td class="py-1.5 font-bold font-mono">${esc(p.qty)}x</td>
-                                <td class="py-1.5 font-mono text-sky-400 font-bold">${esc(p.code || '-')}</td>
-                                <td class="py-1.5">${esc(p.description || '')}</td>
-                            </tr>
-                        `).join("")}
-                    </tbody>
-                </table>
-            ` : `<p class="text-xs text-slate-400">Nenhuma peça Toledo registrada no orçamento.</p>`;
-
-            const isPronta = card.list_role === "pronta" || (card.list_title || "").toUpperCase().includes("PRONTA") || (card.list_title || "").toUpperCase().includes("FINALIZADA");
-            const isApproved = card.quote_status === "approved" || card.pipeline_phase === "APROVADOS";
-            const phase = card.pipeline_phase || "";
+            // Determina a etapa e detalhes da Esteira de Produção
+            const phase = card.pipeline_phase || "ORCAMENTOS_A_FAZER";
             const lTitle = (card.list_title || "").toUpperCase();
-            const canSendQuote = phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS") || card.quote_status === "done";
+
+            let phaseName = "1. Orçamentos a Fazer";
+            let phaseColor = "text-amber-400 bg-amber-500/15 border-amber-500/30";
+            let phaseDesc = "Aguardando técnico na oficina escanear o QR Code para assumir na bancada.";
+            let activeStepIndex = 0;
+
+            if (phase === "EM_ORCAMENTO" || (card.list_is_tech && !card.finished_at && phase !== "EM_MANUTENCAO")) {
+                phaseName = "2. Em Diagnóstico / Orçamento";
+                phaseColor = "text-sky-400 bg-sky-500/15 border-sky-500/30";
+                phaseDesc = `Balança na bancada com <strong>${esc(card.tech_name || 'Oficina')}</strong> (iniciado às ${esc((card.inicio_orcamento || '').slice(11, 16))}).`;
+                activeStepIndex = 1;
+            } else if (phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS")) {
+                phaseName = "3. Orçamento Concluído (Feito)";
+                phaseColor = "text-slate-950 bg-sky-500 border-sky-400 font-black";
+                phaseDesc = "Diagnóstico concluído pelo técnico na bancada. Pronto para ser enviado ao cliente.";
+                activeStepIndex = 2;
+            } else if (phase === "ORCAMENTOS_ENVIADOS" || lTitle.includes("ENVIADOS") || lTitle.includes("ENVIADO")) {
+                phaseName = "4. Orçamento Enviado ao Cliente";
+                phaseColor = "text-purple-300 bg-purple-500/20 border-purple-500/40";
+                phaseDesc = "Orçamento enviado pela recepção. Aguardando aprovação do cliente para execução dos reparos.";
+                activeStepIndex = 3;
+            } else if (phase === "APROVADOS" || lTitle.includes("APROVAD")) {
+                phaseName = "5. Orçamento Aprovado (Liberado)";
+                phaseColor = "text-slate-950 bg-emerald-500 border-emerald-400 font-black";
+                phaseDesc = "Aprovado pelo cliente! Notificado na TV da oficina e QR Code liberado para conserto.";
+                activeStepIndex = 4;
+            } else if (phase === "EM_MANUTENCAO" || (card.list_is_tech && phase === "EM_MANUTENCAO")) {
+                phaseName = "6. Em Manutenção na Bancada";
+                phaseColor = "text-indigo-300 bg-indigo-500/20 border-indigo-500/40";
+                phaseDesc = `Técnico executando os reparos: <strong>${esc(card.tech_name || card.finisher_tech || 'Oficina')}</strong>.`;
+                activeStepIndex = 5;
+            } else if (phase === "PRONTAS" || phase === "FINALIZADAS" || card.finished_at || lTitle.includes("FINALIZADA") || lTitle.includes("PRONTA")) {
+                phaseName = "7. Finalizada / Balança Pronta";
+                phaseColor = "text-emerald-400 bg-emerald-500/20 border-emerald-500/40 font-black";
+                phaseDesc = "Balança reparada, calibrada e pronta para entrega ao cliente.";
+                activeStepIndex = 6;
+            }
+
+            const canSendQuote = phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS");
             const canApproveQuote = phase === "ORCAMENTOS_ENVIADOS" || lTitle.includes("ENVIADOS") || lTitle.includes("ENVIADO");
-            const canReopenQuote = !card.finished_at;
-            const canCancelOs = !card.finished_at;
+
+            const steps = [
+                "1. Orçamentos",
+                "2. Em Orçamento",
+                "3. Orç. Feitos",
+                "4. Enviados",
+                "5. Aprovados",
+                "6. Manutenção",
+                "7. Finalizadas"
+            ];
+
+            const stepsBarHTML = `
+                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5 pt-2 font-mono">
+                    ${steps.map((st, i) => `
+                        <div class="p-2 rounded-xl border text-[11px] font-bold text-center truncate transition ${
+                            i === activeStepIndex 
+                                ? 'bg-sky-500 text-slate-950 border-sky-400 font-black shadow-lg shadow-sky-500/20 scale-[1.02]' 
+                                : (i < activeStepIndex 
+                                    ? 'bg-slate-100 dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
+                                    : 'bg-slate-50 dark:bg-zinc-900/30 text-slate-400 dark:text-zinc-600 border-slate-200 dark:border-zinc-800/60')
+                        }">
+                            ${i < activeStepIndex ? '✓ ' : ''}${st}
+                        </div>
+                    `).join("")}
+                </div>
+            `;
 
             const modalContent = document.getElementById("cardDetailContent");
             modalContent.innerHTML = `
                 <!-- 1. HEADER DO MODAL -->
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 pb-3 mb-4">
                     <div class="flex items-center gap-2">
-                        <span class="font-mono text-sm font-bold px-2.5 py-1 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/25">
+                        <span class="font-mono text-base font-black px-3 py-1 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/30 shadow-sm">
                             O.S. ${esc(card.os_number)}
                         </span>
-                        <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-semibold border border-slate-200 dark:border-zinc-700">
+                        <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-850 text-slate-700 dark:text-zinc-300 font-semibold border border-slate-200 dark:border-zinc-700">
                             Coluna: ${esc(card.list_title || 'N/A')}
                         </span>
                     </div>
@@ -1650,39 +1667,19 @@
                         ${canApproveQuote ? `
                             <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'aprovar')"
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
-                                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
                                 <span>APROVADO (Avisar TV)</span>
                             </button>
                         ` : ''}
 
-                        ${isPronta ? `
-                            <button onclick="finalizeCardFromAdmin()"
-                                class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
-                                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                                <span>Finalizar O.S.</span>
-                            </button>
-                        ` : ''}
-
-                        ${canReopenQuote ? `
-                            <button onclick="reopenQuoteFromAdmin()"
-                                class="${card.reopen_requested === 1 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold animate-pulse' : 'bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-medium'} px-3 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
-                                <i data-lucide="unlock" class="w-3.5 h-3.5"></i>
-                                <span>${card.reopen_requested === 1 ? 'Liberar Reabertura' : 'Reabrir Orçamento'}</span>
-                            </button>
-                            ${card.reopen_requested === 1 ? `
-                                <button onclick="denyReopenRequest(${card.id})"
-                                    class="bg-slate-100 hover:bg-red-500 hover:text-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 font-semibold px-2.5 py-1.5 rounded-lg text-xs transition flex items-center gap-1.5">
-                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                                    <span>Recusar</span>
-                                </button>
-                            ` : ''}
-                        ` : ''}
-
-                        <button onclick="openThermalLabel('${esc(card.os_number)}')" class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-2.5 py-1.5 rounded-lg text-xs font-medium hover:border-sky-500 transition" title="Etiqueta 60x40">
+                        <button onclick="openThermalLabel('${esc(card.os_number)}')" 
+                            class="bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-3 py-1.5 rounded-lg text-xs font-semibold hover:border-sky-500 transition flex items-center gap-1.5" title="Reimprimir Etiqueta Térmica">
                             <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                            <span>Etiqueta</span>
                         </button>
 
-                        <button onclick="deleteCardDirect(window._lastOpenedCard?.os_number)" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition" title="Excluir O.S.">
+                        <button onclick="deleteCardDirect(window._lastOpenedCard?.os_number)" 
+                            class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition" title="Excluir O.S.">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
 
@@ -1692,109 +1689,70 @@
                     </div>
                 </div>
 
-                <!-- 2. CLIENTE EM DESTAQUE -->
-                <div class="text-center py-3.5 px-4 mb-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
-                    <h2 class="text-xl md:text-2xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">
+                <!-- 2. CLIENTE & EQUIPAMENTO -->
+                <div class="text-center py-4 px-5 mb-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
+                    <h2 class="text-xl md:text-2xl font-black uppercase tracking-wide text-slate-900 dark:text-white">
                         ${esc(card.client_name)}
                     </h2>
-                    <p class="text-xs text-slate-400 mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-                        <span>${esc(card.equipment_type)}</span>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400 mt-1.5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                        <span>${esc(card.equipment_type || 'Balança Toledo Prix')}</span>
                         <span>•</span>
-                        <span>Modelo: <strong class="text-slate-200">${esc(card.equipment_model || 'N/I')}</strong></span>
+                        <span>Modelo: <strong class="text-slate-900 dark:text-zinc-100 font-bold">${esc(card.equipment_model || 'TOLEDO PRIX')}</strong></span>
                         <span>•</span>
-                        <span>Série: <strong class="text-slate-200 font-mono">${esc(card.serial_number || 'N/I')}</strong></span>
+                        <span>Nº Equip / Série: <strong class="text-slate-900 dark:text-zinc-100 font-mono font-bold">${esc(card.serial_number || 'N/I')}</strong></span>
                     </p>
                 </div>
 
-                <!-- 3. LACRE IPEM A5 -->
-                ${card.inmetro_seal ? `
-                    <div class="mb-4 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
-                                <i data-lucide="shield-check" class="w-4 h-4"></i>
-                                Lacre IPEM A5:
-                            </span>
-                            <span class="text-base font-bold font-mono tracking-wider text-slate-900 dark:text-white bg-white dark:bg-zinc-900 px-3 py-0.5 rounded-md border border-emerald-500/30">
-                                ${esc(card.inmetro_seal)}
-                            </span>
-                            ${card.finisher_tech ? `<span class="text-xs text-slate-400">Téc: <strong>${esc(card.finisher_tech)}</strong></span>` : ''}
+                <!-- 3. FASE ATUAL DA ESTEIRA DE PRODUÇÃO -->
+                <div class="p-4 mb-4 rounded-2xl border border-sky-500/20 bg-sky-500/5 dark:bg-sky-950/20 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="activity" class="w-4 h-4 text-sky-400"></i>
+                            <span class="text-xs font-black uppercase tracking-wider text-sky-400">Fase Atual da O.S.</span>
                         </div>
-                        <button type="button" onclick="copySealNumber('${esc(card.inmetro_seal)}')"
-                            class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
-                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                            Copiar p/ Teorema
-                        </button>
+                        <span class="text-xs font-black px-3 py-1 rounded-xl border ${phaseColor}">
+                            ${phaseName}
+                        </span>
                     </div>
-                ` : ''}
 
-                <!-- 4. LAUDO & PEÇAS -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40 space-y-2.5">
-                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-2">
-                            <h4 class="font-bold text-xs uppercase text-sky-500 flex items-center gap-1.5">
-                                <i data-lucide="clipboard-check" class="w-4 h-4"></i>
-                                Laudo Técnico & Solução
-                            </h4>
-                            <button onclick="copyQuoteToClipboard()" class="bg-sky-500 hover:bg-sky-400 text-slate-950 px-2.5 py-1 rounded-md text-[11px] font-bold transition flex items-center gap-1">
-                                <i data-lucide="copy" class="w-3 h-3"></i>
-                                Copiar p/ Vendas
+                    <p class="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                        ${phaseDesc}
+                    </p>
+
+                    <!-- LINHA DA ESTEIRA (PROGRESSO) -->
+                    ${stepsBarHTML}
+
+                    <!-- BOTÃO DIRETO SE PRECISAR DE AÇÃO DA ADM -->
+                    ${canSendQuote ? `
+                        <div class="pt-2">
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'enviar_cliente')"
+                                class="w-full bg-sky-600 hover:bg-sky-500 active:scale-[0.99] text-white font-black py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-sky-600/20">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>OK • Registrar Orçamento como Enviado ao Cliente</span>
                             </button>
                         </div>
-                        <div class="text-xs space-y-2">
-                            <p><strong>Defeito Entrada:</strong> ${esc(card.reported_defect || 'Não informado')}</p>
-                            <div class="p-3 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
-                                <strong class="text-sky-400 block mb-1 text-[11px] uppercase tracking-wider">Laudo (Orçamento):</strong>
-                                <span id="copyLaudoText" class="text-xs font-medium text-slate-800 dark:text-zinc-200 leading-relaxed">${esc(qd.technical_report || card.root_cause || 'Aguardando avaliação')}</span>
-                            </div>
-                            <div class="p-2.5 rounded-lg bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
-                                <strong class="text-emerald-500 block mb-0.5 text-[11px] uppercase tracking-wider">Solução Executada:</strong>
-                                <span class="text-xs text-slate-700 dark:text-zinc-300">${esc(qd.solution || card.tech_notes || 'Aguardando finalização')}</span>
-                            </div>
+                    ` : ''}
+
+                    ${canApproveQuote ? `
+                        <div class="pt-2">
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'aprovar')"
+                                class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-black py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span>APROVADO • Disparar Aviso na TV e Liberar p/ Bancada</span>
+                            </button>
                         </div>
-                    </div>
-
-                    <div class="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40 space-y-2.5">
-                        <h4 class="font-bold text-xs uppercase text-sky-500 flex items-center gap-1.5 border-b border-slate-200 dark:border-zinc-800 pb-2">
-                            <i data-lucide="cpu" class="w-4 h-4"></i>
-                            Peças Toledo Substituídas
-                        </h4>
-                        <div id="copyPartsBox">${partsTableHTML}</div>
-                    </div>
+                    ` : ''}
                 </div>
 
-                <!-- 5. ANOTAÇÕES DA RECEPÇÃO -->
-                <div class="mb-4 p-4 rounded-xl border border-amber-500/25 bg-amber-500/5 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label class="font-bold text-xs uppercase text-amber-500 flex items-center gap-1.5">
-                            <i data-lucide="file-edit" class="w-3.5 h-3.5"></i>
-                            Anotações Internas da Recepção (Priscila)
-                        </label>
-                        <button type="button" onclick="saveAdminNotes()"
-                            class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded-lg text-xs transition">
-                            Salvar
-                        </button>
+                <!-- 4. DEFEITO RELATADO NA ENTRADA -->
+                <div class="p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 space-y-2.5">
+                    <div class="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-black text-xs uppercase tracking-wider">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                        <span>Defeito Relatado / Reclamado na Entrada</span>
                     </div>
-                    <textarea id="adminNotesInput" rows="2" placeholder="Observações sobre prazo, contatos com o cliente, etc..."
-                        class="w-full px-3 py-2 rounded-xl border border-amber-500/20 bg-white dark:bg-zinc-950 text-xs focus:outline-none focus:border-amber-500">${esc(card.admin_notes || '')}</textarea>
-                </div>
-
-                <!-- 6. ETIQUETAS -->
-                <div class="mb-4">
-                    <label class="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Etiquetas:</label>
-                    <div class="flex flex-wrap gap-1.5">${editLabelsHTML}</div>
-                </div>
-
-                <!-- 7. FOTOS ANEXADAS -->
-                <div class="mb-4 p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40">
-                    <h4 class="font-bold text-xs uppercase text-slate-400 mb-2 flex items-center gap-1.5">
-                        <i data-lucide="images" class="w-4 h-4 text-sky-500"></i>
-                        Galeria de Fotos da O.S.
-                    </h4>
-                    ${renderPhotoGrid([
-                        ...(card.entry_photos || []),
-                        ...(card.quote_photos || []),
-                        ...(card.exit_photos || [])
-                    ], "Nenhuma foto anexada a esta O.S.")}
+                    <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 text-xs sm:text-sm font-mono font-bold leading-relaxed whitespace-pre-wrap select-text">
+${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
+                    </div>
                 </div>
             `;
 
