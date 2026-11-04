@@ -5,6 +5,7 @@ insere o card no SQLite com pipeline_phase='ORCAMENTOS_A_FAZER', move o arquivo 
 e dispara eventos SocketIO em tempo real (TV e auto-impressão da etiqueta na Adm).
 """
 import os
+import re
 import shutil
 import time
 import logging
@@ -67,8 +68,9 @@ def process_pdf_file(pdf_path: str):
         time.sleep(0.4)
 
     try:
+        from ..utils import format_os_number
         data = parse_os_pdf(pdf_path)
-        os_number = data.get("os_number") or ""
+        os_number = format_os_number(data.get("os_number") or "")
         now_iso = datetime.now().isoformat()
         now_dt = datetime.now()
 
@@ -93,12 +95,17 @@ def process_pdf_file(pdf_path: str):
         # 2. Inserção ou atualização no SQLite
         card_id = None
         with connect() as conn:
-            existing = conn.execute("SELECT id FROM cards WHERE os_number = ?", (os_number,)).fetchone()
+            clean_digits = re.sub(r"\D", "", os_number).lstrip("0") or "0"
+            existing = conn.execute(
+                "SELECT id FROM cards WHERE os_number = ? OR os_number = ? OR os_number = ? OR os_number = ?",
+                (os_number, clean_digits, clean_digits.zfill(10), clean_digits.zfill(6))
+            ).fetchone()
             if existing:
                 card_id = existing["id"]
                 conn.execute("""
                     UPDATE cards
-                    SET client_name = COALESCE(NULLIF(?, ''), client_name),
+                    SET os_number = ?,
+                        client_name = COALESCE(NULLIF(?, ''), client_name),
                         equipment_model = COALESCE(NULLIF(?, ''), equipment_model),
                         serial_number = COALESCE(NULLIF(?, ''), serial_number),
                         reported_defect = COALESCE(NULLIF(?, ''), reported_defect),
@@ -107,6 +114,7 @@ def process_pdf_file(pdf_path: str):
                         updated_at = ?
                     WHERE id = ?
                 """, (
+                    os_number,
                     data["client_name"],
                     data["equipment_model"],
                     data["serial_number"],

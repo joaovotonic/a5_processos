@@ -12,6 +12,7 @@ Gerencia as transições de lista para lista acionadas pelo QR Code da balança 
 from datetime import datetime
 import json
 import logging
+import re
 from typing import Dict, Any, Optional
 
 from ..database import connect
@@ -22,20 +23,21 @@ logger = logging.getLogger("kanban.esteira")
 
 
 def _clean_os(os_number: str) -> str:
-    """Remove zeros à esquerda do número da O.S. (ex: 0000026791 -> 26791)."""
-    raw = str(os_number or "").strip()
-    return raw.lstrip("0") or "0" if raw else ""
+    """Padroniza o número da O.S. para 6 dígitos (ex: 0000026797 -> 026797)."""
+    from ..utils import format_os_number
+    return format_os_number(os_number)
 
 
 def _find_card_by_os(conn, os_number: str):
-    """Localiza o cartão por número de O.S. (com ou sem zeros) ou por ID."""
+    """Localiza o cartão por número de O.S. (em qualquer formato) ou por ID."""
     raw = str(os_number or "").strip()
-    clean = _clean_os(os_number)
+    std = _clean_os(raw)
+    clean_digits = re.sub(r"\D", "", raw).lstrip("0") or "0"
     row = conn.execute(
         "SELECT c.*, l.title as list_title, l.role as list_role, l.is_tech as list_is_tech "
         "FROM cards c JOIN lists l ON c.list_id = l.id "
-        "WHERE c.os_number = ? OR c.os_number = ? OR c.id = ?",
-        (clean, raw, clean)
+        "WHERE c.os_number = ? OR c.os_number = ? OR c.os_number = ? OR c.os_number = ? OR c.os_number = ? OR c.id = ?",
+        (std, clean_digits, clean_digits.zfill(6), clean_digits.zfill(10), raw, clean_digits)
     ).fetchone()
     return dict(row) if row else None
 

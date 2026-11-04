@@ -1,5 +1,6 @@
 """Utilitários de rede, arquivos e leitura de dados das requisições."""
 import os
+import re
 import shutil
 import socket
 import uuid
@@ -9,6 +10,29 @@ from flask import request
 from werkzeug.utils import secure_filename
 
 from .config import ALLOWED_PHOTO_EXTENSIONS, BASE_DIR, UPLOAD_FOLDER
+
+
+def format_os_number(os_number: str) -> str:
+    """
+    Padroniza o número da O.S. para o formato oficial da A5 Tecnologia (6 dígitos).
+    Exemplos:
+      '0000026797' -> '026797'
+      '0000026791' -> '026791'
+      '26797'      -> '026797'
+      '026797'     -> '026797'
+      '997452'     -> '997452'
+    """
+    raw = str(os_number or "").strip()
+    if not raw or raw.startswith("TEO-"):
+        return raw
+    digits = re.sub(r"\D", "", raw)
+    if not digits:
+        return raw
+    trimmed = digits.lstrip("0") or "0"
+    if len(trimmed) < 6:
+        return trimmed.zfill(6)
+    return trimmed
+
 
 
 # ==============================================================================

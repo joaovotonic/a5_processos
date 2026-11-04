@@ -585,7 +585,7 @@
                 else if (c.phase === "EM_MANUTENCAO") badgeColor = "bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30";
                 else if (c.phase === "ORCAMENTOS_ENVIADOS") badgeColor = "bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30";
 
-                const cleanOs = String(c.os_number || "").replace(/^0+/, "") || "0";
+                const cleanOs = String(c.os_number || "");
 
                 return `
                     <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition os-row" data-search="${(cleanOs + ' ' + c.client_name + ' ' + c.equipment_model + ' ' + c.tech_name).toLowerCase()}">

@@ -93,9 +93,10 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
         if m:
             data["os_number"] = m.group(1).strip()
 
-    # Normaliza O.S. pegando a partir do primeiro número após o último zero à esquerda (ex: 0000026791 -> 26791)
+    # Normaliza O.S. para o formato padrão oficial da A5 (6 dígitos, ex: 0000026797 -> 026797, 0000026791 -> 026791)
     if data["os_number"]:
-        data["os_number"] = data["os_number"].lstrip("0") or "0"
+        from ..utils import format_os_number
+        data["os_number"] = format_os_number(data["os_number"])
 
     # 2. Extração do Nome do Cliente (Prioriza Nome Fantasia do Teorema)
     fantasia_patterns = [
@@ -106,6 +107,7 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
             cand = _clean(m.group(1))
+            cand = re.sub(r"^\d+\s*[-–—]\s*", "", cand)
             cand = re.split(r"(?:CNPJ|CPF|IE|FONE|TEL|END|DATA|TELEFONE)", cand, flags=re.IGNORECASE)[0]
             cand = _clean(cand)
             # Remove traços ou termos nulos
@@ -124,6 +126,7 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
             m = re.search(pat, text, re.IGNORECASE)
             if m:
                 candidate = _clean(m.group(1))
+                candidate = re.sub(r"^\d+\s*[-–—]\s*", "", candidate)
                 # Remove sufixos como CNPJ/CPF que possam vir na mesma linha
                 candidate = re.split(r"(?:CNPJ|CPF|IE|FONE|TEL|END|DATA|TELEFONE)", candidate, flags=re.IGNORECASE)[0]
                 candidate = _clean(candidate)

@@ -1,5 +1,6 @@
 """Regras das Ordens de Serviço (cartões): abertura, orçamento digital, aprovação, finalização e cronômetro."""
 import json
+import re
 import sqlite3
 from datetime import datetime, timedelta
 
@@ -65,14 +66,17 @@ def get_card_row_by_os(os_number):
 
 def get_card_details(os_number):
     """Detalhes completos de uma O.S. com nome da coluna atual, técnicos disponíveis e histórico."""
-    clean_os = str(os_number or "").strip().lstrip("0") or "0"
+    from ..utils import format_os_number
+    raw = str(os_number or "").strip()
+    std = format_os_number(raw)
+    clean_digits = re.sub(r"\D", "", raw).lstrip("0") or "0"
     with connect() as conn:
         row = conn.execute("""
             SELECT c.*, l.title as list_title, l.role as list_role, l.is_tech as list_is_tech
             FROM cards c
             JOIN lists l ON c.list_id = l.id
-            WHERE c.os_number = ? OR c.os_number = ?
-        """, (clean_os, os_number)).fetchone()
+            WHERE c.os_number = ? OR c.os_number = ? OR c.os_number = ? OR c.os_number = ? OR c.os_number = ? OR c.id = ?
+        """, (std, clean_digits, clean_digits.zfill(6), clean_digits.zfill(10), raw, clean_digits)).fetchone()
         if not row:
             raise NotFound("O.S. não encontrada.")
 
@@ -234,12 +238,18 @@ def create_card(fields, list_id, labels_json, photo_files, pending_entry_id=None
     Se houver pré-entrada de fotos da Priscila (por ID ou mesmo Nome do Cliente),
     puxa automaticamente as fotos para a nova O.S. gerada no Teorema.
     """
-    os_number = fields["os_number"]
+    from ..utils import format_os_number
+    os_number = format_os_number(fields["os_number"])
+    fields["os_number"] = os_number
     if not os_number or not fields["client_name"]:
         raise ApiError("Número da O.S. e Nome do Cliente são obrigatórios.")
 
     with connect() as conn:
-        if conn.execute("SELECT id FROM cards WHERE os_number = ?", (os_number,)).fetchone():
+        clean_digits = re.sub(r"\D", "", os_number).lstrip("0") or "0"
+        if conn.execute("""
+            SELECT id FROM cards 
+            WHERE os_number = ? OR os_number = ? OR os_number = ? OR os_number = ?
+        """, (os_number, clean_digits, clean_digits.zfill(6), clean_digits.zfill(10))).fetchone():
             raise ApiError(f"A O.S. {os_number} já está cadastrada no sistema!")
 
         # Se não enviou list_id, coloca na primeira lista (ORÇAMENTOS)

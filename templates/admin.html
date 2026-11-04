@@ -1625,7 +1625,7 @@
 
             const canSendQuote = phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS");
             const canApproveQuote = phase === "ORCAMENTOS_ENVIADOS" || lTitle.includes("ENVIADOS") || lTitle.includes("ENVIADO");
-            const displayOs = String(card.os_number || "").replace(/^0+/, "") || "0";
+            const displayOs = String(card.os_number || "");
 
             const steps = [
                 { num: 1, name: "Orçamentos a Fazer", tag: "Fase Inicial" },

@@ -120,7 +120,8 @@ def enrich_card(row_dict):
     """Converte campos JSON do cartão e calcula indicadores de SLA (24h), prioridade e estágio do QR Code."""
     card = dict(row_dict)
     if card.get("os_number"):
-        card["os_number"] = str(card["os_number"]).lstrip("0") or "0"
+        from ..utils import format_os_number
+        card["os_number"] = format_os_number(card["os_number"])
     card["labels"] = json.loads(card.get("labels_json") or "[]")
     card["entry_photos"] = json.loads(card.get("entry_photos_json") or "[]")
     card["exit_photos"] = json.loads(card.get("exit_photos_json") or "[]")
