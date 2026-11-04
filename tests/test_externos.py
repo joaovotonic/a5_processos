@@ -355,43 +355,29 @@ Reduzido Descrição:
         self.assertEqual(r_att.status_code, 200)
         self.assertEqual(r_att.get_json()["order"]["attendance_status"], "attended")
 
-        # 4. Priscila altera para não atendido
+        # 4. Priscila marca chamado como não atendido com motivo digitado: retorna automaticamente para 'chamados externos aguardando rota'
         r_not = self.client.put(f"/api/externos/orders/{order_id}", json={
-            "attendance_status": "not_attended"
+            "attendance_status": "not_attended",
+            "unattended_reason": "Cliente fechado para almoço"
         })
         self.assertEqual(r_not.status_code, 200)
-        self.assertEqual(r_not.get_json()["order"]["attendance_status"], "not_attended")
+        order_not = r_not.get_json()["order"]
+        self.assertEqual(order_not["attendance_status"], "not_attended")
+        self.assertEqual(order_not["unattended_reason"], "Cliente fechado para almoço")
+        self.assertIsNone(order_not["technician"])
+        self.assertEqual(order_not["status"], "pending_route")
 
-        # 5. Remarcar para o turno da tarde de hoje
-        r_resched = self.client.post("/api/externos/orders/reschedule", json={
-            "order_ids": [order_id],
-            "date": "2026-11-04",
-            "shift": "tarde"
-        })
-        self.assertEqual(r_resched.status_code, 200)
-        res_data = r_resched.get_json()
-        self.assertTrue(res_data["success"])
-        self.assertEqual(res_data["count"], 1)
-
-        # Verifica estado após remarcar para tarde: volta a ser pendente na entrada da tarde
-        summary_tarde = get_grouped_routes("2026-11-04", "tarde")
-        unassigned_ids = [o["id"] for o in summary_tarde["unassigned"]]
+        # Verifica que retornou automaticamente para aguardando rota (unassigned) com o motivo
+        summary_manha = get_grouped_routes("2026-11-04", "manha")
+        unassigned_ids = [o["id"] for o in summary_manha["unassigned"]]
         self.assertIn(order_id, unassigned_ids)
-        rescheduled_order = [o for o in summary_tarde["unassigned"] if o["id"] == order_id][0]
-        self.assertEqual(rescheduled_order["attendance_status"], "pending")
-        self.assertEqual(rescheduled_order["route_shift"], "tarde")
-        self.assertIsNone(rescheduled_order["technician"])
+        not_order = [o for o in summary_manha["unassigned"] if o["id"] == order_id][0]
+        self.assertEqual(not_order["unattended_reason"], "Cliente fechado para almoço")
 
-        # 6. Remarcar para outro dia (2026-11-05, manhã)
-        r_resched2 = self.client.post("/api/externos/orders/reschedule", json={
-            "order_ids": [order_id],
-            "date": "2026-11-05",
-            "shift": "manha"
-        })
-        self.assertEqual(r_resched2.status_code, 200)
-        summary_amanha = get_grouped_routes("2026-11-05", "manha")
-        unassigned_amanha = [o["id"] for o in summary_amanha["unassigned"]]
-        self.assertIn(order_id, unassigned_amanha)
+        # Também deve estar visível no turno da tarde se ainda não distribuído
+        summary_tarde = get_grouped_routes("2026-11-04", "tarde")
+        unassigned_tarde = [o["id"] for o in summary_tarde["unassigned"]]
+        self.assertIn(order_id, unassigned_tarde)
 
         # 7. Priscila edita chamado mesmo após ter sido manipulado
         r_edit = self.client.put(f"/api/externos/orders/{order_id}", json={
@@ -413,6 +399,31 @@ Reduzido Descrição:
         # Verifica que foi excluído
         r_del_again = self.client.delete(f"/api/externos/orders/{order_id}")
         self.assertEqual(r_del_again.status_code, 404)
+
+    def test_09_doorbell_sound_assets_and_templates(self):
+        """Valida que o som de campainha existe, é servido estaticamente e está integrado nos painéis."""
+        import os
+        wav_path = os.path.join('static', 'sounds', 'campainha.wav')
+        self.assertTrue(os.path.exists(wav_path), 'Arquivo campainha.wav deve existir em static/sounds')
+        self.assertGreater(os.path.getsize(wav_path), 1000)
+
+        resp = self.client.get('/static/sounds/campainha.wav')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('audio', resp.content_type.lower())
+        resp.close()
+
+        with open('templates/admin.html', 'r', encoding='utf-8') as f:
+            admin_src = f.read()
+        self.assertIn('playDoorbellSound', admin_src)
+        self.assertIn('campainha.wav', admin_src)
+        self.assertNotIn('modalRemarcarChamados', admin_src)
+        self.assertNotIn('openRescheduleModal', admin_src)
+        self.assertIn('modalNaoAtendido', admin_src)
+        self.assertIn('openNaoAtendidoModal', admin_src)
+
+        with open('templates/diretoria.html', 'r', encoding='utf-8') as f:
+            dir_src = f.read()
+        self.assertIn('playDoorbellSound', dir_src)
 
 
 if __name__ == "__main__":

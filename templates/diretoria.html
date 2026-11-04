@@ -883,6 +883,73 @@
             }
         }
 
+
+        let doorbellAudioCache = null;
+
+        // Reproduz o som de campainha ("Ding-Dong") na notificação
+        function playDoorbellSound() {
+            try {
+                if (!doorbellAudioCache) {
+                    doorbellAudioCache = new Audio('/static/sounds/campainha.wav');
+                }
+                doorbellAudioCache.currentTime = 0;
+                doorbellAudioCache.volume = 0.9;
+                const playPromise = doorbellAudioCache.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch((err) => {
+                        console.warn("Reproduzindo campainha sintetizada via Web Audio API:", err);
+                        playWebAudioDoorbell();
+                    });
+                }
+            } catch (err) {
+                playWebAudioDoorbell();
+            }
+        }
+
+        // Sintetizador Web Audio API de alta fidelidade como fallback garantido (independente de rede/arquivos)
+        function playWebAudioDoorbell() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === "suspended") ctx.resume();
+
+                const now = ctx.currentTime;
+
+                const chime = (freq, startTime, duration, vol) => {
+                    const partials = [
+                        { mult: 1.0, gain: 0.65, decay: duration },
+                        { mult: 2.0, gain: 0.28, decay: duration * 0.8 },
+                        { mult: 2.76, gain: 0.18, decay: duration * 0.6 },
+                        { mult: 4.0, gain: 0.09, decay: duration * 0.4 }
+                    ];
+
+                    partials.forEach(p => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = "sine";
+                        osc.frequency.setValueAtTime(freq * p.mult, startTime);
+
+                        gain.gain.setValueAtTime(0.0001, startTime);
+                        gain.gain.exponentialRampToValueAtTime(p.gain * vol, startTime + 0.004);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + p.decay);
+
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(startTime);
+                        osc.stop(startTime + p.decay + 0.05);
+                    });
+                };
+
+                // Ding: E5 (659.25 Hz)
+                chime(659.25, now, 0.75, 0.55);
+                // Dong: C5 (523.25 Hz)
+                chime(523.25, now + 0.38, 1.2, 0.65);
+            } catch (e) {
+                console.warn("Erro ao sintetizar campainha:", e);
+            }
+        }
+
         // Escuta em tempo real quando a Priscila envia chamados da recepção
         socket.on("external_routes_sent_to_director", (data) => {
             const badge = document.getElementById("badgeDiretoriaRotas");
@@ -893,7 +960,8 @@
             }
             if (pulse) pulse.classList.remove("hidden");
 
-            // Som sutil de notificação ou banner
+            // Som sutil de campainha ("Ding-Dong") e banner de notificação
+            playDoorbellSound();
             const toast = document.createElement("div");
             toast.className = "fixed top-5 right-5 z-50 bg-amber-500 text-slate-950 px-5 py-3 rounded-2xl font-black text-xs shadow-2xl flex items-center gap-2 border-2 border-slate-950 animate-bounce";
             toast.innerHTML = `<i data-lucide="bell-ring" class="w-4 h-4"></i> ${data.message || 'Novos chamados externos aguardando rota!'}`;
@@ -1008,9 +1076,13 @@
                                     </span>
                                     <span class="font-black text-xs text-slate-900 dark:text-white truncate">${order.client_name}</span>
                                 </div>
-                                <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold shrink-0">${osStr}</span>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    ${order.attendance_status === 'not_attended' ? '<span class="font-mono text-[9px] px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/30">❌ Não Atendido</span>' : ''}
+                                    <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold">${osStr}</span>
+                                </div>
                             </div>
                             <div class="text-[11px] text-slate-500 dark:text-zinc-400 space-y-0.5 pl-6">
+                                ${order.unattended_reason ? `<p class="text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 p-1.5 rounded border border-rose-200 dark:border-rose-900/40 text-[11px] flex items-start gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-rose-500"></i> <span><strong>Não Atendido:</strong> ${order.unattended_reason}</span></p>` : ''}
                                 ${order.sector || order.equipment_model ? `<p><strong class="text-slate-700 dark:text-zinc-300">Setor/Equip:</strong> ${order.sector || '-'} | ${order.equipment_model || '-'}</p>` : ''}
                                 ${order.reported_defect ? `<p><strong class="text-slate-700 dark:text-zinc-300">Defeito:</strong> ${order.reported_defect}</p>` : ''}
                                 ${hasTasks ? `<p class="text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 p-1 rounded border border-rose-200 dark:border-rose-900/40">⚠️ ${order.tasks_notes}</p>` : ''}

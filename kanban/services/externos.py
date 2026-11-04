@@ -331,6 +331,7 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
     route_order = int(data.get("route_order") or 0)
     status = data.get("status") or ("routed" if tech else "pending_route")
     attendance_status = (data.get("attendance_status") or "pending").lower().strip()
+    unattended_reason = (data.get("unattended_reason") or "").strip()
     pdf_source = data.get("pdf_source_path") or ""
 
     with connect() as conn:
@@ -339,13 +340,13 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
                 os_number, client_name, open_date, open_time, sector,
                 equipment_model, reported_defect, tasks_notes, technician,
                 route_date, route_shift, route_order, status, attendance_status,
-                pdf_source_path, pdf_imported_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                unattended_reason, pdf_source_path, pdf_imported_at, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             os_num, client, open_date, open_time, sector,
             model, defect, tasks, tech,
             route_date, route_shift, route_order, status, attendance_status,
-            pdf_source,
+            unattended_reason, pdf_source,
             now_iso if pdf_source else None, now_iso, now_iso
         ))
         order_id = cur.lastrowid
@@ -359,8 +360,19 @@ def update_external_order(order_id: int, data: Dict[str, Any]) -> Optional[Dict[
     allowed_fields = {
         "os_number", "client_name", "open_date", "open_time", "sector",
         "equipment_model", "reported_defect", "tasks_notes", "technician",
-        "route_date", "route_shift", "route_order", "status", "attendance_status"
+        "route_date", "route_shift", "route_order", "status", "attendance_status",
+        "unattended_reason"
     }
+
+    # Quando um chamado for marcado como 'não atendido', ele retorna automaticamente
+    # para a fila de 'chamados externos aguardando rota' (unassigned / pending_route)
+    if data.get("attendance_status") and str(data.get("attendance_status")).strip().lower() == "not_attended":
+        data["technician"] = None
+        data["route_order"] = 0
+        data["status"] = "pending_route"
+        data["route_shift"] = ""
+    elif data.get("attendance_status") and str(data.get("attendance_status")).strip().lower() == "attended":
+        data["unattended_reason"] = "" 
 
     updates = []
     params = []
@@ -516,6 +528,7 @@ def save_route_assignments(
                     route_date = ?,
                     route_shift = ?,
                     status = ?,
+                    attendance_status = 'pending',
                     updated_at = ?
                 WHERE id = ?
             """

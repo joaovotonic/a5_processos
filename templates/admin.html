@@ -534,101 +534,83 @@
         </div>
     </div>
 
-    <!-- MODAL: REMARCAR CHAMADOS EXTERNOS (NÃO ATENDIDOS / OUTRO TURNO OU DIA) -->
-    <div id="modalRemarcarChamados" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 space-y-4">
+    <!-- MODAL: MOTIVO DE NÃO ATENDIMENTO (PRISCILA / ADM) -->
+    <div id="modalNaoAtendido" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 space-y-4">
             <div class="flex justify-between items-center border-b border-slate-200 dark:border-zinc-800 pb-3">
                 <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
-                        <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+                    <div class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                        <i data-lucide="alert-triangle" class="w-4 h-4"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-black uppercase text-slate-900 dark:text-white">Remarcar Chamados Externos</h3>
-                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">Transferir atendimentos não realizados para outro turno ou dia</p>
+                        <h3 class="text-sm font-black uppercase text-slate-900 dark:text-white">Motivo do Não Atendimento</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">Informe o motivo para devolver o chamado à lista de espera</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeModal('modalRemarcarChamados')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
+                <button type="button" onclick="closeModal('modalNaoAtendido')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <!-- Chamados selecionados para remarcação -->
-            <div class="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-xl border border-slate-200 dark:border-zinc-700/80 space-y-2">
-                <div class="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-zinc-300">
-                    <span>Chamado(s) selecionados:</span>
-                    <span id="rescheduleCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">0 selecionado(s)</span>
+            <!-- Dados resumidos do chamado -->
+            <div class="p-3 bg-slate-50 dark:bg-zinc-800/60 rounded-xl border border-slate-200 dark:border-zinc-700/80 space-y-1 text-xs">
+                <div class="flex items-center justify-between">
+                    <strong id="modalNaoAtendidoClient" class="text-slate-900 dark:text-white font-black truncate">Nome do Cliente</strong>
+                    <span id="modalNaoAtendidoOs" class="font-mono text-sky-600 dark:text-sky-400 font-bold">O.S. S/N</span>
                 </div>
-                <div id="rescheduleOrdersList" class="max-h-36 overflow-y-auto space-y-1 text-xs">
-                    <!-- Lista de chamados injetada via JS -->
-                </div>
+                <p id="modalNaoAtendidoTech" class="text-[11px] text-slate-500 dark:text-zinc-400">Técnico: -</p>
             </div>
 
-            <!-- Formulário de Nova Data e Turno -->
-            <form id="formRemarcarChamados" onsubmit="submitRescheduleOrders(event)" class="space-y-4 text-xs">
-                <!-- Seletor de Data de Destino -->
+            <!-- Formulário de Motivo -->
+            <form id="formNaoAtendido" onsubmit="submitNaoAtendido(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="modalNaoAtendidoOrderId" value="">
+                
                 <div>
                     <label class="block font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                        Data de Destino:
+                        Escreva o motivo de não ser atendido: <span class="text-rose-500">*</span>
                     </label>
-                    <div class="flex items-center gap-2">
-                        <input type="date" id="rescheduleTargetDate" required
-                            class="flex-1 bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:outline-none focus:border-amber-500">
-                        <button type="button" onclick="setRescheduleDate('today')"
-                            class="px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-bold text-[11px] transition">
-                            Hoje
-                        </button>
-                        <button type="button" onclick="setRescheduleDate('tomorrow')"
-                            class="px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 font-bold text-[11px] transition">
-                            Amanhã
-                        </button>
-                    </div>
+                    <textarea id="modalNaoAtendidoReason" rows="3" required
+                        placeholder="Ex: Cliente estava fechado para almoço, sem responsável no local, falta de peças..."
+                        class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-rose-500"></textarea>
                 </div>
 
-                <!-- Seletor de Turno de Destino -->
+                <!-- Sugestões rápidas de 1 clique -->
                 <div>
-                    <label class="block font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                        Turno de Destino:
-                    </label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" id="btnRescheduleShiftManha" onclick="setRescheduleShift('manha')"
-                            class="p-2.5 rounded-xl border-2 font-black text-xs flex items-center justify-center gap-2 transition border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800">
-                            <span>🌅 Manhã</span>
+                    <span class="text-[10px] font-bold text-slate-400 block mb-1">Sugestões rápidas:</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="setQuickReason('Cliente fechado / sem expediente')"
+                            class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[10px] font-bold border border-slate-200 dark:border-zinc-700 transition">
+                            🔒 Cliente fechado
                         </button>
-                        <button type="button" id="btnRescheduleShiftTarde" onclick="setRescheduleShift('tarde')"
-                            class="p-2.5 rounded-xl border-2 font-black text-xs flex items-center justify-center gap-2 transition border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                            <span>☀️ Tarde</span>
+                        <button type="button" onclick="setQuickReason('Sem responsável ou contato no local')"
+                            class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[10px] font-bold border border-slate-200 dark:border-zinc-700 transition">
+                            👤 Sem responsável
+                        </button>
+                        <button type="button" onclick="setQuickReason('Balança em uso / produção não liberou')"
+                            class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[10px] font-bold border border-slate-200 dark:border-zinc-700 transition">
+                            ⚖️ Balança em uso
+                        </button>
+                        <button type="button" onclick="setQuickReason('Falta de peças / material indisponível')"
+                            class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[10px] font-bold border border-slate-200 dark:border-zinc-700 transition">
+                            🔧 Falta de peças
+                        </button>
+                        <button type="button" onclick="setQuickReason('Sem tempo hábil / atraso na rota')"
+                            class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 text-[10px] font-bold border border-slate-200 dark:border-zinc-700 transition">
+                            ⏱️ Sem tempo hábil
                         </button>
                     </div>
-                    <input type="hidden" id="rescheduleTargetShift" value="tarde">
-                </div>
-
-                <!-- Atalhos rápidos -->
-                <div class="pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-2 flex-wrap">
-                    <span class="text-[10px] font-bold text-slate-500">Atalhos rápidos:</span>
-                    <button type="button" onclick="setReschedulePreset('today_afternoon')"
-                        class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25 border border-amber-500/30 text-[10px] font-black transition">
-                        ☀️ Hoje à Tarde
-                    </button>
-                    <button type="button" onclick="setReschedulePreset('tomorrow_morning')"
-                        class="px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-700 dark:text-sky-300 hover:bg-sky-500/25 border border-sky-500/30 text-[10px] font-black transition">
-                        🌅 Amanhã de Manhã
-                    </button>
-                    <button type="button" onclick="setReschedulePreset('tomorrow_afternoon')"
-                        class="px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-700 dark:text-purple-300 hover:bg-purple-500/25 border border-purple-500/30 text-[10px] font-black transition">
-                        ☀️ Amanhã à Tarde
-                    </button>
                 </div>
 
                 <!-- Botões de Ação -->
                 <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-zinc-800">
-                    <button type="button" onclick="closeModal('modalRemarcarChamados')"
+                    <button type="button" onclick="closeModal('modalNaoAtendido')"
                         class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">
                         Cancelar
                     </button>
-                    <button type="submit" id="btnSubmitReschedule"
-                        class="px-4 py-2 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 transition shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+                    <button type="submit" id="btnConfirmNaoAtendido"
+                        class="px-4 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-500 active:scale-95 text-white transition shadow-md shadow-rose-600/20 flex items-center gap-1.5">
                         <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                        <span>Confirmar Remarcação</span>
+                        <span>Confirmar e Devolver p/ Rota</span>
                     </button>
                 </div>
             </form>
@@ -1003,6 +985,72 @@
                 osc.start();
                 osc.stop(ctx.currentTime + 0.45);
             } catch (e) {}
+        }
+
+        let doorbellAudioCache = null;
+
+        // Reproduz o som de campainha ("Ding-Dong") na notificação
+        function playDoorbellSound() {
+            try {
+                if (!doorbellAudioCache) {
+                    doorbellAudioCache = new Audio('/static/sounds/campainha.wav');
+                }
+                doorbellAudioCache.currentTime = 0;
+                doorbellAudioCache.volume = 0.9;
+                const playPromise = doorbellAudioCache.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch((err) => {
+                        console.warn("Reproduzindo campainha sintetizada via Web Audio API:", err);
+                        playWebAudioDoorbell();
+                    });
+                }
+            } catch (err) {
+                playWebAudioDoorbell();
+            }
+        }
+
+        // Sintetizador Web Audio API de alta fidelidade como fallback garantido (independente de rede/arquivos)
+        function playWebAudioDoorbell() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                if (ctx.state === "suspended") ctx.resume();
+
+                const now = ctx.currentTime;
+
+                const chime = (freq, startTime, duration, vol) => {
+                    const partials = [
+                        { mult: 1.0, gain: 0.65, decay: duration },
+                        { mult: 2.0, gain: 0.28, decay: duration * 0.8 },
+                        { mult: 2.76, gain: 0.18, decay: duration * 0.6 },
+                        { mult: 4.0, gain: 0.09, decay: duration * 0.4 }
+                    ];
+
+                    partials.forEach(p => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = "sine";
+                        osc.frequency.setValueAtTime(freq * p.mult, startTime);
+
+                        gain.gain.setValueAtTime(0.0001, startTime);
+                        gain.gain.exponentialRampToValueAtTime(p.gain * vol, startTime + 0.004);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + p.decay);
+
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(startTime);
+                        osc.stop(startTime + p.decay + 0.05);
+                    });
+                };
+
+                // Ding: E5 (659.25 Hz)
+                chime(659.25, now, 0.75, 0.55);
+                // Dong: C5 (523.25 Hz)
+                chime(523.25, now + 0.38, 1.2, 0.65);
+            } catch (e) {
+                console.warn("Erro ao sintetizar campainha:", e);
+            }
         }
 
         function showAdminNotificationToast(notif) {
@@ -2795,10 +2843,22 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             } else {
                 pendingTableBody.innerHTML = unassigned.map(o => {
                     const osStr = o.os_number || 'S/N';
+                    const notAttendedBadge = o.attendance_status === 'not_attended'
+                        ? `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 ml-1.5" title="Chamado não foi atendido e retornou para aguardar nova rota">❌ Não Atendido</span>`
+                        : '';
                     const taskHighlight = o.tasks_notes ? `<span class="text-rose-600 dark:text-rose-400 font-black">${o.tasks_notes}</span>` : '-';
+                    const reasonHtml = o.unattended_reason
+                        ? `<div class="mt-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/40 flex items-center gap-1.5" title="Motivo informado pela Priscila">
+                               <i data-lucide="alert-circle" class="w-3.5 h-3.5 shrink-0 text-rose-500"></i>
+                               <span><strong>Motivo:</strong> ${esc(o.unattended_reason)}</span>
+                           </div>`
+                        : '';
                     return `
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition">
-                            <td class="py-2.5 px-3 font-black text-slate-900 dark:text-white">${o.client_name}</td>
+                            <td class="py-2.5 px-3 font-black text-slate-900 dark:text-white">
+                                <div>${o.client_name} ${notAttendedBadge}</div>
+                                ${reasonHtml}
+                            </td>
                             <td class="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-zinc-400">${o.open_date || '-'}</td>
                             <td class="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-zinc-400">${o.open_time || '-'}</td>
                             <td class="py-2.5 px-3 text-center font-mono font-bold text-sky-600 dark:text-sky-400">${osStr}</td>
@@ -2870,12 +2930,6 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                             </div>
                         </div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <button type="button" onclick="openRescheduleModal()"
-                                class="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-                                title="Remarcar todos os chamados não atendidos desta rota para outro turno ou dia">
-                                <i data-lucide="calendar-clock" class="w-4 h-4"></i>
-                                <span>📅 Remarcar Não Atendidos (${notAttendedOrders.length})</span>
-                            </button>
                             <button type="button" onclick="saveAllRouteImagesToFolder()"
                                 class="bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-purple-600/20"
                                 title="Salva os arquivos PNG na pasta rotas_imagens/ automaticamente">
@@ -3198,7 +3252,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                         <div class="flex items-center gap-1.5 text-[9px] font-bold">
                             <button type="button" onclick="setOrderAttendance(${s.id}, 'pending')" class="text-slate-500 hover:text-slate-800 hover:underline">Desfazer</button>
                             <span class="text-slate-300">•</span>
-                            <button type="button" onclick="setOrderAttendance(${s.id}, 'not_attended')" class="text-rose-600 hover:text-rose-800 hover:underline">Não Atendido</button>
+                            <button type="button" onclick="openNaoAtendidoModal(${orderJsonSafe})" class="text-rose-600 hover:text-rose-800 hover:underline" title="Marcar como Não Atendido e informar motivo">Não Atendido</button>
                         </div>
                     </div>
                 `;
@@ -3208,19 +3262,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-xs">
                             ❌ Não Atendido
                         </span>
-                        <div class="flex items-center gap-1 mt-0.5">
-                            <button type="button" onclick="quickMoveToAfternoon(${s.id})"
-                                class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 border border-amber-500/40 font-black text-[10px] transition"
-                                title="Mover para rota da tarde de hoje">
-                                ☀️ P/ Tarde
-                            </button>
-                            <button type="button" onclick="openRescheduleModal([${s.id}])"
-                                class="px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-900 border border-sky-500/40 font-black text-[10px] transition"
-                                title="Remarcar para outro dia ou turno">
-                                📅 Remarcar
-                            </button>
-                        </div>
-                        <button type="button" onclick="setOrderAttendance(${s.id}, 'pending')" class="text-[9px] font-bold text-slate-500 hover:text-slate-800 hover:underline">Desfazer</button>
+                        <span class="text-[9px] font-bold text-amber-700">Retornado para Aguardando Rota</span>
                     </div>
                 `;
             } else {
@@ -3231,9 +3273,9 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                             title="Marcar como Atendido">
                             <span>✅ Atendido</span>
                         </button>
-                        <button type="button" onclick="setOrderAttendance(${s.id}, 'not_attended')"
+                        <button type="button" onclick="openNaoAtendidoModal(${orderJsonSafe})"
                             class="px-2 py-1 rounded bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black text-[10px] transition flex items-center gap-1 shadow-xs"
-                            title="Marcar como Não Atendido">
+                            title="Marcar como Não Atendido (abre tela para informar o motivo)">
                             <span>❌ Não Atendido</span>
                         </button>
                     </div>
@@ -3249,10 +3291,6 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                                 class="p-1 rounded text-sky-700 hover:bg-sky-100 transition" title="Editar chamado (cliente, O.S., defeito, tarefas, etc)">
                                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                             </button>
-                            <button type="button" onclick="openRescheduleModal([${s.id}])"
-                                class="p-1 rounded text-amber-700 hover:bg-amber-100 transition" title="Remarcar para outro dia/turno">
-                                <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
-                            </button>
                             <button type="button" onclick="deleteExternalOrder(${s.id})"
                                 class="p-1 rounded text-rose-700 hover:bg-rose-100 transition" title="Excluir chamado (cancelado)">
                                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -3263,163 +3301,66 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             `;
         }
 
-        let currentRescheduleOrderIds = [];
-
-        function getNotAttendedOrderIds() {
-            if (!currentAdminExternosSummary || !currentAdminExternosSummary.technicians) return [];
-            const ids = [];
-            Object.values(currentAdminExternosSummary.technicians).forEach(stops => {
-                stops.forEach(s => {
-                    if (s.attendance_status === 'not_attended') ids.push(s.id);
-                });
-            });
-            return ids;
-        }
-
-        function openRescheduleModal(orderIds = null) {
-            if (!orderIds || orderIds.length === 0) {
-                orderIds = getNotAttendedOrderIds();
-                if (orderIds.length === 0) {
-                    alert("Nenhum chamado marcado como 'Não Atendido' no momento. Você pode marcar um chamado como 'Não Atendido' na tabela ou clicar no ícone de calendário de qualquer chamado para transferi-lo.");
-                    return;
-                }
-            }
-
-            currentRescheduleOrderIds = orderIds;
-            const badge = document.getElementById("rescheduleCountBadge");
-            if (badge) badge.textContent = `${orderIds.length} selecionado(s)`;
-
-            const listContainer = document.getElementById("rescheduleOrdersList");
-            if (listContainer) {
-                const allStops = [];
-                if (currentAdminExternosSummary && currentAdminExternosSummary.technicians) {
-                    Object.values(currentAdminExternosSummary.technicians).forEach(stops => allStops.push(...stops));
-                }
-                if (currentAdminExternosSummary && currentAdminExternosSummary.unassigned) {
-                    allStops.push(...currentAdminExternosSummary.unassigned);
-                }
-
-                const selectedStops = allStops.filter(s => orderIds.includes(s.id));
-                if (selectedStops.length > 0) {
-                    listContainer.innerHTML = selectedStops.map(s => `
-                        <div class="flex items-center justify-between p-1.5 rounded bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700">
-                            <div class="flex items-center gap-1.5 min-w-0">
-                                <span class="font-mono font-bold text-sky-600 dark:text-sky-400">O.S. ${s.os_number || 'S/N'}</span>
-                                <span class="font-bold text-slate-800 dark:text-zinc-200 truncate">${s.client_name}</span>
-                            </div>
-                            <span class="text-[10px] text-slate-500 font-mono">${s.sector || s.equipment_model || ''}</span>
-                        </div>
-                    `).join("");
-                } else {
-                    listContainer.innerHTML = `<p class="text-slate-500 text-[11px]">${orderIds.length} chamado(s) selecionado(s) para transferência.</p>`;
-                }
-            }
-
-            const todayStr = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
-            const dateInput = document.getElementById("rescheduleTargetDate");
-            if (dateInput) dateInput.value = todayStr;
-
-            if (currentAdminShift === "manha") {
-                setRescheduleShift("tarde");
-            } else {
-                setRescheduleDate("tomorrow");
-                setRescheduleShift("manha");
-            }
-
-            const modal = document.getElementById("modalRemarcarChamados");
-            modal.classList.remove("hidden");
-            modal.classList.add("flex");
+        function openNaoAtendidoModal(order) {
+            if (!order || !order.id) return;
+            document.getElementById("modalNaoAtendidoOrderId").value = order.id;
+            document.getElementById("modalNaoAtendidoClient").textContent = order.client_name || "Cliente";
+            document.getElementById("modalNaoAtendidoOs").textContent = order.os_number ? `O.S. ${order.os_number}` : "S/N";
+            document.getElementById("modalNaoAtendidoTech").textContent = `Técnico responsável: ${order.technician || "-"}`;
+            
+            const reasonInput = document.getElementById("modalNaoAtendidoReason");
+            reasonInput.value = order.unattended_reason || "";
+            
+            openModal("modalNaoAtendido");
+            setTimeout(() => reasonInput.focus(), 150);
             if (window.lucide) lucide.createIcons();
         }
 
-        function setReschedulePreset(preset) {
-            const today = new Date();
-            const todayStr = today.toISOString().split("T")[0];
-
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().split("T")[0];
-
-            const dateInput = document.getElementById("rescheduleTargetDate");
-
-            if (preset === "today_afternoon") {
-                if (dateInput) dateInput.value = todayStr;
-                setRescheduleShift("tarde");
-            } else if (preset === "tomorrow_morning") {
-                if (dateInput) dateInput.value = tomorrowStr;
-                setRescheduleShift("manha");
-            } else if (preset === "tomorrow_afternoon") {
-                if (dateInput) dateInput.value = tomorrowStr;
-                setRescheduleShift("tarde");
+        function setQuickReason(text) {
+            const el = document.getElementById("modalNaoAtendidoReason");
+            if (!el) return;
+            if (el.value.trim()) {
+                el.value = el.value.trim() + " - " + text;
+            } else {
+                el.value = text;
             }
+            el.focus();
         }
 
-        function setRescheduleDate(preset) {
-            const dateInput = document.getElementById("rescheduleTargetDate");
-            if (!dateInput) return;
-            if (preset === "today") {
-                dateInput.value = new Date().toISOString().split("T")[0];
-            } else if (preset === "tomorrow") {
-                const d = new Date();
-                d.setDate(d.getDate() + 1);
-                dateInput.value = d.toISOString().split("T")[0];
-            }
-        }
-
-        function setRescheduleShift(shift) {
-            const hidden = document.getElementById("rescheduleTargetShift");
-            if (hidden) hidden.value = shift;
-
-            const btnM = document.getElementById("btnRescheduleShiftManha");
-            const btnT = document.getElementById("btnRescheduleShiftTarde");
-
-            if (btnM && btnT) {
-                if (shift === "manha") {
-                    btnM.className = "p-2.5 rounded-xl border-2 font-black text-xs flex items-center justify-center gap-2 transition border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400";
-                    btnT.className = "p-2.5 rounded-xl border-2 font-black text-xs flex items-center justify-center gap-2 transition border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800";
-                } else {
-                    btnT.className = "p-2.5 rounded-xl border-2 font-black text-xs flex items-center justify-center gap-2 transition border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400";
-                    btnM.className = "p-2.5 rounded-xl border-2 font-black text-xs flex items-center justify-center gap-2 transition border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800";
-                }
-            }
-        }
-
-        async function submitRescheduleOrders(event) {
+        async function submitNaoAtendido(event) {
             event.preventDefault();
-            if (!currentRescheduleOrderIds || currentRescheduleOrderIds.length === 0) {
-                alert("Nenhum chamado selecionado para remarcar.");
+            const orderId = document.getElementById("modalNaoAtendidoOrderId").value;
+            const reason = document.getElementById("modalNaoAtendidoReason").value.trim();
+            if (!orderId) return;
+            if (!reason) {
+                alert("Por favor, digite o motivo de não ser atendido.");
                 return;
             }
 
-            const dateVal = document.getElementById("rescheduleTargetDate").value;
-            const shiftVal = document.getElementById("rescheduleTargetShift").value || "tarde";
-            const btnSubmit = document.getElementById("btnSubmitReschedule");
-            if (btnSubmit) btnSubmit.disabled = true;
+            const btn = document.getElementById("btnConfirmNaoAtendido");
+            if (btn) btn.disabled = true;
 
             try {
-                const res = await fetch("/api/externos/orders/reschedule", {
-                    method: "POST",
+                const res = await fetch(`/api/externos/orders/${orderId}`, {
+                    method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        order_ids: currentRescheduleOrderIds,
-                        date: dateVal,
-                        shift: shiftVal
+                        attendance_status: "not_attended",
+                        unattended_reason: reason
                     })
                 });
                 const json = await res.json();
                 if (json.success) {
-                    closeModal("modalRemarcarChamados");
-                    const shiftLabel = shiftVal === "manha" ? "Manhã" : "Tarde";
-                    const cleanDate = dateVal.includes('-') ? dateVal.split('-').reverse().join('/') : dateVal;
-                    showToast(`📅 ${json.count} chamado(s) remarcado(s) para ${shiftLabel} de ${cleanDate}!`, "success");
+                    closeModal("modalNaoAtendido");
+                    showToast(`Chamado retornado para "Chamados Externos Aguardando Rota" com o motivo registrado!`, "info");
                     loadAdminExternosData();
                 } else {
-                    alert(json.error || "Erro ao remarcar chamados.");
+                    alert(json.error || "Erro ao registrar não atendimento.");
                 }
             } catch (err) {
                 alert("Erro de comunicação: " + err.message);
             } finally {
-                if (btnSubmit) btnSubmit.disabled = false;
+                if (btn) btn.disabled = false;
             }
         }
 
@@ -3432,35 +3373,16 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                 });
                 const json = await res.json();
                 if (json.success) {
-                    const label = status === "attended" ? "✅ Atendido" : (status === "not_attended" ? "❌ Não Atendido" : "Pendente");
-                    showToast(`Status atualizado: ${label}`, "info");
+                    if (status === "not_attended") {
+                        showToast(`Chamado retornado para "Chamados Externos Aguardando Rota"!`, "info");
+                    } else if (status === "attended") {
+                        showToast(`Status atualizado: ✅ Atendido`, "success");
+                    } else {
+                        showToast(`Status atualizado: Pendente`, "info");
+                    }
                     loadAdminExternosData();
                 } else {
                     alert(json.error || "Erro ao atualizar status de atendimento.");
-                }
-            } catch (err) {
-                alert("Erro de comunicação: " + err.message);
-            }
-        }
-
-        async function quickMoveToAfternoon(orderId) {
-            const today = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
-            try {
-                const res = await fetch("/api/externos/orders/reschedule", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        order_ids: [orderId],
-                        date: today,
-                        shift: "tarde"
-                    })
-                });
-                const json = await res.json();
-                if (json.success) {
-                    showToast("☀️ Chamado transferido para a Rota da Tarde de hoje!", "success");
-                    loadAdminExternosData();
-                } else {
-                    alert(json.error || "Erro ao transferir chamado para a tarde.");
                 }
             } catch (err) {
                 alert("Erro de comunicação: " + err.message);
@@ -3576,6 +3498,14 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             const btn = document.getElementById("btnNotifyDirector");
             if (btn) btn.disabled = true;
 
+            // Pré-carrega o áudio no clique do usuário para garantir permissão imediata no navegador
+            if (!doorbellAudioCache) {
+                try {
+                    doorbellAudioCache = new Audio('/static/sounds/campainha.wav');
+                    doorbellAudioCache.load();
+                } catch (e) {}
+            }
+
             try {
                 const res = await fetch("/api/externos/routes/notify-director", {
                     method: "POST",
@@ -3585,6 +3515,8 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                 const json = await res.json();
                 if (json.success) {
                     const shiftLabel = currentAdminShift === "manha" ? "Manhã" : "Tarde";
+                    // Toca a campainha ("Ding-Dong") na notificação
+                    playDoorbellSound();
                     showToast(`🔔 Chamados da ${shiftLabel} enviados ao Sr. Jacson! Ele foi notificado na Diretoria com alerta sonoro.`, "success");
                     loadAdminExternosData();
                 } else {
