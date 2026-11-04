@@ -247,7 +247,15 @@ def _ensure_esteira_lists(cursor):
     cursor.execute("UPDATE lists SET title = 'APROVADOS', role = 'aprovados' WHERE title = 'APROVADAS' OR title = 'APROVADOS';")
     cursor.execute("UPDATE lists SET title = 'FINALIZADAS', role = 'finalizada' WHERE title = 'BALANÇAS PRONTAS' OR title = 'FINALIZADAS';")
     # Remove colunas desnecessárias do kanban antigo se existirem
-    cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'ORÇAMENTOS NÃO AUTORIZADOS', 'PENDÊNCIAS');")
+    cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'ORÇAMENTOS NÃO AUTORIZADOS', 'PENDÊNCIAS', 'BALANÇAS PRONTAS');")
+
+    # Deduplica a lista 'FINALIZADAS', mantendo uma única coluna oficial
+    fin_lists = cursor.execute("SELECT id FROM lists WHERE title = 'FINALIZADAS' OR role = 'finalizada' ORDER BY id ASC").fetchall()
+    if len(fin_lists) > 1:
+        primary_id = fin_lists[0]["id"]
+        for dup in fin_lists[1:]:
+            cursor.execute("UPDATE cards SET list_id = ? WHERE list_id = ?", (primary_id, dup["id"]))
+            cursor.execute("DELETE FROM lists WHERE id = ?", (dup["id"],))
 
 
 def _ensure_cards_columns(cursor):
@@ -311,32 +319,6 @@ def _ensure_cards_columns(cursor):
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_clients_cnpj ON clients (cnpj_cpf)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_clients_name ON clients (client_name)")
-
-    # Garante a criação da lista "BALANÇAS PRONTAS" antes de "FINALIZADAS" em bancos existentes
-    has_lists = cursor.execute(
-        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='lists'"
-    ).fetchone()
-    if has_lists:
-        has_prontas = cursor.execute(
-            "SELECT id FROM lists WHERE role = 'pronta' OR UPPER(title) LIKE '%BALANCAS PRONTAS%' OR UPPER(title) LIKE '%BALANÇAS PRONTAS%'"
-        ).fetchone()
-        if not has_prontas:
-            fin_row = cursor.execute(
-                "SELECT id, position FROM lists WHERE role = 'finalizada' OR UPPER(title) LIKE '%FINALIZADA%' ORDER BY position DESC LIMIT 1"
-            ).fetchone()
-            if fin_row:
-                pos = fin_row["position"]
-                cursor.execute("UPDATE lists SET position = position + 1 WHERE position >= ?", (pos,))
-                cursor.execute(
-                    "INSERT INTO lists (title, position, is_tech, role) VALUES (?, ?, 0, 'pronta')",
-                    ("BALANÇAS PRONTAS", pos)
-                )
-            else:
-                max_pos = cursor.execute("SELECT COALESCE(MAX(position), -1) as m FROM lists").fetchone()["m"]
-                cursor.execute(
-                    "INSERT INTO lists (title, position, is_tech, role) VALUES (?, ?, 0, 'pronta')",
-                    ("BALANÇAS PRONTAS", max_pos + 1)
-                )
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS pending_entries (

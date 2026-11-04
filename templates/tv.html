@@ -640,9 +640,9 @@
 
             if (!boardData.lists || !boardData.lists.length) return;
 
-            // 1. Localiza as colunas exclusivas da TV: ORÇAMENTOS e APROVADAS
-            const orcList = boardData.lists.find(l => l.role === "orcamento" || l.title.toUpperCase().includes("ORÇAMENTO") || l.title.toUpperCase().includes("ORCAMENTO")) || { title: "ORÇAMENTOS", cards: [] };
-            const aprList = boardData.lists.find(l => l.role === "aprovada" || l.title.toUpperCase().includes("APROVADA")) || { title: "APROVADAS", cards: [] };
+            // 1. Localiza as colunas exclusivas da TV: ORÇAMENTOS e APROVADOS
+            const orcList = boardData.lists.find(l => (l.role && l.role.toLowerCase().includes("orcamento")) || (l.title && l.title.toUpperCase().includes("ORÇAMENTO")) || (l.title && l.title.toUpperCase().includes("ORCAMENTO"))) || { title: "ORÇAMENTOS", cards: [] };
+            const aprList = boardData.lists.find(l => (l.role && l.role.toLowerCase().includes("aprovad")) || (l.title && l.title.toUpperCase().includes("APROVAD"))) || { title: "APROVADOS", cards: [] };
 
             // 2. Localiza as bancadas dos técnicos (role === 'tech' ou is_tech === 1)
             const techLists = boardData.lists.filter(l => l.is_tech === 1 || l.role === "tech" || l.title.toUpperCase().startsWith("TEC.") || l.title.toUpperCase().startsWith("SR."));
@@ -696,7 +696,7 @@
                     <div class="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
                         <div class="flex items-center gap-2.5 truncate">
                             <span class="text-xl">✅</span>
-                            <span class="font-black text-base tracking-wider uppercase text-emerald-400 truncate">APROVADAS</span>
+                            <span class="font-black text-base tracking-wider uppercase text-emerald-400 truncate">${aprList.title || 'APROVADOS'}</span>
                         </div>
                         <span class="bg-emerald-500 text-slate-950 font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow">${aprCards.length}</span>
                     </div>
