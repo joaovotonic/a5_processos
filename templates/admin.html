@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark-mode">
+<html lang="pt-BR" class="clean-mode">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -497,7 +497,12 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const savedTheme = localStorage.getItem("a5_theme") || "dark";
+            // Força o padrão limpo / claro da Recepção (Clean Mode)
+            let savedTheme = localStorage.getItem("a5_theme");
+            if (!savedTheme || savedTheme === "dark") {
+                savedTheme = "clean";
+                localStorage.setItem("a5_theme", "clean");
+            }
             applyTheme(savedTheme);
             fetchBoard();
 
@@ -2094,20 +2099,23 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
         }
 
         function toggleTheme() {
-            const isDark = document.documentElement.classList.contains("dark-mode");
+            const isDark = document.documentElement.classList.contains("dark-mode") || document.documentElement.classList.contains("dark");
             applyTheme(isDark ? "clean" : "dark");
         }
 
         function applyTheme(theme) {
             const html = document.documentElement;
+            const themeBtn = document.getElementById("themeBtn");
             if (theme === "dark") {
                 html.classList.add("dark-mode", "dark");
                 html.classList.remove("clean-mode");
                 localStorage.setItem("a5_theme", "dark");
+                if (themeBtn) themeBtn.innerHTML = '<i data-lucide="sun" class="w-3.5 h-3.5 text-amber-400"></i>';
             } else {
                 html.classList.add("clean-mode");
                 html.classList.remove("dark-mode", "dark");
                 localStorage.setItem("a5_theme", "clean");
+                if (themeBtn) themeBtn.innerHTML = '<i data-lucide="moon" class="w-3.5 h-3.5 text-slate-600"></i>';
             }
             refreshIcons();
         }
