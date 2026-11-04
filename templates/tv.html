@@ -590,7 +590,7 @@
         }
 
         function renderTvCardHTML(c, isHorizontal = false) {
-            const widthClass = isHorizontal ? "w-[300px] shrink-0" : "w-full";
+            const widthClass = isHorizontal ? "w-[310px] shrink-0" : "w-full";
             const labelsHTML = (c.labels || []).map(l => `
                 <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide" style="background:${esc(l.color)}; color:${esc(l.text_color)}">
                     ${esc(l.name)}
@@ -611,11 +611,45 @@
                 `;
             }
 
+            // Indicador de Fase na Bancada do Técnico (Orçamentando vs Finalizando)
+            let phaseBannerHTML = "";
+            const isFinishing = c.pipeline_phase === "EM_MANUTENCAO";
+            const isQuoting = c.pipeline_phase === "EM_ORCAMENTO" || (isHorizontal && !isFinishing);
+
+            if (isFinishing) {
+                phaseBannerHTML = `
+                    <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-between shadow-md">
+                        <span class="flex items-center gap-2">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                            </span>
+                            <span class="tracking-wide">🔧 FINALIZANDO BALANÇA</span>
+                        </span>
+                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-100">Manutenção</span>
+                    </div>
+                `;
+            } else if (isQuoting) {
+                phaseBannerHTML = `
+                    <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center justify-between shadow-md">
+                        <span class="flex items-center gap-2">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                            </span>
+                            <span class="tracking-wide">🔬 ORÇAMENTANDO</span>
+                        </span>
+                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-amber-500/30 text-amber-100">Diagnóstico</span>
+                    </div>
+                `;
+            }
+
             return `
                 <div class="glass-card rounded-2xl p-3.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''} transition hover:scale-[1.01]">
-                    <div class="flex flex-wrap gap-1 mb-1.5">
-                        ${labelsHTML}
-                    </div>
+                    ${labelsHTML ? `<div class="flex flex-wrap gap-1 mb-1.5">${labelsHTML}</div>` : ''}
+
+                    ${phaseBannerHTML}
+
                     <div class="flex items-center justify-between gap-1 mb-1.5">
                         <span class="bg-sky-500/15 text-sky-300 border border-sky-400/30 font-mono font-bold text-xs px-2.5 py-0.5 rounded-lg shadow-sm">
                             O.S. ${esc(c.os_number)}
@@ -719,6 +753,31 @@
 
                 const techRowsHTML = activeTechLists.map(tech => {
                     const cards = sortCards(tech.cards);
+                    const manCount = cards.filter(c => c.pipeline_phase === 'EM_MANUTENCAO').length;
+                    const orcCount = cards.length - manCount;
+                    let headerBadgeHTML = "";
+                    if (manCount > 0 && orcCount === 0) {
+                        headerBadgeHTML = `
+                            <span class="bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
+                                🔧 FINALIZANDO (${cards.length})
+                            </span>
+                        `;
+                    } else if (orcCount > 0 && manCount === 0) {
+                        headerBadgeHTML = `
+                            <span class="bg-amber-400 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
+                                🔬 ORÇAMENTANDO (${cards.length})
+                            </span>
+                        `;
+                    } else {
+                        headerBadgeHTML = `
+                            <span class="bg-sky-500 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0">
+                                🔬 ${orcCount} Orç. • 🔧 ${manCount} Fin.
+                            </span>
+                        `;
+                    }
+
                     return `
                         <div class="tv-tech-row rounded-2xl border border-sky-500/35 bg-slate-900/70 shadow-xl overflow-hidden transition">
                             <!-- Cabeçalho do Técnico (Faixa Horizontal) -->
@@ -727,9 +786,7 @@
                                     <span class="text-xl">👨‍🔧</span>
                                     <span class="font-black text-base tracking-wide uppercase text-white truncate">${esc(tech.title)}</span>
                                 </div>
-                                <span class="bg-sky-500 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0">
-                                    ${cards.length} ${cards.length === 1 ? 'O.S. em andamento' : 'O.S. em andamento'}
-                                </span>
+                                ${headerBadgeHTML}
                             </div>
 
                             <!-- Cartões da Balança selecionada pelo Técnico (Dispostos Horizontalmente) -->

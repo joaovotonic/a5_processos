@@ -6,6 +6,17 @@ _ARRIVAL_BY_ROLE = {"orcamento": "ORÇAMENTO", "aprovada": "APROVADA", "aprovado
 _ARRIVAL_BY_TITLE = {"ORÇAMENTOS": "ORÇAMENTO", "APROVADAS": "APROVADA", "APROVADOS": "APROVADA"}
 
 
+def _as_dict(lst):
+    if lst is None:
+        return {}
+    if isinstance(lst, dict):
+        return lst
+    try:
+        return dict(lst)
+    except Exception:
+        return {}
+
+
 def arrival_stage(lst):
     """
     Retorna "ORÇAMENTO" ou "APROVADA" se a coluna deve anunciar chegadas na TV, senão None.
@@ -14,33 +25,37 @@ def arrival_stage(lst):
     """
     if lst is None:
         return None
-    role = (lst.get("role") or "").lower()
+    d = _as_dict(lst)
+    role = (d.get("role") or "").lower()
     stage = _ARRIVAL_BY_ROLE.get(role)
     if stage:
         return stage
-    return _ARRIVAL_BY_TITLE.get((lst.get("title") or "").strip().upper())
+    return _ARRIVAL_BY_TITLE.get((d.get("title") or "").strip().upper())
 
 
 def is_finished_list(lst):
     """Coluna de serviços concluídos (FINALIZADAS)."""
     if lst is None:
         return False
-    return lst.get("role") == "finalizada" or "FINALIZADA" in (lst.get("title") or "").upper()
+    d = _as_dict(lst)
+    return d.get("role") == "finalizada" or "FINALIZADA" in (d.get("title") or "").upper()
 
 
 def is_ready_list(lst):
     """Coluna de balanças prontas aguardando conferência final da Priscila (BALANÇAS PRONTAS)."""
     if lst is None:
         return False
-    return lst.get("role") == "pronta" or "PRONTA" in (lst.get("title") or "").upper()
+    d = _as_dict(lst)
+    return d.get("role") == "pronta" or "PRONTA" in (d.get("title") or "").upper()
 
 
 def is_approved_list(lst):
     """Coluna de serviços aprovados pelo cliente (APROVADAS ou APROVADOS)."""
     if lst is None:
         return False
-    role = (lst.get("role") or "").lower()
-    title = (lst.get("title") or "").upper()
+    d = _as_dict(lst)
+    role = (d.get("role") or "").lower()
+    title = (d.get("title") or "").upper()
     return "aprovad" in role or "APROVAD" in title
 
 
@@ -48,10 +63,15 @@ def is_orcamento_entry_list(lst):
     """Coluna inicial de fila de orçamentos (ORÇAMENTOS)."""
     if lst is None:
         return False
-    return lst["role"] == "orcamento" or (lst["title"] or "").strip().upper() == "ORÇAMENTOS"
+    d = _as_dict(lst)
+    return d.get("role") == "orcamento" or (d.get("title") or "").strip().upper() == "ORÇAMENTOS"
 
 
 def is_tech_list(lst):
     """Coluna de bancada de um técnico."""
-    return lst is not None and lst["is_tech"] == 1
+    if lst is None:
+        return False
+    d = _as_dict(lst)
+    return d.get("is_tech") == 1
+
 
