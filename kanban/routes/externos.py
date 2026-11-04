@@ -12,6 +12,7 @@ from ..services.externos import (
     create_external_order,
     update_external_order,
     delete_external_order,
+    reschedule_external_orders,
     notify_director_pending_routes,
     save_route_assignments,
     get_grouped_routes,
@@ -89,6 +90,34 @@ def remove_order(order_id):
 
     _emit_safe("external_order_deleted", {"order_id": order_id})
     return jsonify({"success": True, "deleted_id": order_id})
+
+
+@bp.route("/orders/reschedule", methods=["POST"])
+def reschedule_orders():
+    """
+    Transfere um ou mais chamados (ex: não atendidos) para outra data ou outro turno (tarde/amanhã).
+    """
+    data = request.get_json() or {}
+    order_ids = data.get("order_ids") or []
+    new_date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
+    new_shift = data.get("shift") or "tarde"
+
+    if not order_ids:
+        return jsonify({"success": False, "error": "Nenhum chamado selecionado para remarcar."}), 400
+
+    count = reschedule_external_orders(order_ids, new_date, new_shift)
+    _emit_safe("external_orders_rescheduled", {
+        "order_ids": order_ids,
+        "new_date": new_date,
+        "new_shift": new_shift,
+        "count": count
+    })
+    return jsonify({
+        "success": True,
+        "count": count,
+        "new_date": new_date,
+        "new_shift": new_shift
+    })
 
 
 @bp.route("/routes/summary", methods=["GET"])

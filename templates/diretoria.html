@@ -915,6 +915,27 @@
             }
         });
 
+        socket.on("external_order_updated", () => {
+            const secRotas = document.getElementById("sectionRotas");
+            if (secRotas && !secRotas.classList.contains("hidden")) {
+                loadDiretoriaRoutes();
+            }
+        });
+
+        socket.on("external_order_deleted", () => {
+            const secRotas = document.getElementById("sectionRotas");
+            if (secRotas && !secRotas.classList.contains("hidden")) {
+                loadDiretoriaRoutes();
+            }
+        });
+
+        socket.on("external_orders_rescheduled", () => {
+            const secRotas = document.getElementById("sectionRotas");
+            if (secRotas && !secRotas.classList.contains("hidden")) {
+                loadDiretoriaRoutes();
+            }
+        });
+
         async function loadDiretoriaRoutes() {
             updateDiretoriaShiftButtons();
             const dateInput = document.getElementById("diretoriaRouteDate");

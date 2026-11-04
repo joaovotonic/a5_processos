@@ -278,6 +278,141 @@ class TestExternalRoutes(unittest.TestCase):
         r_img = self.client.get("/api/externos/images/ROTA_EDSON_TARDE_04-11-2026.png")
         self.assertEqual(r_img.status_code, 200)
         self.assertEqual(r_img.content_type, "image/png")
+        r_img.close()
+
+    def test_09_os_pdf_parsing_sector_and_defect(self):
+        """Testa parametrização do parser de O.S. externa do Teorema (O.S. sem zeros, setor no defeito, defeito sem solicitante)."""
+        from unittest.mock import patch
+        from kanban.services.externos import parse_external_os_pdf, format_external_os_number
+
+        # 1. Teste format_external_os_number
+        self.assertEqual(format_external_os_number("0000026803"), "26803")
+        self.assertEqual(format_external_os_number("026803"), "26803")
+        self.assertEqual(format_external_os_number("26803"), "26803")
+
+        # 2. Teste texto real do PDF da O.S. 26803 enviado pelo usuário
+        sample_pdf_text = """
+Situação: Aberta
+A5 TECNOLOGIA E AUTOMAÇÃO DE PESAGENS LTDA - ME - (92) 3342-2315 Ordem de Serviço:
+Previsão de entrega:
+Data de abertura: RUA COMENDADOR CLEMENTINO, 379 - Bairro: CENTRO CEP: 69025000
+0000026803
+04/11/2026
+Tipo da OS : EXTERNO
+Cliente : 0001890 - ATACADAO S.A.
+Fantasia : ATACADÃO JAPIIM
+MARCA / MODELO : TOLEDO - PL - 3000/6
+Defeito :
+BALANÇA DO ATACADÃO JAPIIM, SETOR RECEBIMENTO, ELA ESTÁ INOPERANTE, POIS O CLIENTE DEIXOU O PRAZO DE CALIBRAÇÃO 
+EXPIRAR. CHAMADO SOLICITADO PELO ADM LUIZ.
+.
+Reduzido Descrição:
+"""
+        with patch("kanban.services.externos.extract_text_from_pdf", return_value=sample_pdf_text):
+            result = parse_external_os_pdf("dummy.pdf")
+
+            self.assertEqual(result["os_number"], "26803")
+            self.assertEqual(result["client_name"], "ATACADÃO JAPIIM")
+            self.assertEqual(result["equipment_model"], "PL 3000")
+            self.assertEqual(result["sector"], "RECEBIMENTO")
+            self.assertEqual(result["reported_defect"], "ELA ESTÁ INOPERANTE, POIS O CLIENTE DEIXOU O PRAZO DE CALIBRAÇÃO EXPIRAR")
+            self.assertNotIn("LUIZ", result["reported_defect"])
+            self.assertNotIn("SOLICITADO", result["reported_defect"])
+
+    def test_10_reschedule_and_attendance_flow(self):
+        """Testa fluxo completo de marcar como atendido/não atendido, remarcar para tarde/outro dia, editar e excluir."""
+        from kanban.services.externos import create_external_order, get_grouped_routes, save_route_assignments
+
+        # 1. Cria chamado inicial
+        order = create_external_order({
+            "os_number": "26999",
+            "client_name": "SUPERMERCADO TESTE REMARCAR",
+            "sector": "AÇOUGUE",
+            "equipment_model": "PRIX 6",
+            "reported_defect": "TECLADO PAROU",
+            "route_date": "2026-11-04",
+            "route_shift": "manha"
+        })
+        order_id = order["id"]
+        self.assertEqual(order.get("attendance_status"), "pending")
+
+        # 2. Atribui na rota do Edson e finaliza
+        save_route_assignments(
+            route_date="2026-11-04",
+            assignments=[{
+                "technician": "EDSON",
+                "orders": [{"id": order_id, "tasks_notes": "TESTAR TECLAS"}]
+            }],
+            finalize=True,
+            director_name="Jacson",
+            route_shift="manha"
+        )
+
+        # 3. Priscila marca como atendido via API
+        r_att = self.client.put(f"/api/externos/orders/{order_id}", json={
+            "attendance_status": "attended"
+        })
+        self.assertEqual(r_att.status_code, 200)
+        self.assertEqual(r_att.get_json()["order"]["attendance_status"], "attended")
+
+        # 4. Priscila altera para não atendido
+        r_not = self.client.put(f"/api/externos/orders/{order_id}", json={
+            "attendance_status": "not_attended"
+        })
+        self.assertEqual(r_not.status_code, 200)
+        self.assertEqual(r_not.get_json()["order"]["attendance_status"], "not_attended")
+
+        # 5. Remarcar para o turno da tarde de hoje
+        r_resched = self.client.post("/api/externos/orders/reschedule", json={
+            "order_ids": [order_id],
+            "date": "2026-11-04",
+            "shift": "tarde"
+        })
+        self.assertEqual(r_resched.status_code, 200)
+        res_data = r_resched.get_json()
+        self.assertTrue(res_data["success"])
+        self.assertEqual(res_data["count"], 1)
+
+        # Verifica estado após remarcar para tarde: volta a ser pendente na entrada da tarde
+        summary_tarde = get_grouped_routes("2026-11-04", "tarde")
+        unassigned_ids = [o["id"] for o in summary_tarde["unassigned"]]
+        self.assertIn(order_id, unassigned_ids)
+        rescheduled_order = [o for o in summary_tarde["unassigned"] if o["id"] == order_id][0]
+        self.assertEqual(rescheduled_order["attendance_status"], "pending")
+        self.assertEqual(rescheduled_order["route_shift"], "tarde")
+        self.assertIsNone(rescheduled_order["technician"])
+
+        # 6. Remarcar para outro dia (2026-11-05, manhã)
+        r_resched2 = self.client.post("/api/externos/orders/reschedule", json={
+            "order_ids": [order_id],
+            "date": "2026-11-05",
+            "shift": "manha"
+        })
+        self.assertEqual(r_resched2.status_code, 200)
+        summary_amanha = get_grouped_routes("2026-11-05", "manha")
+        unassigned_amanha = [o["id"] for o in summary_amanha["unassigned"]]
+        self.assertIn(order_id, unassigned_amanha)
+
+        # 7. Priscila edita chamado mesmo após ter sido manipulado
+        r_edit = self.client.put(f"/api/externos/orders/{order_id}", json={
+            "client_name": "SUPERMERCADO TESTE ALTERADO",
+            "reported_defect": "NOVO DEFEITO INFORMADO",
+            "technician": "ANTONIO"
+        })
+        self.assertEqual(r_edit.status_code, 200)
+        edited = r_edit.get_json()["order"]
+        self.assertEqual(edited["client_name"], "SUPERMERCADO TESTE ALTERADO")
+        self.assertEqual(edited["reported_defect"], "NOVO DEFEITO INFORMADO")
+        self.assertEqual(edited["technician"], "ANTONIO")
+
+        # 8. Priscila exclui chamado cancelado de última hora
+        r_del = self.client.delete(f"/api/externos/orders/{order_id}")
+        self.assertEqual(r_del.status_code, 200)
+        self.assertTrue(r_del.get_json()["success"])
+
+        # Verifica que foi excluído
+        r_del_again = self.client.delete(f"/api/externos/orders/{order_id}")
+        self.assertEqual(r_del_again.status_code, 404)
 
 
 if __name__ == "__main__":

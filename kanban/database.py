@@ -409,6 +409,7 @@ def _ensure_external_routes_tables(cursor):
             route_shift TEXT DEFAULT 'manha',
             route_order INTEGER DEFAULT 0,
             status TEXT DEFAULT 'pending_route',
+            attendance_status TEXT DEFAULT 'pending',
             pdf_source_path TEXT DEFAULT '',
             pdf_imported_at TEXT DEFAULT NULL,
             created_at TEXT NOT NULL,
@@ -439,6 +440,8 @@ def _ensure_external_routes_tables(cursor):
     order_cols = {row["name"] for row in cursor.execute("PRAGMA table_info(external_orders)").fetchall()}
     if "route_shift" not in order_cols:
         cursor.execute("ALTER TABLE external_orders ADD COLUMN route_shift TEXT DEFAULT 'manha'")
+    if "attendance_status" not in order_cols:
+        cursor.execute("ALTER TABLE external_orders ADD COLUMN attendance_status TEXT DEFAULT 'pending'")
 
     route_cols = {row["name"] for row in cursor.execute("PRAGMA table_info(external_routes)").fetchall()}
     if "route_shift" not in route_cols:

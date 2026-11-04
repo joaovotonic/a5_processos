@@ -217,9 +217,9 @@ def process_external_pdf_file(pdf_path: str):
         time.sleep(0.4)
 
     try:
-        from ..utils import format_os_number
+        from ..services.externos import format_external_os_number
         data = parse_external_os_pdf(pdf_path)
-        os_number = format_os_number(data.get("os_number") or "")
+        os_number = format_external_os_number(data.get("os_number") or "")
         now_dt = datetime.now()
 
         if not os_number:

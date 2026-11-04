@@ -46,6 +46,24 @@ def get_current_shift() -> str:
     return "manha" if datetime.now().hour < 11 else "tarde"
 
 
+def format_external_os_number(os_num: str) -> str:
+    """
+    Padroniza o número da O.S. de chamados externos:
+    Remove zeros à esquerda excedentes (ex: '0000026803' -> '26803', '026803' -> '26803').
+    Mantém intacto se for alfanumérico (ex: 'TEST26802').
+    """
+    raw = str(os_num or "").strip()
+    if not raw:
+        return ""
+    if raw.isdigit():
+        clean = raw.lstrip("0")
+        return clean if clean else "0"
+    m = re.match(r"^0+(\d+)$", raw)
+    if m:
+        return m.group(1)
+    return raw
+
+
 def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
     """
     Analisa um PDF de O.S. externa do Teorema e extrai os campos exatos
@@ -53,10 +71,10 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
     - Cliente (Nome Fantasia ou Razão)
     - Data Abertura de O.S. (DD/MM/YYYY)
     - Horário (HH:MM)
-    - O.S. (número com 5-6 dígitos)
-    - Setor (ex: PEIXARIA, ROTISSERIE, RECEBIMENTO, FLV, AÇOUGUE, CAIXA...)
-    - Mod. Equip. (ex: PRIX 6, PL 3000, PRIX 5 PTA...)
-    - Defeito (descrição do defeito relatado)
+    - O.S. (número sem zeros extras, ex: 26803)
+    - Setor (extraído prioritariamente do descritivo do defeito, ex: RECEBIMENTO, ROTISSERIE)
+    - Mod. Equip. (ex: PRIX 6, PL 3000, 8217 LIGHT...)
+    - Defeito (descritivo do defeito limpo, sem nome do solicitante)
     - Tarefas a serem realizadas (observações adicionais)
     """
     text = extract_text_from_pdf(pdf_path)
@@ -79,7 +97,7 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
         "raw_text": text
     }
 
-    # 1. Número da O.S.
+    # 1. Número da O.S. (extrai e remove zeros à esquerda: 0000026803 -> 26803)
     os_patterns = [
         r"Ordem\s+de\s+Servi[çc]o\s*:\s*(\d{3,14})",
         r"(?:ORDEM\s+DE\s+SERVI[ÇC]O|O\.?S\.?|NUMERO|N[°ºo]\.?)\s*[:#\s]?\s*(\d{3,14})",
@@ -88,7 +106,7 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
     for pat in os_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
-            data["os_number"] = format_os_number(m.group(1).strip())
+            data["os_number"] = format_external_os_number(m.group(1).strip())
             break
 
     # 2. Cliente (Fantasia prioritário)
@@ -145,25 +163,12 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # 5. Setor
-    sector_patterns = [
-        r"(?:SETOR|DEPARTAMENTO|DEPTO|LOCAL)\s*[:#]?\s*([A-Z0-9\s\.\-]{3,25})",
-        r"\b(ROTISSERIE|RECEBIMENTO|PEIXARIA|A[ÇC]OUGUE|FLV|PADARIA|HORTIFRUTI|LATIC[ÍI]NIOS|FRIOS|ESTOQUE|DEPOSITO|DEPÓSITO|FRENTE\s+DE\s+CAIXA|CAIXA\s+\d+|CHECKOUT\s*\d*)\b",
-    ]
-    for pat in sector_patterns:
-        m = re.search(pat, text, re.IGNORECASE)
-        if m:
-            found_sec = _clean(m.group(1) if m.lastindex else m.group(0)).upper()
-            if len(found_sec) > 1 and "DATA" not in found_sec:
-                data["sector"] = found_sec
-                break
-
-    # 6. Modelo de Equipamento
+    # 5. Modelo de Equipamento
     model_patterns = [
         r"MARCA\s*(?:\/|E)?\s*MODELO\s*:\s*([^\n\r]+)",
         r"(?:MODELO|EQUIPAMENTO)\s*[:#]?\s*([^\n\r]+)",
         r"\b(PRIX\s+[0-9A-Z\s\+\-\/]+)\b",
-        r"\b(PL\s*\d{3,5})\b",
+        r"\b(PL\s*[-–—]?\s*\d{3,5}(?:/\d+)?)\b",
         r"\b(8217\s+[A-Z0-9\s]+)\b",
         r"\b(TOLEDO\s+[0-9A-Z\s\+\-\/]+)\b",
     ]
@@ -175,12 +180,16 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
             cand = _clean(cand).upper()
             if len(cand) > 1:
                 cand = re.sub(r"^TOLEDO\s*[-–—]?\s*", "", cand)
-                data["equipment_model"] = cand
+                cand = re.sub(r"^PL\s*[-–—]?\s*(\d+)(?:/\d+)?", r"PL \1", cand)
+                data["equipment_model"] = cand.strip()
                 break
 
-    # 7. Defeito Reclamado
+    # 6 & 7. Descritivo do Defeito & Setor da Balança
+    # O descritivo do Teorema traz o defeito, o setor da balança e por vezes quem solicitou.
+    # Ex: "BALANÇA DO ATACADÃO JAPIIM, SETOR RECEBIMENTO, ELA ESTÁ INOPERANTE, POIS O CLIENTE DEIXOU O PRAZO DE CALIBRAÇÃO EXPIRAR. CHAMADO SOLICITADO PELO ADM LUIZ."
+    raw_defect_text = ""
     m_def = re.search(
-        r"Defeito\s*:\s*([\s\S]*?)(?=(?:Reduzido|S\s*E\s*R\s*V\s*I\s*Ç\s*O\s*S|Vl\s*Total|Descri[çc][ãa]o:|\.\s*[\r\n]|\Z))",
+        r"Defeito\s*:\s*([\s\S]*?)(?=(?:Reduzido|S\s*E\s*R\s*V\s*I\s*Ç\s*O\s*S|I\s*T\s*E\s*N\s*S|Vl\s*Total|Descri[çc][ãa]o:|\Z))",
         text,
         re.IGNORECASE
     )
@@ -188,12 +197,75 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
         raw_lines = [l.strip() for l in m_def.group(1).strip().split("\n")]
         clean_lines = [l for l in raw_lines if l and l != "."]
         if clean_lines:
-            data["reported_defect"] = " ".join(clean_lines).upper()
+            raw_defect_text = " ".join(clean_lines)
 
-    if not data["reported_defect"]:
+    if not raw_defect_text:
         cand_defect = re.search(r"(?:DEFEITO|PROBLEMA|RECLAMA[ÇC][ÃA]O)\s*[:#]?\s*([^\n\r]+)", text, re.IGNORECASE)
         if cand_defect:
-            data["reported_defect"] = _clean(cand_defect.group(1)).upper()
+            raw_defect_text = _clean(cand_defect.group(1))
+
+    # Extrai o setor da balança prioritariamente do descritivo do defeito
+    extracted_sector = ""
+    if raw_defect_text:
+        m_sec = re.search(
+            r"SETOR\s*(?:DE\s*)?[:\-]?\s*([A-Z0-9\s/\+\-]+?)(?=[,;:\.\n\r]|ELA\b|ELE\b|EST[AÁ]\b|POIS\b|COM\b|N[ÃA]O\b|CHAMADO\b|SOLICITADO\b|SOLICITANTE\b|CONTATO\b|$)",
+            raw_defect_text,
+            re.IGNORECASE
+        )
+        if m_sec:
+            cand = _clean(m_sec.group(1)).upper()
+            if len(cand) > 1:
+                extracted_sector = cand
+
+        if not extracted_sector:
+            m_known = re.search(
+                r"\b(ROTISSERIE|RECEBIMENTO|PEIXARIA|A[ÇC]OUGUE|FLV|PADARIA|HORTIFRUTI|LATIC[ÍI]NIOS|FRIOS|ESTOQUE|DEPOSITO|DEPÓSITO|FRENTE\s+DE\s+CAIXA|CAIXA\s+\d+|CHECKOUT\s*\d*|TODAS\s+AS\s+BALAN[ÇC]AS|BALC[ÃA]O)\b",
+                raw_defect_text,
+                re.IGNORECASE
+            )
+            if m_known:
+                extracted_sector = m_known.group(0).strip().upper()
+
+    # Fallback se não encontrou no descritivo do defeito: busca no texto geral da OS
+    if not extracted_sector:
+        sector_patterns = [
+            r"(?:SETOR|DEPARTAMENTO|DEPTO|LOCAL)\s*[:#]?\s*([A-Z0-9\s\.\-]{3,25})",
+            r"\b(ROTISSERIE|RECEBIMENTO|PEIXARIA|A[ÇC]OUGUE|FLV|PADARIA|HORTIFRUTI|LATIC[ÍI]NIOS|FRIOS|ESTOQUE|DEPOSITO|DEPÓSITO|FRENTE\s+DE\s+CAIXA|CAIXA\s+\d+|CHECKOUT\s*\d*)\b",
+        ]
+        for pat in sector_patterns:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                found_sec = _clean(m.group(1) if m.lastindex else m.group(0)).upper()
+                if len(found_sec) > 1 and "DATA" not in found_sec:
+                    extracted_sector = found_sec
+                    break
+
+    data["sector"] = extracted_sector
+
+    # Limpeza do defeito reclamado:
+    # 1. Remove solicitante ("Nao precisa pegar o nome de quem solicitou")
+    clean_def = raw_defect_text.strip()
+    solicitante_patterns = [
+        r"[\s,;\.\-]*(?:CHAMADO\s+)?SOLICITADO\s+(?:POR|PELO|PELA|PELOS|PELAS)\s+[\w\s\.\-]+(?:\.|$)",
+        r"[\s,;\.\-]*SOLICITANTE\s*[:\-]\s*[\w\s\.\-]+(?:\.|$)",
+        r"[\s,;\.\-]*SOL\.\s*POR\s*[:\-]?\s*[\w\s\.\-]+(?:\.|$)",
+        r"[\s,;\.\-]*CONTATO\s*[:\-]?\s*(?:SR\.?|SRA\.?)?\s*[\w\s\.\-]+(?:\.|$)",
+        r"[\s,;\.\-]*QUEM\s+SOLICITOU\s*[:\-]?\s*[\w\s\.\-]+(?:\.|$)",
+    ]
+    for s_pat in solicitante_patterns:
+        clean_def = re.sub(s_pat, "", clean_def, flags=re.IGNORECASE)
+
+    # 2. Remove prefixos redundantes de balança / cliente / setor do defeito
+    clean_def = re.sub(r"^\s*BALAN[ÇC]A\s+(?:DO\s+|DA\s+|DE\s+)?[^,;:\.\n\r]+[,;:\.]?\s*", "", clean_def, flags=re.IGNORECASE)
+    clean_def = re.sub(r"^\s*BALAN[ÇC]A\s+SETOR\s+[^,;:\.\n\r]+[,;:\.]?\s*", "", clean_def, flags=re.IGNORECASE)
+    clean_def = re.sub(r"^\s*SETOR\s*(?:DE\s*)?[:\-]?\s*[^,;:\.\n\r]+[,;:\.]?\s*", "", clean_def, flags=re.IGNORECASE)
+
+    # Se o nome do setor ainda ficou no início seguido de hífen/dois pontos (ex: 'ROTISSERIE - TECLADO TRAVANDO')
+    if extracted_sector and clean_def.upper().startswith(extracted_sector):
+        clean_def = clean_def[len(extracted_sector):].lstrip(" :;,-")
+
+    clean_def = clean_def.strip(" ,;.-")
+    data["reported_defect"] = clean_def.upper() if clean_def else raw_defect_text.upper()
 
     return data
 
@@ -245,7 +317,7 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
     now_iso = datetime.now().isoformat()
     now_dt = datetime.now()
 
-    os_num = format_os_number(data.get("os_number") or "")
+    os_num = format_external_os_number(data.get("os_number") or "")
     client = (data.get("client_name") or "CLIENTE EXTERNO").strip().upper()
     open_date = (data.get("open_date") or now_dt.strftime("%d/%m/%Y")).strip()
     open_time = (data.get("open_time") or now_dt.strftime("%H:%M")).strip()
@@ -258,6 +330,7 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
     route_shift = (data.get("route_shift") or get_current_shift()).lower().strip()
     route_order = int(data.get("route_order") or 0)
     status = data.get("status") or ("routed" if tech else "pending_route")
+    attendance_status = (data.get("attendance_status") or "pending").lower().strip()
     pdf_source = data.get("pdf_source_path") or ""
 
     with connect() as conn:
@@ -265,13 +338,14 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
             INSERT INTO external_orders (
                 os_number, client_name, open_date, open_time, sector,
                 equipment_model, reported_defect, tasks_notes, technician,
-                route_date, route_shift, route_order, status, pdf_source_path,
-                pdf_imported_at, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                route_date, route_shift, route_order, status, attendance_status,
+                pdf_source_path, pdf_imported_at, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             os_num, client, open_date, open_time, sector,
             model, defect, tasks, tech,
-            route_date, route_shift, route_order, status, pdf_source,
+            route_date, route_shift, route_order, status, attendance_status,
+            pdf_source,
             now_iso if pdf_source else None, now_iso, now_iso
         ))
         order_id = cur.lastrowid
@@ -280,12 +354,12 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def update_external_order(order_id: int, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Atualiza dados de um chamado externo (técnico, turno, sequência, setor, notas, etc)."""
+    """Atualiza dados de um chamado externo (técnico, turno, sequência, setor, notas, attendance_status, etc)."""
     now_iso = datetime.now().isoformat()
     allowed_fields = {
         "os_number", "client_name", "open_date", "open_time", "sector",
         "equipment_model", "reported_defect", "tasks_notes", "technician",
-        "route_date", "route_shift", "route_order", "status"
+        "route_date", "route_shift", "route_order", "status", "attendance_status"
     }
 
     updates = []
@@ -294,10 +368,10 @@ def update_external_order(order_id: int, data: Dict[str, Any]) -> Optional[Dict[
         if k in allowed_fields:
             if k in ["client_name", "sector", "equipment_model", "reported_defect", "technician"] and isinstance(v, str):
                 v = v.strip().upper()
-            elif k == "route_shift" and isinstance(v, str):
+            elif k in ["route_shift", "attendance_status"] and isinstance(v, str):
                 v = v.strip().lower()
             elif k == "os_number" and isinstance(v, str) and v.strip():
-                v = format_os_number(v.strip())
+                v = format_external_os_number(v.strip())
             elif k == "route_order":
                 v = int(v or 0)
             updates.append(f"{k} = ?")
@@ -314,6 +388,29 @@ def update_external_order(order_id: int, data: Dict[str, Any]) -> Optional[Dict[
         conn.execute(f"UPDATE external_orders SET {', '.join(updates)} WHERE id = ?", params)
         row = conn.execute("SELECT * FROM external_orders WHERE id = ?", (order_id,)).fetchone()
         return dict(row) if row else None
+
+
+def reschedule_external_orders(order_ids: List[int], new_date: str, new_shift: str) -> int:
+    """
+    Transfere um ou mais chamados (ex: não atendidos) para outra data ou outro turno (ex: tarde).
+    Reseta attendance_status para 'pending' e route_order para 0 para reorganização.
+    """
+    if not order_ids:
+        return 0
+    now_iso = datetime.now().isoformat()
+    clean_ids = [int(i) for i in order_ids if str(i).isdigit()]
+    if not clean_ids:
+        return 0
+    placeholders = ",".join(["?"] * len(clean_ids))
+    params = [new_date, new_shift.lower().strip(), now_iso] + clean_ids
+
+    with connect() as conn:
+        res = conn.execute(f"""
+            UPDATE external_orders
+            SET route_date = ?, route_shift = ?, attendance_status = 'pending', route_order = 0, technician = NULL, status = 'pending_route', updated_at = ?
+            WHERE id IN ({placeholders})
+        """, params)
+        return res.rowcount
 
 
 def delete_external_order(order_id: int) -> bool:
