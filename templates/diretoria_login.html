@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito - Diretoria Executiva - A5 Tecnologia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #f4f4f5;
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-image: radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 80%, rgba(14, 165, 233, 0.06) 0%, transparent 40%);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel {
+            background: rgba(18, 18, 23, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 antialiased">
+
+    <div class="max-w-md w-full glass-panel rounded-3xl p-7 sm:p-9 space-y-6 border border-zinc-800 shadow-2xl relative overflow-hidden">
+        
+        <!-- Top Accent Glow Line -->
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-sky-500 to-amber-500"></div>
+
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <div class="inline-flex items-center justify-center mb-2">
+                <svg viewBox="0 0 48 32" class="w-14 h-9 drop-shadow" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="48" height="32" rx="7" fill="#254a93"/>
+                    <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
+                    <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central">A5</text>
+                </svg>
+            </div>
+            
+            <div class="inline-block">
+                <span class="bg-amber-500 text-slate-950 font-mono font-black px-2.5 py-0.5 rounded-lg text-[10px] uppercase tracking-wider shadow-sm">
+                    Diretoria Executiva
+                </span>
+            </div>
+
+            <h1 class="text-xl font-black text-white tracking-tight">Painel do Sr. Jacson</h1>
+            <p class="text-xs text-zinc-400">Acesso restrito. Digite suas credenciais para visualizar relatórios e acionar a TV.</p>
+        </div>
+
+        <!-- Erro de login se houver -->
+        {% if error %}
+            <div class="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2.5 animate-shake">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i>
+                <span class="font-semibold">{{ error }}</span>
+            </div>
+        {% endif %}
+
+        <!-- Form de Login -->
+        <form method="POST" action="/diretoria" class="space-y-4">
+            <div class="space-y-1.5">
+                <label for="username" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Usuário</span>
+                </label>
+                <input type="text" id="username" name="username" required autofocus placeholder="admin"
+                    class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
+            </div>
+
+            <div class="space-y-1.5">
+                <label for="password" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                    <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Senha</span>
+                </label>
+                <input type="password" id="password" name="password" required placeholder="••••••"
+                    class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
+            </div>
+
+            <div class="pt-2">
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] text-slate-950 font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    <span>Entrar no Painel</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Rodapé -->
+        <div class="pt-2 text-center border-t border-zinc-800/80">
+            <a href="/admin" class="text-xs text-zinc-400 hover:text-sky-400 transition inline-flex items-center gap-1 font-semibold">
+                <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                <span>Voltar ao Kanban da Recepção</span>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        if (window.lucide) { lucide.createIcons(); }
+    </script>
+</body>
+</html>

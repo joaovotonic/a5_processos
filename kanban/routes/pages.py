@@ -1,6 +1,6 @@
 """Rotas de páginas web da Esteira de Produção A5 Tecnologia."""
 import json
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, redirect, render_template, request, session, url_for
 
 from ..config import PORT
 from ..database import connect
@@ -38,10 +38,21 @@ def os_mobile_page(os_number):
     return render_template("os_tecnico.html", card=card, local_ip=get_local_ip(), port=PORT)
 
 
-@bp.route("/diretoria")
-@bp.route("/chamado")
+@bp.route("/diretoria", methods=["GET", "POST"])
+@bp.route("/chamado", methods=["GET", "POST"])
 def diretoria_page():
     """4. Painel da Diretoria do Sr. Jacson (Relatórios Executivos + Chamada de Técnicos na TV)."""
+    if request.method == "POST":
+        username = (request.form.get("username") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        if username.lower() == "admin" and password == "admin":
+            session["diretoria_auth"] = True
+            return redirect(url_for("pages.diretoria_page"))
+        return render_template("diretoria_login.html", error="Usuário ou senha incorretos. Acesso restrito à Diretoria.", port=PORT)
+
+    if not session.get("diretoria_auth"):
+        return render_template("diretoria_login.html", error=None, port=PORT)
+
     with connect() as conn:
         tech_rows = conn.execute("SELECT title FROM lists WHERE is_tech = 1 ORDER BY position ASC").fetchall()
     technicians = []
@@ -52,6 +63,13 @@ def diretoria_page():
     if not technicians:
         technicians = ["João Otoni", "Enzo Gabriel", "Guilherme", "Wisley", "Iago", "ANTONIO"]
     return render_template("diretoria.html", technicians=technicians, local_ip=get_local_ip(), port=PORT)
+
+
+@bp.route("/diretoria/logout")
+def diretoria_logout():
+    """Encerra a sessão da Diretoria e redireciona para a tela de login."""
+    session.pop("diretoria_auth", None)
+    return redirect(url_for("pages.diretoria_page"))
 
 
 @bp.route("/etiqueta/<path:os_number>")
