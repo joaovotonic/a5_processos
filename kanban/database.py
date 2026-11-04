@@ -247,7 +247,7 @@ def _ensure_esteira_lists(cursor):
     cursor.execute("UPDATE lists SET title = 'APROVADOS', role = 'aprovados' WHERE title = 'APROVADAS' OR title = 'APROVADOS';")
     cursor.execute("UPDATE lists SET title = 'FINALIZADAS', role = 'finalizada' WHERE title = 'BALANÇAS PRONTAS' OR title = 'FINALIZADAS';")
     # Remove colunas desnecessárias do kanban antigo se existirem
-    cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'ORÇAMENTOS NÃO AUTORIZADOS', 'PENDÊNCIAS', 'BALANÇAS PRONTAS');")
+    cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'PENDÊNCIAS', 'BALANÇAS PRONTAS');")
 
     # Deduplica a lista 'FINALIZADAS', mantendo uma única coluna oficial
     fin_lists = cursor.execute("SELECT id FROM lists WHERE title = 'FINALIZADAS' OR role = 'finalizada' ORDER BY id ASC").fetchall()

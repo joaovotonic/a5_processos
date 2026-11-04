@@ -2,6 +2,8 @@
 Avisos em tempo real (WebSocket) para todas as telas: quadro atualizado e
 anúncios sonoros/visuais da TV da oficina (os textos falados ficam todos aqui).
 """
+import re
+
 from .extensions import socketio
 from .services.board import get_full_board
 from .services.tts import get_neural_audio_base64, VOICE_JACSON, VOICE_RECEPTION, VOICE_OFICINA
@@ -76,7 +78,7 @@ def announce_finished_mobile(os_number, client_name, tech_name, inmetro_seal, fi
 
 
 def _normalize_speech_name(tech_name):
-    """Normaliza o nome do técnico para pronúncia natural no sintetizador de voz (TTS)."""
+    """Normaliza o nome do funcionário/técnico para pronúncia natural no sintetizador de voz (TTS)."""
     t_name = (tech_name or "Oficina").strip()
     if t_name.upper().startswith("TODOS"):
         return "toda a equipe da oficina"
@@ -84,7 +86,11 @@ def _normalize_speech_name(tech_name):
         return "Senhor " + t_name[4:].title()
     elif t_name.upper().startswith("TEC. "):
         return "Técnico " + t_name[5:].title()
-    return t_name.title()
+    elif t_name.upper().startswith("ADM. "):
+        return t_name[5:].title()
+
+    clean = re.sub(r"\s*\([^)]*\)", "", t_name).strip()
+    return clean.title() if clean else t_name.title()
 
 
 def announce_call_tech(tech_name, reason):

@@ -467,6 +467,24 @@ def api_adm_aprovar():
     return jsonify(adm_aprovar(os_number))
 
 
+@bp.route("/esteira/adm-nao-autorizar", methods=["POST"])
+def api_adm_nao_autorizar():
+    from ..services.esteira import adm_nao_autorizar
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    reason = data.get("reason") or ""
+    return jsonify(adm_nao_autorizar(os_number, reason=reason))
+
+
+@bp.route("/esteira/fechar-balanca", methods=["POST"])
+def api_fechar_balanca():
+    from ..services.esteira import fechar_balanca
+    data = json_body()
+    os_number = data.get("os_number") or ""
+    tech_name = data.get("tech_name") or data.get("tecnico") or ""
+    return jsonify(fechar_balanca(os_number, tech_name=tech_name))
+
+
 @bp.route("/cards/<path:os_number>/advance-admin", methods=["POST"])
 def api_advance_admin(os_number):
     """Avança a O.S. na esteira via ação da recepção."""

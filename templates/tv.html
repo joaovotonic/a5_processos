@@ -611,12 +611,26 @@
                 `;
             }
 
-            // Indicador de Fase na Bancada do Técnico (Orçamentando vs Finalizando)
+            // Indicador de Fase na Bancada do Técnico (Orçamentando vs Finalizando vs Não Autorizado)
             let phaseBannerHTML = "";
             const isFinishing = c.pipeline_phase === "EM_MANUTENCAO";
-            const isQuoting = c.pipeline_phase === "EM_ORCAMENTO" || (isHorizontal && !isFinishing);
+            const isNaoAut = c.pipeline_phase === "NAO_AUTORIZADO" || (c.list_title && (c.list_title.toUpperCase().includes("NÃO AUTORIZAD") || c.list_title.toUpperCase().includes("NAO AUTORIZAD")));
+            const isQuoting = c.pipeline_phase === "EM_ORCAMENTO" || (isHorizontal && !isFinishing && !isNaoAut);
 
-            if (isFinishing) {
+            if (isNaoAut) {
+                phaseBannerHTML = `
+                    <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 font-black text-xs flex items-center justify-between shadow-md">
+                        <span class="flex items-center gap-2">
+                            <span class="relative flex h-2.5 w-2.5">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                            </span>
+                            <span class="tracking-wide">🚫 NÃO AUTORIZADO</span>
+                        </span>
+                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-rose-500/30 text-rose-100">Fechar Balança</span>
+                    </div>
+                `;
+            } else if (isFinishing) {
                 phaseBannerHTML = `
                     <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-between shadow-md">
                         <span class="flex items-center gap-2">
@@ -674,9 +688,21 @@
 
             if (!boardData.lists || !boardData.lists.length) return;
 
-            // 1. Localiza as colunas exclusivas da TV: ORÇAMENTOS e APROVADOS
-            const orcList = boardData.lists.find(l => (l.role && l.role.toLowerCase().includes("orcamento")) || (l.title && l.title.toUpperCase().includes("ORÇAMENTO")) || (l.title && l.title.toUpperCase().includes("ORCAMENTO"))) || { title: "ORÇAMENTOS", cards: [] };
-            const aprList = boardData.lists.find(l => (l.role && l.role.toLowerCase().includes("aprovad")) || (l.title && l.title.toUpperCase().includes("APROVAD"))) || { title: "APROVADOS", cards: [] };
+            // 1. Localiza as colunas exclusivas da TV: ORÇAMENTOS, APROVADOS e NÃO AUTORIZADOS
+            const orcList = boardData.lists.find(l => 
+                (l.role && l.role.toLowerCase() === "orcamento") || 
+                (l.title && (l.title.trim().toUpperCase() === "ORÇAMENTOS" || l.title.trim().toUpperCase() === "ORCAMENTOS"))
+            ) || { title: "ORÇAMENTOS", cards: [] };
+
+            const aprList = boardData.lists.find(l => 
+                (l.role && l.role.toLowerCase().includes("aprovad")) || 
+                (l.title && (l.title.trim().toUpperCase() === "APROVADOS" || l.title.trim().toUpperCase() === "APROVADAS"))
+            ) || { title: "APROVADOS", cards: [] };
+
+            const naoAutList = boardData.lists.find(l => 
+                (l.role && l.role.toLowerCase().includes("nao_autorizado")) || 
+                (l.title && (l.title.toUpperCase().includes("NÃO AUTORIZAD") || l.title.toUpperCase().includes("NAO AUTORIZAD")))
+            ) || { title: "NÃO AUTORIZADOS", cards: [] };
 
             // 2. Localiza as bancadas dos técnicos (role === 'tech' ou is_tech === 1)
             const techLists = boardData.lists.filter(l => l.is_tech === 1 || l.role === "tech" || l.title.toUpperCase().startsWith("TEC.") || l.title.toUpperCase().startsWith("SR."));
@@ -695,12 +721,15 @@
 
             const orcCards = sortCards(orcList.cards);
             const aprCards = sortCards(aprList.cards);
+            const naoAutCards = sortCards(naoAutList.cards || []);
+            const hasNaoAut = naoAutCards.length > 0;
 
             // Ajusta o layout dinamicamente:
-            // - De base (sem técnico com balança): Orçamentos e Aprovadas ocupam a tela simetricamente
-            // - Com técnico atendendo: Orçamentos e Aprovadas ficam em colunas laterais e os técnicos ativos entram na tela horizontalmente
-            const colWidthClass = hasActiveTechs ? "w-[330px] shrink-0" : "flex-1 max-w-3xl";
-            container.className = `flex-1 flex items-stretch gap-5 p-5 overflow-hidden ${hasActiveTechs ? '' : 'justify-center max-w-7xl mx-auto w-full'}`;
+            // - Se houver bancadas ativas ou balanças não autorizadas, colunas ficam compactas
+            // - Sem técnicos atendendo e sem não-autorizados, ocupa a tela centralizada
+            const hasSidePanels = hasActiveTechs || hasNaoAut;
+            const colWidthClass = hasSidePanels ? "w-[310px] shrink-0" : "flex-1 max-w-3xl";
+            container.className = `flex-1 flex items-stretch gap-4 p-4 overflow-hidden ${hasSidePanels ? '' : 'justify-center max-w-7xl mx-auto w-full'}`;
 
             // HTML da Coluna 1: ORÇAMENTOS
             const orcColHTML = `
@@ -745,6 +774,25 @@
                     </div>
                 </div>
             `;
+
+            // HTML da Coluna 3: NÃO AUTORIZADOS (Aparece na TV APENAS quando houver balanças não autorizadas)
+            let naoAutColHTML = "";
+            if (hasNaoAut) {
+                naoAutColHTML = `
+                    <div class="tv-col ${colWidthClass} rounded-2xl flex flex-col h-full overflow-hidden shadow-lg border-2 border-rose-500/50 bg-rose-950/20">
+                        <div class="px-5 py-3.5 bg-rose-950/60 border-b border-rose-500/40 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2.5 truncate">
+                                <span class="text-xl">🚫</span>
+                                <span class="font-black text-base tracking-wider uppercase text-rose-300 truncate">NÃO AUTORIZADOS</span>
+                            </div>
+                            <span class="bg-rose-600 text-white font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow animate-pulse">${naoAutCards.length}</span>
+                        </div>
+                        <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
+                            ${naoAutCards.map(c => renderTvCardHTML(c, false)).join("")}
+                        </div>
+                    </div>
+                `;
+            }
 
             // HTML da Área dos Técnicos: SOMENTE EXIBE QUANDO O TÉCNICO SELECIONAR BALANÇA
             let techAreaHTML = "";
@@ -823,7 +871,7 @@
                 `;
             }
 
-            container.innerHTML = orcColHTML + aprColHTML + techAreaHTML;
+            container.innerHTML = orcColHTML + aprColHTML + naoAutColHTML + techAreaHTML;
             refreshLucide();
         }
 

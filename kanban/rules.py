@@ -75,3 +75,13 @@ def is_tech_list(lst):
     return d.get("is_tech") == 1
 
 
+def is_nao_autorizados_list(lst):
+    """Coluna de orçamentos não autorizados pelo cliente."""
+    if lst is None:
+        return False
+    d = _as_dict(lst)
+    role = (d.get("role") or "").lower()
+    title = (d.get("title") or "").upper()
+    return "nao_autorizado" in role or "NÃO AUTORIZAD" in title or "NAO AUTORIZAD" in title
+
+

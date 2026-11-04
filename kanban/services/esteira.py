@@ -123,7 +123,11 @@ def get_os_status_for_mobile(os_number: str) -> Dict[str, Any]:
     is_tech_col = bool(card.get("list_is_tech"))
 
     # Determina o estado operacional da esteira
-    if "ORÇAMENTO" in list_title and not is_tech_col and "FEITO" not in list_title and "ENVIADO" not in list_title:
+    if "FINALIZAD" in list_title or "PRONTA" in list_title or card.get("finished_at"):
+        state = "FINALIZADAS"
+    elif "NÃO AUTORIZAD" in list_title or "NAO AUTORIZAD" in list_title or card.get("pipeline_phase") == "NAO_AUTORIZADO":
+        state = "NAO_AUTORIZADO"
+    elif "ORÇAMENTO" in list_title and not is_tech_col and "FEITO" not in list_title and "ENVIADO" not in list_title:
         state = "AGUARDANDO_TECNICO_ORCAMENTO"
     elif is_tech_col and card.get("pipeline_phase") == "EM_MANUTENCAO":
         state = "EM_MANUTENCAO_BANCADA"
@@ -135,8 +139,6 @@ def get_os_status_for_mobile(os_number: str) -> Dict[str, Any]:
         state = "ORCAMENTOS_ENVIADOS"
     elif "APROVAD" in list_title or card.get("pipeline_phase") == "APROVADOS":
         state = "APROVADOS"
-    elif "FINALIZAD" in list_title or "PRONTA" in list_title or card.get("finished_at"):
-        state = "FINALIZADAS"
     else:
         state = "OUTRO"
 
@@ -147,6 +149,41 @@ def get_os_status_for_mobile(os_number: str) -> Dict[str, Any]:
     card["tempo_liquido_str"] = format_duration(card.get("tempo_liquido_segundos") or 0)
 
     return card
+
+
+def get_or_create_nao_autorizados_list(conn) -> Dict[str, Any]:
+    """
+    Localiza ou cria dinamicamente a coluna 'NÃO AUTORIZADOS' no Kanban caso ela não exista.
+    Assim que o botão 'NÃO AUTORIZADO' é acionado, esta lista é criada/assegurada no banco.
+    """
+    row = conn.execute(
+        "SELECT * FROM lists WHERE role = 'nao_autorizados' OR title = 'NÃO AUTORIZADOS' OR title = 'ORÇAMENTOS NÃO AUTORIZADOS' LIMIT 1"
+    ).fetchone()
+    if row:
+        return dict(row)
+
+    # Posiciona imediatamente antes de FINALIZADAS
+    fin_row = conn.execute(
+        "SELECT position FROM lists WHERE role = 'finalizada' OR title = 'FINALIZADAS' LIMIT 1"
+    ).fetchone()
+    if fin_row:
+        target_pos = fin_row["position"]
+        conn.execute("UPDATE lists SET position = position + 1 WHERE position >= ?", (target_pos,))
+    else:
+        max_pos = conn.execute("SELECT COALESCE(MAX(position), 0) as m FROM lists").fetchone()["m"]
+        target_pos = max_pos + 1
+
+    cur = conn.execute(
+        "INSERT INTO lists (title, position, is_tech, role) VALUES ('NÃO AUTORIZADOS', ?, 0, 'nao_autorizados')",
+        (target_pos,)
+    )
+    return {
+        "id": cur.lastrowid,
+        "title": "NÃO AUTORIZADOS",
+        "position": target_pos,
+        "is_tech": 0,
+        "role": "nao_autorizados"
+    }
 
 
 # ==============================================================================
@@ -342,6 +379,66 @@ def adm_aprovar(os_number: str) -> Dict[str, Any]:
     return {"success": True, "message": f"O.S. {clean_os} APROVADA! Anúncio despachado para a TV e QR Code liberado.", "phase": "APROVADOS"}
 
 
+def adm_nao_autorizar(os_number: str, reason: str = "") -> Dict[str, Any]:
+    """
+    Marca o orçamento como NÃO AUTORIZADO pelo cliente, cria a lista 'NÃO AUTORIZADOS'
+    se não existir, move a balança para ela e notifica a TV.
+    """
+    clean_os = _clean_os(os_number)
+    now_iso = _now()
+
+    with connect() as conn:
+        card = _find_card_by_os(conn, os_number)
+        if not card:
+            raise NotFound(f"O.S. {clean_os} não encontrada.")
+        clean_os = _clean_os(card["os_number"])
+        card_id = card["id"]
+
+        dest_col = get_or_create_nao_autorizados_list(conn)
+        dest_list_id = dest_col["id"]
+        dest_title = dest_col["title"]
+        pos = _next_position(conn, dest_list_id)
+
+        try:
+            cur_labels = json.loads(card.get("labels_json") or "[]")
+        except Exception:
+            cur_labels = []
+        if not any((l.get("name") or "").upper() == "NÃO AUTORIZADO" for l in cur_labels):
+            cur_labels.append({"name": "NÃO AUTORIZADO", "color": "#EF4444", "text_color": "#FFFFFF", "priority": 0})
+
+        conn.execute("""
+            UPDATE cards
+            SET pipeline_phase = 'NAO_AUTORIZADO',
+                labels_json = ?,
+                list_id = ?,
+                position = ?,
+                moved_at = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (json.dumps(cur_labels, ensure_ascii=False), dest_list_id, pos, now_iso, now_iso, card_id))
+
+        conn.execute("""
+            INSERT INTO card_history (card_id, os_number, from_list, to_list, actor, action_description, timestamp)
+            VALUES (?, ?, ?, ?, 'Priscila (Recepção)', 'Orçamento NÃO AUTORIZADO pelo cliente. Movida para NÃO AUTORIZADOS.', ?)
+        """, (card_id, clean_os, card["list_title"], dest_title, now_iso))
+
+        # Notifica na TV com Edge-TTS e aviso sonoro
+        realtime.announce_arrival({
+            "os_number": clean_os,
+            "client_name": card["client_name"],
+            "equipment_type": card.get("equipment_model") or card.get("equipment_type"),
+            "is_urgent": True,
+            "is_warranty": False
+        }, "fechamento (orçamento não autorizado)", intro="Atenção oficina!")
+
+    realtime.broadcast_board()
+    return {
+        "success": True,
+        "message": f"O.S. {clean_os} marcada como NÃO AUTORIZADA e movida para '{dest_title}'!",
+        "phase": "NAO_AUTORIZADO"
+    }
+
+
 # ==============================================================================
 # ETAPA 5: TÉCNICO PUXA BALANÇA APROVADA PARA MANUTENÇÃO (Move para o nome do técnico)
 # ==============================================================================
@@ -485,6 +582,85 @@ def finalizar_balanca(os_number: str) -> Dict[str, Any]:
     }
 
 
+def fechar_balanca(os_number: str, tech_name: str = "") -> Dict[str, Any]:
+    """
+    Técnico fecha e remonta a balança (orçamento não autorizado ou fechamento direto),
+    transferindo o cartão imediatamente para a coluna FINALIZADAS.
+    """
+    clean_os = _clean_os(os_number)
+    now_iso = _now()
+    now_dt = datetime.now()
+
+    with connect() as conn:
+        card = _find_card_by_os(conn, os_number)
+        if not card:
+            raise NotFound(f"O.S. {clean_os} não encontrada.")
+        clean_os = _clean_os(card["os_number"])
+        card_id = card["id"]
+        actor_tech = tech_name or card.get("tech_name") or "Oficina"
+
+        dest_col = _get_list_by_title(conn, "FINALIZADAS")
+        dest_list_id = dest_col["id"] if dest_col else card["list_id"]
+        dest_title = dest_col["title"] if dest_col else "FINALIZADAS"
+        pos = _next_position(conn, dest_list_id)
+
+        tempo_orc_seg = card.get("tempo_orcamento_segundos") or 0
+        tempo_man_seg = card.get("tempo_manutencao_segundos") or 0
+        tempo_liq_seg = tempo_orc_seg + tempo_man_seg
+        dur_liq_str = format_duration(tempo_liq_seg)
+
+        conn.execute("""
+            UPDATE cards
+            SET pipeline_phase = 'PRONTAS',
+                finished_at = ?,
+                tech_name = ?,
+                finisher_tech = ?,
+                list_id = ?,
+                position = ?,
+                moved_at = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (now_iso, actor_tech, actor_tech, dest_list_id, pos, now_iso, now_iso, card_id))
+
+        conn.execute("""
+            INSERT INTO card_history (card_id, os_number, from_list, to_list, actor, action_description, timestamp)
+            VALUES (?, ?, ?, ?, ?, 'Balança Fechada pelo Técnico. Movida para FINALIZADAS.', ?)
+        """, (card_id, clean_os, card["list_title"], dest_title, actor_tech, now_iso))
+
+        today_prefix = now_dt.strftime("%Y-%m-%d")
+        finished_today = conn.execute(
+            "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ?",
+            (f"{today_prefix}%",)
+        ).fetchone()["c"]
+
+        # Anuncia na TV da oficina
+        realtime.announce_finished_mobile(
+            os_number=clean_os,
+            client_name=card["client_name"],
+            tech_name=actor_tech,
+            inmetro_seal=card.get("inmetro_seal") or "",
+            finished_today=finished_today
+        )
+
+        # Notifica a Priscila na recepção
+        realtime.notify_admin({
+            "type": "balanca_finalizada",
+            "title": "Balança Fechada (Finalizada)",
+            "message": f"O técnico {actor_tech} fechou a balança da O.S. {clean_os} ({card['client_name']}). Movida para FINALIZADAS.",
+            "os_number": clean_os,
+            "tech_name": actor_tech,
+            "finished_today": finished_today
+        })
+
+    realtime.broadcast_board()
+    return {
+        "success": True,
+        "message": f"Balança O.S. {clean_os} fechada e transferida para FINALIZADAS!",
+        "phase": "PRONTAS",
+        "action": "fechar_balanca"
+    }
+
+
 # ==============================================================================
 # EXCLUSÃO DE O.S. (Solicitado pelo usuário para a Priscila)
 # ==============================================================================
@@ -578,6 +754,8 @@ def process_qr_scan(os_number: str, tech_name: str = "") -> Dict[str, Any]:
         return claim_manutencao(os_number, tech_name or status.get("tech_name") or "Oficina")
     elif state == "EM_MANUTENCAO_BANCADA" or phase == "EM_MANUTENCAO":
         return finalizar_balanca(os_number)
+    elif state == "NAO_AUTORIZADO" or phase == "NAO_AUTORIZADO":
+        return fechar_balanca(os_number, tech_name or status.get("tech_name") or "Oficina")
     else:
         return {
             "success": False,
@@ -593,5 +771,9 @@ def advance_admin_pipeline(os_number: str, action: str) -> Dict[str, Any]:
         return adm_enviar_cliente(os_number)
     elif clean_action in ("aprovar", "aprovado", "aprovados"):
         return adm_aprovar(os_number)
+    elif clean_action in ("nao_autorizado", "nao_autorizar", "recusar", "recusado", "recusada", "rejeitado"):
+        return adm_nao_autorizar(os_number)
+    elif clean_action in ("fechar", "fechar_balanca", "fechar_nao_autorizada"):
+        return fechar_balanca(os_number)
     raise ApiError(f"Ação administrativa desconhecida: '{action}'", status=400)
 

@@ -386,6 +386,9 @@
                         <option value="João Otoni">TEC. João Otoni</option>
                         <option value="Iago">TEC. Iago</option>
                         <option value="Antonio">TEC. ANTONIO</option>
+                        <option value="Arthur (ADM)">ADM. Arthur</option>
+                        <option value="Roosevelt (ADM)">ADM. Roosevelt</option>
+                        <option value="Priscila (ADM)">ADM. Priscila</option>
                         <option value="Senhor Jacson">SR. JACSON</option>
                         <option value="Todos os Técnicos">TODOS OS TÉCNICOS</option>
                     </select>
@@ -882,7 +885,11 @@
                 col.className = "kanban-col rounded-xl overflow-hidden flex flex-col shrink-0 shadow-sm";
                 col.dataset.listId = list.id;
 
-                const headerAccent = list.is_tech ? "border-l-2 border-sky-500" : "";
+                let headerAccent = list.is_tech ? "border-l-2 border-sky-500" : "";
+                const isNaoAutCol = list.role === "nao_autorizados" || (list.title && (list.title.toUpperCase().includes("NÃO AUTORIZAD") || list.title.toUpperCase().includes("NAO AUTORIZAD")));
+                if (isNaoAutCol) {
+                    headerAccent = "border-l-4 border-rose-500 bg-rose-500/10";
+                }
                 const canDeleteEmpty = list.cards.length === 0;
 
                 col.innerHTML = `
@@ -1031,11 +1038,27 @@
                 `;
             } else if (currentPhase === "ORCAMENTOS_ENVIADOS" || listTitleUpper.includes("ENVIADOS") || listTitleUpper.includes("ENVIADO")) {
                 esteiraActionBtn = `
-                    <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80 grid grid-cols-2 gap-1.5">
                         <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'aprovar')"
-                            class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[11px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                            class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-[11px] py-1.5 px-1.5 rounded-lg transition flex items-center justify-center gap-1 shadow">
                             <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                            <span>APROVADO (Avisar TV)</span>
+                            <span>APROVADO</span>
+                        </button>
+                        <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'nao_autorizado')"
+                            class="bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black text-[11px] py-1.5 px-1.5 rounded-lg transition flex items-center justify-center gap-1 shadow"
+                            title="Orçamento não autorizado pelo cliente">
+                            <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                            <span>NÃO AUTORIZADO</span>
+                        </button>
+                    </div>
+                `;
+            } else if (currentPhase === "NAO_AUTORIZADO" || listTitleUpper.includes("NÃO AUTORIZAD") || listTitleUpper.includes("NAO AUTORIZAD")) {
+                esteiraActionBtn = `
+                    <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
+                        <button onclick="event.stopPropagation(); advanceAdmin(this.closest('.kanban-card').dataset.osNumber, 'fechar_balanca')"
+                            class="w-full bg-rose-700 hover:bg-rose-600 active:scale-95 text-white font-black text-[11px] py-1.5 px-2 rounded-lg transition flex items-center justify-center gap-1.5 shadow">
+                            <i data-lucide="package-check" class="w-3.5 h-3.5"></i>
+                            <span>FECHAR BALANÇA (FINALIZAR)</span>
                         </button>
                     </div>
                 `;
@@ -1109,7 +1132,11 @@
 
         async function advanceAdmin(osNumber, action) {
             try {
-                const url = action === "aprovar" ? "/api/esteira/adm-aprovar" : "/api/esteira/adm-enviar-cliente";
+                let url = "/api/esteira/adm-enviar-cliente";
+                if (action === "aprovar") url = "/api/esteira/adm-aprovar";
+                else if (action === "nao_autorizado") url = "/api/esteira/adm-nao-autorizar";
+                else if (action === "fechar_balanca") url = "/api/esteira/fechar-balanca";
+
                 const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -1117,10 +1144,16 @@
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
-                    showToast(action === "aprovar" ? `O.S. ${osNumber} aprovada! Aviso na TV emitido.` : `O.S. ${osNumber} enviada ao cliente!`, "success");
+                    let msg = `O.S. ${osNumber} atualizada!`;
+                    if (action === "aprovar") msg = `O.S. ${osNumber} aprovada! Aviso na TV emitido.`;
+                    else if (action === "nao_autorizado") msg = `O.S. ${osNumber} NÃO AUTORIZADA! Movida para NÃO AUTORIZADOS e exibida na TV.`;
+                    else if (action === "fechar_balanca") msg = `O.S. ${osNumber} fechada com sucesso! Movida para FINALIZADAS.`;
+                    else if (action === "enviar_cliente") msg = `O.S. ${osNumber} enviada ao cliente!`;
+                    showToast(msg, "success");
                     if (window._lastOpenedCard && window._lastOpenedCard.os_number === osNumber) {
                         closeModal("cardDetailModal");
                     }
+                    fetchBoard();
                 } else {
                     alert("Erro ao avançar O.S.: " + (data.error || "Erro desconhecido."));
                 }
@@ -1608,6 +1641,11 @@
                 phaseColor = "text-purple-300 bg-purple-500/20 border-purple-500/40";
                 phaseDesc = "Orçamento enviado pela recepção. Aguardando aprovação do cliente para execução dos reparos.";
                 activeStepIndex = 3;
+            } else if (phase === "NAO_AUTORIZADO" || lTitle.includes("NÃO AUTORIZAD") || lTitle.includes("NAO AUTORIZAD")) {
+                phaseName = "Orçamento NÃO Autorizado";
+                phaseColor = "text-rose-400 bg-rose-500/20 border-rose-500/40 font-black";
+                phaseDesc = "Cliente não autorizou o orçamento. Equipamento aguardando técnico fechar/montar a balança para devolução.";
+                activeStepIndex = 3;
             } else if (phase === "APROVADOS" || lTitle.includes("APROVAD")) {
                 phaseName = "5. Orçamento Aprovado (Liberado)";
                 phaseColor = "text-slate-950 bg-emerald-500 border-emerald-400 font-black";
@@ -1627,6 +1665,7 @@
 
             const canSendQuote = phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS");
             const canApproveQuote = phase === "ORCAMENTOS_ENVIADOS" || lTitle.includes("ENVIADOS") || lTitle.includes("ENVIADO");
+            const isNaoAutorizado = phase === "NAO_AUTORIZADO" || lTitle.includes("NÃO AUTORIZAD") || lTitle.includes("NAO AUTORIZAD");
             const displayOs = String(card.os_number || "");
 
             const steps = [
@@ -1723,7 +1762,20 @@
                             <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'aprovar')"
                                 class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                                <span>APROVADO (Avisar TV)</span>
+                                <span>APROVADO</span>
+                            </button>
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'nao_autorizado')"
+                                class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5" title="Cliente não autorizou o orçamento">
+                                <i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+                                <span>NÃO AUTORIZADO</span>
+                            </button>
+                        ` : ''}
+
+                        ${isNaoAutorizado ? `
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'fechar_balanca')"
+                                class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow transition flex items-center gap-1.5">
+                                <i data-lucide="package-check" class="w-3.5 h-3.5"></i>
+                                <span>FECHAR BALANÇA</span>
                             </button>
                         ` : ''}
 
@@ -1789,11 +1841,26 @@
                     ` : ''}
 
                     ${canApproveQuote ? `
-                        <div class="pt-2">
+                        <div class="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'aprovar')"
                                 class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-black py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
                                 <i data-lucide="check-circle" class="w-4 h-4"></i>
-                                <span>APROVADO • Disparar Aviso na TV e Liberar p/ Bancada</span>
+                                <span>APROVADO • Liberar Bancada & Avisar TV</span>
+                            </button>
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'nao_autorizado')"
+                                class="w-full bg-rose-600 hover:bg-rose-500 active:scale-[0.99] text-white font-black py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-rose-600/20">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                <span>NÃO AUTORIZADO • Mover para Fila Fechamento</span>
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    ${isNaoAutorizado ? `
+                        <div class="pt-2">
+                            <button onclick="advanceAdmin(window._lastOpenedCard?.os_number, 'fechar_balanca')"
+                                class="w-full bg-rose-700 hover:bg-rose-600 active:scale-[0.99] text-white font-black py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-rose-700/20">
+                                <i data-lucide="package-check" class="w-4 h-4"></i>
+                                <span>FECHAR BALANÇA • Mover para FINALIZADAS</span>
                             </button>
                         </div>
                     ` : ''}

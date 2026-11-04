@@ -166,6 +166,38 @@
                 <span class="text-[10px] font-mono text-zinc-400 block pt-1">Tempo líquido pausado até aprovação</span>
             </div>
 
+        <!-- CASO: ORÇAMENTO NÃO AUTORIZADO (TÉCNICO FECHA A BALANÇA) -->
+        {% elif card.state == 'NAO_AUTORIZADO' %}
+            <div class="glass-card rounded-3xl p-5 space-y-4 border border-rose-500/40 text-center shadow-xl">
+                <div class="space-y-1">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-block animate-pulse">
+                        🚫 ORÇAMENTO NÃO AUTORIZADO
+                    </span>
+                    <h3 class="text-base font-black text-white pt-1">Fechar Balança p/ Devolução</h3>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        O cliente optou por não autorizar o serviço. Feche e monte o equipamento para liberar a entrega na recepção:
+                    </p>
+                </div>
+
+                {% if not card.tech_name %}
+                    <div class="pt-1 text-left space-y-1.5">
+                        <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Quem está fechando a balança?</label>
+                        <select id="fecharTechSelect" class="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs text-white font-bold focus:outline-none focus:border-rose-500">
+                            {% for tech in card.technicians %}
+                                <option value="{{ tech }}">{{ tech }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+
+                <!-- Botão Gigante de Fechar Balança -->
+                <button type="button" onclick="fecharBalancaNaoAutorizada()"
+                    class="w-full bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-rose-600/30 flex items-center justify-center gap-2.5 glow-pulse">
+                    <i data-lucide="package-check" class="w-5 h-5"></i>
+                    <span>FECHAR BALANÇA (FINALIZAR)</span>
+                </button>
+            </div>
+
         <!-- CASO 4: O.S. APROVADA PELO CLIENTE (PUXAR PARA MANUTENÇÃO) -->
         {% elif card.state == 'APROVADOS' %}
             <div class="glass-card rounded-3xl p-5 space-y-3.5 border border-emerald-500/40 shadow-xl">
@@ -335,6 +367,29 @@
                     setTimeout(() => location.reload(), 800);
                 } else {
                     alert("Erro: " + (data.error || "Não foi possível finalizar a balança."));
+                }
+            } catch (err) {
+                alert("Falha de rede: " + err.message);
+            }
+        }
+
+        // 5. Técnico fecha balança não autorizada
+        async function fecharBalancaNaoAutorizada() {
+            const techSelect = document.getElementById("fecharTechSelect");
+            const tech = techSelect ? techSelect.value : "{{ card.tech_name }}";
+            if (!confirm("Confirma que a balança foi fechada e montada para entrega?")) return;
+            triggerHapticAndSound();
+            try {
+                const res = await fetch("/api/esteira/fechar-balanca", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ os_number: osNumber, tech_name: tech })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    location.reload();
+                } else {
+                    alert("Erro: " + (data.error || "Não foi possível fechar a balança."));
                 }
             } catch (err) {
                 alert("Falha de rede: " + err.message);

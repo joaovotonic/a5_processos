@@ -32,8 +32,8 @@ class TestA5KanbanComplete(unittest.TestCase):
         cls.sio = socketio.test_client(cls.app)
         # Limpa dados de teste anteriores se houver
         with connect() as conn:
-            conn.execute("DELETE FROM card_history WHERE os_number = '990001'")
-            conn.execute("DELETE FROM cards WHERE os_number = '990001'")
+            conn.execute("DELETE FROM card_history WHERE os_number IN ('990001', '770001')")
+            conn.execute("DELETE FROM cards WHERE os_number IN ('990001', '770001')")
             conn.execute("DELETE FROM pending_entries WHERE client_name LIKE '%PADARIA CENTRAL%'")
 
     def test_01_http_pages(self):
@@ -358,6 +358,74 @@ class TestA5KanbanComplete(unittest.TestCase):
 
         # 5. Valida integridade da pré-entrada salva
         self.assertIsNotNone(entry_id)
+
+    def test_09_nao_autorizado_and_call_adm(self):
+        """Testa o fluxo completo de Orçamento NÃO AUTORIZADO, criação dinâmica da coluna e chamada de ADM (Arthur/Roosevelt)."""
+        from kanban.services.esteira import create_manual_os, claim_orcamento, concluir_orcamento, advance_admin_pipeline, get_os_status_for_mobile, _find_card_by_os
+        from kanban.realtime import _normalize_speech_name
+
+        # 1. Valida normalização de voz de Arthur e Roosevelt como ADM
+        self.assertEqual(_normalize_speech_name("Arthur (ADM)"), "Arthur")
+        self.assertEqual(_normalize_speech_name("Roosevelt (ADM)"), "Roosevelt")
+        self.assertEqual(_normalize_speech_name("Priscila (ADM)"), "Priscila")
+        self.assertEqual(_normalize_speech_name("TODOS (OFICINA TODA)"), "toda a equipe da oficina")
+
+        # 2. Emite chamados WebSocket para validar recepção
+        self.sio.emit("director_call_tech", {"tech_name": "Arthur (ADM)", "message": "Reunião de diretoria"})
+        self.sio.emit("director_call_tech", {"tech_name": "Roosevelt (ADM)", "message": "Verificar estoque"})
+
+        # 3. Cria O.S. de teste
+        test_os = "770001"
+        with connect() as conn:
+            conn.execute("DELETE FROM card_history WHERE os_number = ?", (test_os,))
+            conn.execute("DELETE FROM cards WHERE os_number = ?", (test_os,))
+        create_manual_os({"os_number": test_os, "client_name": "CLIENTE RECUSA TESTE", "equipment_model": "Prix 4 Uno"})
+        claim_orcamento(test_os, "Guilherme")
+        concluir_orcamento(test_os)
+        advance_admin_pipeline(test_os, "enviar_cliente")
+
+        # 4. Aciona botão NÃO AUTORIZADO via API
+        r_nao_aut = self.client.post("/api/esteira/adm-nao-autorizar", json={"os_number": test_os})
+        self.assertEqual(r_nao_aut.status_code, 200)
+        self.assertTrue(r_nao_aut.get_json()["success"])
+
+        # 5. Verifica se a lista 'NÃO AUTORIZADOS' foi criada dinamicamente no banco
+        with connect() as conn:
+            nao_aut_col = conn.execute("SELECT * FROM lists WHERE role = 'nao_autorizados' OR title = 'NÃO AUTORIZADOS'").fetchone()
+            self.assertIsNotNone(nao_aut_col, "Coluna 'NÃO AUTORIZADOS' deveria ter sido criada dinamicamente!")
+            card = _find_card_by_os(conn, test_os)
+            self.assertEqual(card["pipeline_phase"], "NAO_AUTORIZADO")
+            self.assertEqual(card["list_id"], nao_aut_col["id"])
+
+        # 6. Verifica estado para a tela mobile do técnico
+        st_mob = get_os_status_for_mobile(test_os)
+        self.assertEqual(st_mob["state"], "NAO_AUTORIZADO")
+
+        # 7. Verifica no Board que a coluna NÃO AUTORIZADOS agora possui 1 cartão
+        r_board = self.client.get("/api/board")
+        self.assertEqual(r_board.status_code, 200)
+        board_data = r_board.get_json()
+        target_col = next((l for l in board_data["lists"] if l["role"] == "nao_autorizados" or "NÃO AUTORIZAD" in l["title"]), None)
+        self.assertIsNotNone(target_col)
+        self.assertEqual(len(target_col["cards"]), 1)
+
+        # 8. Técnico fecha a balança (vai para FINALIZADAS)
+        r_fechar = self.client.post("/api/esteira/fechar-balanca", json={"os_number": test_os, "tech_name": "Guilherme"})
+        self.assertEqual(r_fechar.status_code, 200)
+        self.assertTrue(r_fechar.get_json()["success"])
+
+        with connect() as conn:
+            card_closed = _find_card_by_os(conn, test_os)
+            fin_col = conn.execute("SELECT * FROM lists WHERE role = 'finalizada' OR title = 'FINALIZADAS'").fetchone()
+            self.assertEqual(card_closed["list_id"], fin_col["id"])
+            self.assertEqual(card_closed["pipeline_phase"], "PRONTAS")
+            self.assertIsNotNone(card_closed["finished_at"])
+
+        # 9. No Board, a coluna NÃO AUTORIZADOS agora possui 0 cartões (não mostrará na TV)
+        r_board2 = self.client.get("/api/board")
+        board_data2 = r_board2.get_json()
+        target_col2 = next((l for l in board_data2["lists"] if l["role"] == "nao_autorizados" or "NÃO AUTORIZAD" in l["title"]), None)
+        self.assertEqual(len(target_col2["cards"]), 0)
 
 
 if __name__ == "__main__":
