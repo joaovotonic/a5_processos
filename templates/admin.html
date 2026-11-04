@@ -1019,9 +1019,6 @@
             const searchStr = `${card.os_number} ${card.client_name} ${card.equipment_type} ${card.equipment_model || ''} ${card.tech_name} ${card.inmetro_seal} ${(card.labels||[]).map(x=>x.name).join(' ')}`;
 
             let esteiraActionBtn = "";
-            const currentPhase = card.pipeline_phase || "";
-            const listTitleUpper = (card.list_title || "").toUpperCase();
-
             if (currentPhase === "ORCAMENTOS_FEITOS" || listTitleUpper.includes("FEITAS") || listTitleUpper.includes("FEITOS")) {
                 esteiraActionBtn = `
                     <div class="mt-2 pt-1.5 border-t border-slate-100 dark:border-zinc-800/80">
