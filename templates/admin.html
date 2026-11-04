@@ -1615,30 +1615,73 @@
 
             const canSendQuote = phase === "ORCAMENTOS_FEITOS" || lTitle.includes("FEITOS") || lTitle.includes("FEITAS");
             const canApproveQuote = phase === "ORCAMENTOS_ENVIADOS" || lTitle.includes("ENVIADOS") || lTitle.includes("ENVIADO");
+            const displayOs = String(card.os_number || "").replace(/^0+/, "") || "0";
 
             const steps = [
-                "1. Orçamentos",
-                "2. Em Orçamento",
-                "3. Orç. Feitos",
-                "4. Enviados",
-                "5. Aprovados",
-                "6. Manutenção",
-                "7. Finalizadas"
+                { num: 1, name: "Orçamentos a Fazer", tag: "Fase Inicial" },
+                { num: 2, name: "Em Diagnóstico", tag: "Bancada" },
+                { num: 3, name: "Orçamento Concluído", tag: "Feito" },
+                { num: 4, name: "Enviado ao Cliente", tag: "Recepção" },
+                { num: 5, name: "Aprovado pelo Cliente", tag: "Liberado" },
+                { num: 6, name: "Em Manutenção", tag: "Bancada" },
+                { num: 7, name: "Finalizada / Pronta", tag: "Concluído" }
             ];
 
             const stepsBarHTML = `
-                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5 pt-2 font-mono">
-                    ${steps.map((st, i) => `
-                        <div class="p-2 rounded-xl border text-[11px] font-bold text-center truncate transition ${
-                            i === activeStepIndex 
-                                ? 'bg-sky-500 text-slate-950 border-sky-400 font-black shadow-lg shadow-sky-500/20 scale-[1.02]' 
-                                : (i < activeStepIndex 
-                                    ? 'bg-slate-100 dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' 
-                                    : 'bg-slate-50 dark:bg-zinc-900/30 text-slate-400 dark:text-zinc-600 border-slate-200 dark:border-zinc-800/60')
-                        }">
-                            ${i < activeStepIndex ? '✓ ' : ''}${st}
+                <div class="space-y-3 pt-1">
+                    <!-- Barra de Progresso Segmentada -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-zinc-400">
+                            <span>Fluxo da Esteira de Produção</span>
+                            <span class="font-mono text-sky-400 font-bold">Etapa ${activeStepIndex + 1} de 7</span>
                         </div>
-                    `).join("")}
+                        <div class="grid grid-cols-7 gap-1.5 h-2">
+                            ${steps.map((st, i) => `
+                                <div class="h-full rounded-full transition-all duration-300 ${
+                                    i === activeStepIndex 
+                                        ? 'bg-sky-500 ring-2 ring-sky-400/50 shadow-sm shadow-sky-500/50' 
+                                        : (i < activeStepIndex 
+                                            ? 'bg-emerald-500' 
+                                            : 'bg-slate-200 dark:bg-zinc-800')
+                                }"></div>
+                            `).join("")}
+                        </div>
+                    </div>
+
+                    <!-- Caixas das Etapas: Espaçosas, sem texto truncado -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+                        ${steps.map((st, i) => {
+                            const isActive = i === activeStepIndex;
+                            const isPast = i < activeStepIndex;
+                            return `
+                                <div class="p-2.5 rounded-xl border flex items-center gap-2.5 transition ${
+                                    i === 6 ? 'sm:col-span-2 lg:col-span-2' : ''
+                                } ${
+                                    isActive 
+                                        ? 'bg-sky-500/15 border-sky-400 text-sky-400 font-bold ring-1 ring-sky-400/40 shadow-sm' 
+                                        : (isPast 
+                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-medium' 
+                                            : 'bg-slate-50 dark:bg-zinc-900/40 border-slate-200 dark:border-zinc-800/80 text-slate-400 dark:text-zinc-500')
+                                }">
+                                    <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black shrink-0 ${
+                                        isActive 
+                                            ? 'bg-sky-500 text-slate-950 font-black shadow-sm' 
+                                            : (isPast 
+                                                ? 'bg-emerald-500 text-white font-black' 
+                                                : 'bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400')
+                                    }">
+                                        ${isPast ? '✓' : st.num}
+                                    </span>
+                                    <div class="min-w-0">
+                                        <div class="font-bold leading-tight">${esc(st.name)}</div>
+                                        <div class="text-[10px] opacity-75 font-normal">
+                                            ${isActive ? 'Fase Atual' : (isPast ? 'Concluída' : 'Aguardando')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join("")}
+                    </div>
                 </div>
             `;
 
@@ -1648,7 +1691,7 @@
                 <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 pb-3 mb-4">
                     <div class="flex items-center gap-2">
                         <span class="font-mono text-base font-black px-3 py-1 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/30 shadow-sm">
-                            O.S. ${esc(card.os_number)}
+                            O.S. ${esc(displayOs)}
                         </span>
                         <span class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-850 text-slate-700 dark:text-zinc-300 font-semibold border border-slate-200 dark:border-zinc-700">
                             Coluna: ${esc(card.list_title || 'N/A')}

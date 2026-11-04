@@ -58,19 +58,21 @@ def format_parts_summary(parts_items):
 # CONSULTAS
 # ==============================================================================
 def get_card_row_by_os(os_number):
+    clean_os = str(os_number or "").strip().lstrip("0") or "0"
     with connect() as conn:
-        return conn.execute("SELECT * FROM cards WHERE os_number = ?", (os_number,)).fetchone()
+        return conn.execute("SELECT * FROM cards WHERE os_number = ? OR os_number = ?", (clean_os, os_number)).fetchone()
 
 
 def get_card_details(os_number):
     """Detalhes completos de uma O.S. com nome da coluna atual, técnicos disponíveis e histórico."""
+    clean_os = str(os_number or "").strip().lstrip("0") or "0"
     with connect() as conn:
         row = conn.execute("""
             SELECT c.*, l.title as list_title, l.role as list_role, l.is_tech as list_is_tech
             FROM cards c
             JOIN lists l ON c.list_id = l.id
-            WHERE c.os_number = ?
-        """, (os_number,)).fetchone()
+            WHERE c.os_number = ? OR c.os_number = ?
+        """, (clean_os, os_number)).fetchone()
         if not row:
             raise NotFound("O.S. não encontrada.")
 

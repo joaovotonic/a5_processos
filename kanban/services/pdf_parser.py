@@ -93,6 +93,10 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
         if m:
             data["os_number"] = m.group(1).strip()
 
+    # Normaliza O.S. pegando a partir do primeiro número após o último zero à esquerda (ex: 0000026791 -> 26791)
+    if data["os_number"]:
+        data["os_number"] = data["os_number"].lstrip("0") or "0"
+
     # 2. Extração do Nome do Cliente (Prioriza Nome Fantasia do Teorema)
     fantasia_patterns = [
         r"Fantasia\s*:\s*([^\n\r]+)",

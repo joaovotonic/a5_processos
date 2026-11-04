@@ -21,6 +21,25 @@ from .. import realtime
 logger = logging.getLogger("kanban.esteira")
 
 
+def _clean_os(os_number: str) -> str:
+    """Remove zeros à esquerda do número da O.S. (ex: 0000026791 -> 26791)."""
+    raw = str(os_number or "").strip()
+    return raw.lstrip("0") or "0" if raw else ""
+
+
+def _find_card_by_os(conn, os_number: str):
+    """Localiza o cartão por número de O.S. (com ou sem zeros) ou por ID."""
+    raw = str(os_number or "").strip()
+    clean = _clean_os(os_number)
+    row = conn.execute(
+        "SELECT c.*, l.title as list_title, l.role as list_role, l.is_tech as list_is_tech "
+        "FROM cards c JOIN lists l ON c.list_id = l.id "
+        "WHERE c.os_number = ? OR c.os_number = ? OR c.id = ?",
+        (clean, raw, clean)
+    ).fetchone()
+    return dict(row) if row else None
+
+
 def _now() -> str:
     return datetime.now().isoformat()
 
@@ -88,15 +107,9 @@ def _next_position(conn, list_id: int) -> int:
 
 def get_os_status_for_mobile(os_number: str) -> Dict[str, Any]:
     """Retorna os dados da O.S. e a etapa atual para exibição na tela do celular do técnico."""
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     with connect() as conn:
-        card = conn.execute(
-            "SELECT c.*, l.title as list_title, l.role as list_role, l.is_tech as list_is_tech "
-            "FROM cards c JOIN lists l ON c.list_id = l.id "
-            "WHERE c.os_number = ? OR c.id = ?",
-            (clean_os, clean_os)
-        ).fetchone()
-
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"Ordem de Serviço '{clean_os}' não encontrada.")
 
@@ -138,17 +151,17 @@ def get_os_status_for_mobile(os_number: str) -> Dict[str, Any]:
 # ETAPA 1: TÉCNICO INICIA ORÇAMENTO (Move para o nome do técnico)
 # ==============================================================================
 def claim_orcamento(os_number: str, tech_name: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     clean_tech = (tech_name or "").strip()
     if not clean_tech:
         raise ApiError("Selecione o seu nome para iniciar o orçamento.", status=400)
 
     now_iso = _now()
     with connect() as conn:
-        card = conn.execute("SELECT c.*, l.title as list_title FROM cards c JOIN lists l ON c.list_id = l.id WHERE c.os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada.")
-        card = dict(card)
+        clean_os = _clean_os(card["os_number"])
         card_id = card["id"]
 
         tech_col = _find_tech_list(conn, clean_tech)
@@ -187,15 +200,15 @@ def claim_orcamento(os_number: str, tech_name: str) -> Dict[str, Any]:
 # ETAPA 2: TÉCNICO FINALIZA ORÇAMENTO (Aperta 'ORÇAMENTO OK' -> Move para ORÇAMENTOS FEITOS)
 # ==============================================================================
 def concluir_orcamento(os_number: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     now_iso = _now()
     now_dt = datetime.now()
 
     with connect() as conn:
-        card = conn.execute("SELECT c.*, l.title as list_title FROM cards c JOIN lists l ON c.list_id = l.id WHERE c.os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada.")
-        card = dict(card)
+        clean_os = _clean_os(card["os_number"])
         card_id = card["id"]
         tech_name = card.get("tech_name") or "Técnico"
 
@@ -249,14 +262,14 @@ def concluir_orcamento(os_number: str) -> Dict[str, Any]:
 # ETAPA 3 & 4: AÇÕES DA ADM NO KANBAN (OK -> ENVIADOS | APROVADO -> APROVADOS + TV)
 # ==============================================================================
 def adm_enviar_cliente(os_number: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     now_iso = _now()
 
     with connect() as conn:
-        card = conn.execute("SELECT c.*, l.title as list_title FROM cards c JOIN lists l ON c.list_id = l.id WHERE c.os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada.")
-        card = dict(card)
+        clean_os = _clean_os(card["os_number"])
         card_id = card["id"]
 
         dest_col = _get_list_by_title(conn, "ORÇAMENTOS ENVIADOS")
@@ -284,14 +297,14 @@ def adm_enviar_cliente(os_number: str) -> Dict[str, Any]:
 
 
 def adm_aprovar(os_number: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     now_iso = _now()
 
     with connect() as conn:
-        card = conn.execute("SELECT c.*, l.title as list_title FROM cards c JOIN lists l ON c.list_id = l.id WHERE c.os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada.")
-        card = dict(card)
+        clean_os = _clean_os(card["os_number"])
         card_id = card["id"]
 
         dest_col = _get_list_by_title(conn, "APROVADOS")
@@ -331,17 +344,17 @@ def adm_aprovar(os_number: str) -> Dict[str, Any]:
 # ETAPA 5: TÉCNICO PUXA BALANÇA APROVADA PARA MANUTENÇÃO (Move para o nome do técnico)
 # ==============================================================================
 def claim_manutencao(os_number: str, tech_name: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     clean_tech = (tech_name or "").strip()
     if not clean_tech:
         raise ApiError("Selecione o seu nome para iniciar a manutenção.", status=400)
 
     now_iso = _now()
     with connect() as conn:
-        card = conn.execute("SELECT c.*, l.title as list_title FROM cards c JOIN lists l ON c.list_id = l.id WHERE c.os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada.")
-        card = dict(card)
+        clean_os = _clean_os(card["os_number"])
         card_id = card["id"]
 
         tech_col = _find_tech_list(conn, clean_tech)
@@ -389,15 +402,15 @@ def claim_manutencao(os_number: str, tech_name: str) -> Dict[str, Any]:
 # ETAPA 6: TÉCNICO FINALIZA A BALANÇA ('FINALIZAR BALANÇA' -> Move para FINALIZADAS)
 # ==============================================================================
 def finalizar_balanca(os_number: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     now_iso = _now()
     now_dt = datetime.now()
 
     with connect() as conn:
-        card = conn.execute("SELECT c.*, l.title as list_title FROM cards c JOIN lists l ON c.list_id = l.id WHERE c.os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada.")
-        card = dict(card)
+        clean_os = _clean_os(card["os_number"])
         card_id = card["id"]
         tech_name = card.get("tech_name") or "Técnico"
 
@@ -474,12 +487,13 @@ def finalizar_balanca(os_number: str) -> Dict[str, Any]:
 # EXCLUSÃO DE O.S. (Solicitado pelo usuário para a Priscila)
 # ==============================================================================
 def delete_card_by_os(os_number: str) -> Dict[str, Any]:
-    clean_os = (os_number or "").strip()
+    clean_os = _clean_os(os_number)
     with connect() as conn:
-        card = conn.execute("SELECT id, os_number, client_name FROM cards WHERE os_number = ?", (clean_os,)).fetchone()
+        card = _find_card_by_os(conn, os_number)
         if not card:
             raise NotFound(f"O.S. {clean_os} não encontrada para exclusão.")
         card_id = card["id"]
+        clean_os = _clean_os(card["os_number"])
         conn.execute("DELETE FROM card_history WHERE card_id = ?", (card_id,))
         conn.execute("DELETE FROM cards WHERE id = ?", (card_id,))
 
@@ -492,7 +506,8 @@ def delete_card_by_os(os_number: str) -> Dict[str, Any]:
 # CRIAÇÃO MANUAL DE BANNER (Caso a Priscila precise criar direto no Kanban)
 # ==============================================================================
 def create_manual_os(data: Dict[str, Any]) -> Dict[str, Any]:
-    os_number = (data.get("os_number") or "").strip()
+    raw_os = (data.get("os_number") or "").strip()
+    os_number = _clean_os(raw_os) if raw_os else ""
     client_name = (data.get("client_name") or "CLIENTE BALCÃO").strip().upper()
     equipment_model = (data.get("equipment_model") or "").strip()
     serial_number = (data.get("serial_number") or "").strip().upper()
@@ -505,7 +520,7 @@ def create_manual_os(data: Dict[str, Any]) -> Dict[str, Any]:
 
     now_iso = _now()
     with connect() as conn:
-        existing = conn.execute("SELECT id FROM cards WHERE os_number = ?", (os_number,)).fetchone()
+        existing = _find_card_by_os(conn, os_number)
         if existing:
             raise ApiError(f"Já existe uma O.S. com o número {os_number}.", status=400)
 
