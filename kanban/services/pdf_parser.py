@@ -93,22 +93,39 @@ def parse_os_pdf(pdf_path: str) -> Dict[str, Any]:
         if m:
             data["os_number"] = m.group(1).strip()
 
-    # 2. Extração do Nome do Cliente / Razão Social
-    client_patterns = [
-        r"Cliente\s*:\s*([^\n\r]+)",
-        r"(?:CLIENTE|RAZ[ÃA]O\s+SOCIAL|NOME\/RAZ[ÃA]O|DESTINAT[ÁA]RIO)\s*[:#]?\s*([^\n\r]+)",
-        r"(?:SR\(A\)|NOME)\s*[:#]?\s*([^\n\r]+)",
+    # 2. Extração do Nome do Cliente (Prioriza Nome Fantasia do Teorema)
+    fantasia_patterns = [
+        r"Fantasia\s*:\s*([^\n\r]+)",
+        r"(?:NOME\s+FANTASIA|FANTASIA)\s*[:#]?\s*([^\n\r]+)",
     ]
-    for pat in client_patterns:
+    for pat in fantasia_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
-            candidate = _clean(m.group(1))
-            # Remove sufixos como CNPJ/CPF que possam vir na mesma linha
-            candidate = re.split(r"(?:CNPJ|CPF|IE|FONE|TEL|END|DATA)", candidate, flags=re.IGNORECASE)[0]
-            candidate = _clean(candidate)
-            if len(candidate) > 2:
-                data["client_name"] = candidate.upper()
+            cand = _clean(m.group(1))
+            cand = re.split(r"(?:CNPJ|CPF|IE|FONE|TEL|END|DATA|TELEFONE)", cand, flags=re.IGNORECASE)[0]
+            cand = _clean(cand)
+            # Remove traços ou termos nulos
+            if cand and cand.upper() not in ["-", "--", "SEM", "NÃO INFORMADO", "NAO INFORMADO", "N/I", "N/A"]:
+                data["client_name"] = cand.upper()
                 break
+
+    # Se não houver Fantasia válida, extrai Razão Social / Cliente
+    if not data["client_name"]:
+        client_patterns = [
+            r"Cliente\s*:\s*([^\n\r]+)",
+            r"(?:CLIENTE|RAZ[ÃA]O\s+SOCIAL|NOME\/RAZ[ÃA]O|DESTINAT[ÁA]RIO)\s*[:#]?\s*([^\n\r]+)",
+            r"(?:SR\(A\)|NOME)\s*[:#]?\s*([^\n\r]+)",
+        ]
+        for pat in client_patterns:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                candidate = _clean(m.group(1))
+                # Remove sufixos como CNPJ/CPF que possam vir na mesma linha
+                candidate = re.split(r"(?:CNPJ|CPF|IE|FONE|TEL|END|DATA|TELEFONE)", candidate, flags=re.IGNORECASE)[0]
+                candidate = _clean(candidate)
+                if len(candidate) > 2:
+                    data["client_name"] = candidate.upper()
+                    break
 
     # Fallback para cliente no nome do arquivo caso não ache (ex: OS_12345_SUPERMERCADO.pdf)
     if not data["client_name"]:
