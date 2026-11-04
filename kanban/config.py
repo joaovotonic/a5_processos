@@ -11,6 +11,10 @@ UPLOAD_FOLDER = os.path.join(STATIC_DIR, "uploads")
 ENTRADA_PDFS_DIR = os.path.join(BASE_DIR, "entrada_pdfs")
 ARQUIVADOS_PDFS_DIR = os.path.join(BASE_DIR, "arquivados_pdfs")
 
+ENTRADA_EXTERNOS_DIR = os.path.join(BASE_DIR, "entrada_chamados_externos")
+ARQUIVADOS_EXTERNOS_DIR = os.path.join(BASE_DIR, "arquivados_chamados_externos")
+ROTAS_IMAGENS_DIR = os.path.join(BASE_DIR, "rotas_imagens")
+
 DB_DIR = os.path.join(BASE_DIR, "database")
 DB_PATH = os.path.join(DB_DIR, "a5_kanban.db")
 TOLEDO_PARTS_PATH = os.path.join(DB_DIR, "toledo_parts.json")
@@ -27,4 +31,3 @@ ALLOWED_PHOTO_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "jfif", "bmp", 
 
 DEFAULT_EQUIPMENT_TYPE = "Balança Toledo Prix"
 SLA_HOURS = 24.0
-

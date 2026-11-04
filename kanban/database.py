@@ -3,12 +3,18 @@ import os
 import sqlite3
 from contextlib import contextmanager
 
-from .config import BACKUP_DIR, DB_DIR, DB_PATH, ENTRADA_PDFS_DIR, ARQUIVADOS_PDFS_DIR
+from .config import (
+    BACKUP_DIR, DB_DIR, DB_PATH, ENTRADA_PDFS_DIR, ARQUIVADOS_PDFS_DIR,
+    ENTRADA_EXTERNOS_DIR, ARQUIVADOS_EXTERNOS_DIR, ROTAS_IMAGENS_DIR
+)
 
 os.makedirs(DB_DIR, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
 os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
 os.makedirs(ARQUIVADOS_PDFS_DIR, exist_ok=True)
+os.makedirs(ENTRADA_EXTERNOS_DIR, exist_ok=True)
+os.makedirs(ARQUIVADOS_EXTERNOS_DIR, exist_ok=True)
+os.makedirs(ROTAS_IMAGENS_DIR, exist_ok=True)
 
 # Listas padrões da Esteira de Produção da A5 Tecnologia
 INITIAL_LISTS = [
@@ -65,6 +71,7 @@ def get_db_connection():
                 _ensure_cards_columns(conn.cursor())
                 _ensure_esteira_lists(conn.cursor())
                 _ensure_scale_models(conn.cursor())
+                _ensure_external_routes_tables(conn.cursor())
                 conn.commit()
         except Exception:
             pass
@@ -236,6 +243,7 @@ def init_db():
         _ensure_cards_columns(cursor)
         _ensure_esteira_lists(cursor)
         _ensure_scale_models(cursor)
+        _ensure_external_routes_tables(cursor)
 
     perform_daily_backup()
 
@@ -381,5 +389,60 @@ def _ensure_scale_models(cursor):
                 json.dumps(item.get("division_rule", {}), ensure_ascii=False),
                 item.get("description", "")
             ))
+
+
+def _ensure_external_routes_tables(cursor):
+    """Cria tabelas de chamados externos e rotas de rua se não existirem e aplica migrações."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS external_orders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            os_number TEXT DEFAULT '',
+            client_name TEXT NOT NULL,
+            open_date TEXT DEFAULT '',
+            open_time TEXT DEFAULT '',
+            sector TEXT DEFAULT '',
+            equipment_model TEXT DEFAULT '',
+            reported_defect TEXT DEFAULT '',
+            tasks_notes TEXT DEFAULT '',
+            technician TEXT DEFAULT '',
+            route_date TEXT DEFAULT '',
+            route_shift TEXT DEFAULT 'manha',
+            route_order INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'pending_route',
+            pdf_source_path TEXT DEFAULT '',
+            pdf_imported_at TEXT DEFAULT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ext_orders_route_date ON external_orders(route_date);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ext_orders_technician ON external_orders(technician);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ext_orders_status ON external_orders(status);")
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS external_routes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            route_date TEXT NOT NULL,
+            route_shift TEXT DEFAULT 'manha',
+            technician TEXT DEFAULT '',
+            status TEXT DEFAULT 'draft',
+            notes TEXT DEFAULT '',
+            finalized_at TEXT DEFAULT NULL,
+            finalized_by TEXT DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_ext_routes_date ON external_routes(route_date);")
+
+    # Migrações seguras de colunas caso as tabelas já tenham sido criadas
+    order_cols = {row["name"] for row in cursor.execute("PRAGMA table_info(external_orders)").fetchall()}
+    if "route_shift" not in order_cols:
+        cursor.execute("ALTER TABLE external_orders ADD COLUMN route_shift TEXT DEFAULT 'manha'")
+
+    route_cols = {row["name"] for row in cursor.execute("PRAGMA table_info(external_routes)").fetchall()}
+    if "route_shift" not in route_cols:
+        cursor.execute("ALTER TABLE external_routes ADD COLUMN route_shift TEXT DEFAULT 'manha'")
+
 
 

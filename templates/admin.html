@@ -37,9 +37,10 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@formkit/auto-animate@0.8.2/index.min.js"></script>
     
-    <!-- Socket.IO & SortableJS -->
+    <!-- Socket.IO & SortableJS & html2canvas -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
     <style>
         :root {
@@ -140,6 +141,24 @@
             </div>
         </div>
 
+        <!-- SELETOR DE MÓDULO (ESTEIRA KANBAN / CHAMADOS EXTERNOS) -->
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 p-1 rounded-xl border border-slate-200 dark:border-zinc-800 shrink-0">
+            <button type="button" id="tabBtnKanban" onclick="switchAdminView('kanban')"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-white dark:bg-zinc-800 text-sky-600 dark:text-sky-300 shadow-sm">
+                <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Esteira Oficina</span>
+                <span class="sm:hidden">Esteira</span>
+            </button>
+            <button type="button" id="tabBtnExternos" onclick="switchAdminView('externos')"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white relative">
+                <i data-lucide="truck" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span class="hidden sm:inline">Chamados Externos & Rotas</span>
+                <span class="sm:hidden">Rotas</span>
+                <span id="badgePendingExternos" class="hidden px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">0</span>
+                <span id="pingFinalizedExternos" class="hidden w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping absolute -top-0.5 -right-0.5" title="Rotas finalizadas pelo Sr. Jacson!"></span>
+            </button>
+        </div>
+
         <!-- BARRA DE PESQUISA COM AUTOCOMPLETE -->
         <div class="relative flex-1 max-w-md min-w-[240px]" id="searchBoxContainer">
             <div class="relative flex items-center">
@@ -204,11 +223,312 @@
     <div id="adminNotificationsContainer" class="fixed bottom-4 right-4 z-[70] flex flex-col gap-2.5 max-w-md w-full pointer-events-none px-3"></div>
 
     <!-- ÁREA DO QUADRO KANBAN -->
-    <main class="flex-1 overflow-x-auto overflow-y-hidden p-4">
+    <main id="kanbanMainView" class="flex-1 overflow-x-auto overflow-y-hidden p-4">
         <div id="boardContainer" class="flex items-start gap-3.5 h-full">
             <!-- Colunas renderizadas dinamicamente via JS -->
         </div>
     </main>
+
+    <!-- ÁREA DO MÓDULO DE CHAMADOS EXTERNOS & ROTAS -->
+    <section id="externosMainView" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <!-- BARRA SUPERIOR DE AÇÕES E STATUS -->
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 border border-slate-200 dark:border-zinc-800 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                            Chamados Externos & Rotas de Rua
+                        </h2>
+                        <span id="adminRouteStatusBadge" class="text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                            Aguardando Montagem
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">Ordens de serviço externas para atendimento em campo pelos técnicos.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <!-- Turno da Rota (Manhã / Tarde - Auto horário < 11h) -->
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200 dark:border-zinc-700">
+                    <button type="button" id="btnAdminShiftManha" onclick="setAdminShift('manha')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 shadow-sm">
+                        <span>🌅 Manhã (&lt; 11h)</span>
+                    </button>
+                    <button type="button" id="btnAdminShiftTarde" onclick="setAdminShift('tarde')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 shadow-sm">
+                        <span>☀️ Tarde (&ge; 11h)</span>
+                    </button>
+                </div>
+
+                <!-- Seletor de Data -->
+                <div class="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-sky-500"></i>
+                    <label for="adminExtDateFilter" class="text-xs font-bold text-slate-500 dark:text-zinc-400">Data:</label>
+                    <input type="date" id="adminExtDateFilter" onchange="loadAdminExternosData()"
+                        class="bg-transparent font-mono font-bold text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer">
+                </div>
+
+                <!-- Botão + Novo Chamado Externo -->
+                <button type="button" onclick="openNewExternalModal()"
+                    class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-500"></i>
+                    <span>+ Novo Chamado</span>
+                </button>
+
+                <!-- Botão Enviar para Sr. Jacson -->
+                <button type="button" id="btnNotifyDirector" onclick="notifyDirectorFromAdmin()"
+                    class="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 text-xs font-black px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-amber-500/20">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    <span>Enviar p/ Sr. Jacson</span>
+                </button>
+
+                <!-- Botão Ver Pasta de Imagens Salvas -->
+                <button type="button" onclick="openSavedImagesModal()"
+                    class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    title="Ver histórico de imagens salvas das rotas">
+                    <i data-lucide="image" class="w-3.5 h-3.5 text-purple-500"></i>
+                    <span>📁 Imagens Salvas</span>
+                </button>
+
+                <!-- Botão Exportar CSV / Planilha -->
+                <a id="btnExportCsvExternos" href="/api/externos/export/csv"
+                    class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                    title="Exportar Planilha Excel no formato oficial">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-sky-500"></i>
+                    <span>Exportar CSV</span>
+                </a>
+
+                <!-- Botão Atualizar -->
+                <button type="button" onclick="loadAdminExternosData()"
+                    class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 transition" title="Atualizar Lista">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="adminExtRefreshIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- BANNER DE STATUS EM TEMPO REAL -->
+        <div id="adminExtStatusAlert" class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                <span id="adminExtStatusText">Carregando informações de rotas...</span>
+            </div>
+            <span class="text-[11px] font-mono text-slate-500 dark:text-zinc-400">Pasta de PDFs: <strong>entrada_chamados_externos/</strong></span>
+        </div>
+
+        <!-- SEÇÃO 1: TABELA DE CHAMADOS PENDENTES (FOTO 1) -->
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden space-y-3 p-4 sm:p-5">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <h3 class="text-xs font-black uppercase text-slate-900 dark:text-white">
+                        Chamados Externos Aguardando Rota (Entrada)
+                    </h3>
+                    <span id="adminPendingCallsCountBadge" class="font-mono text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        0 chamados
+                    </span>
+                </div>
+                <span class="text-[11px] text-slate-500 dark:text-zinc-400">Extração automática de PDF ou cadastro manual</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/60 text-slate-600 dark:text-zinc-400 font-bold uppercase text-[10px] tracking-wider">
+                            <th class="py-2.5 px-3">Cliente</th>
+                            <th class="py-2.5 px-3 text-center">Data O.S.</th>
+                            <th class="py-2.5 px-3 text-center">Horário</th>
+                            <th class="py-2.5 px-3 text-center">O.S.</th>
+                            <th class="py-2.5 px-3">Setor</th>
+                            <th class="py-2.5 px-3">Mod. Equip.</th>
+                            <th class="py-2.5 px-3">Defeito</th>
+                            <th class="py-2.5 px-3">Tarefas / Observações</th>
+                            <th class="py-2.5 px-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminPendingCallsTableBody" class="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                        <!-- Linhas renderizadas dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SEÇÃO 2: ROTAS MONTADAS PELO SR. JACSON (FOTO 2) -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <h3 class="text-xs font-black uppercase text-slate-900 dark:text-white">
+                        Rotas Organizadas por Técnico (Prontas para Envio)
+                    </h3>
+                </div>
+                <span class="text-[11px] text-slate-500 dark:text-zinc-400">Copie o texto formatado ou envie a imagem direta pelo WhatsApp</span>
+            </div>
+
+            <div id="adminFinalizedRoutesContainer" class="space-y-5">
+                <!-- Cards de Edson, Antonio, etc. renderizados dinamicamente -->
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL: NOVO / EDITAR CHAMADO EXTERNO (PRISCILA / ADM) -->
+    <div id="modalNovoChamadoExterno" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="truck" class="w-5 h-5 text-amber-500"></i>
+                    <h3 id="modalExtTitle" class="text-sm font-black uppercase text-slate-900 dark:text-white">Cadastrar Chamado Externo</h3>
+                </div>
+                <button type="button" onclick="closeModal('modalNovoChamadoExterno')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form id="formNovoChamadoExterno" onsubmit="submitExternalOrder(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="extOrderId" value="">
+
+                <div>
+                    <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Nome Fantasia / Cliente: *</label>
+                    <input type="text" id="extClientName" required placeholder="Ex: DB ALLEGRO, ATACADÃO JAPIIM..."
+                        class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-bold focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5">
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Nº O.S.:</label>
+                        <input type="text" id="extOsNumber" placeholder="Ex: 26802"
+                            class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-mono font-bold focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Data O.S.:</label>
+                        <input type="text" id="extOpenDate" placeholder="DD/MM/AAAA"
+                            class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-mono focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Horário:</label>
+                        <input type="text" id="extOpenTime" placeholder="HH:MM"
+                            class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2.5 py-2 text-xs font-mono focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Setor da Balança:</label>
+                        <input type="text" id="extSector" placeholder="Ex: ROTISSERIE, PEIXARIA, FLV, CAIXA 104..."
+                            class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Modelo Equipamento:</label>
+                        <input type="text" id="extModel" placeholder="Ex: PRIX 6, PL 3000, 8217 LIGHT..."
+                            class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Defeito Reclamado:</label>
+                    <input type="text" id="extDefect" placeholder="Ex: TECLADO TRAVANDO, NÃO ESTÁ LIGANDO..."
+                        class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-amber-500">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Tarefas a serem realizadas (Destaque em Vermelho):</label>
+                    <input type="text" id="extTasksNotes" placeholder="Ex: PEDIDO: 937/ EMBARQUE PORTO DO DEMÉTRIO/BARCO SAI SEXTA AS 12:00"
+                        class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-rose-600 dark:text-rose-400 font-bold focus:outline-none focus:border-rose-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Turno da Rota:</label>
+                        <select id="extRouteShift" class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-amber-500">
+                            <option value="manha">🌅 Manhã (até 11h)</option>
+                            <option value="tarde">☀️ Tarde (após 11h)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 dark:text-zinc-400 mb-1">Técnico Pré-Atribuído (Opcional):</label>
+                        <select id="extTechnician" class="w-full bg-slate-50 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-amber-500">
+                            <option value="">-- Deixar para o Sr. Jacson Definir --</option>
+                            <option value="EDSON">EDSON</option>
+                            <option value="ANTONIO">ANTONIO</option>
+                            <option value="ENZO">ENZO</option>
+                            <option value="JOAO">JOAO</option>
+                            <option value="ENZO / JOAO">ENZO / JOAO (Dupla)</option>
+                            <option value="ENZO / EDSON">ENZO / EDSON (Dupla)</option>
+                            <option value="EDSON / ANTONIO">EDSON / ANTONIO (Dupla)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200 dark:border-zinc-800">
+                    <button type="button" onclick="closeModal('modalNovoChamadoExterno')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950 hover:bg-amber-400 transition shadow-md">Salvar Chamado</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: VISUALIZADOR DE CARD PARA PRINT / IMAGEM WHATSAPP -->
+    <div id="modalPreviewCard" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[92vh] overflow-y-auto space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="image" class="w-5 h-5 text-sky-500"></i>
+                    <h3 class="text-sm font-black uppercase text-slate-900 dark:text-white">Pré-visualização da Rota para WhatsApp</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btnCopyImgFromModal" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        <span>Copiar Imagem (Ctrl+V)</span>
+                    </button>
+                    <button type="button" id="btnDownloadImgFromModal" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Baixar PNG</span>
+                    </button>
+                    <button type="button" onclick="closeModal('modalPreviewCard')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONTAINER ONDE O CARD RENDERIZADO É EXIBIDO -->
+            <div id="modalPreviewCardContent" class="p-4 bg-white text-slate-900 rounded-xl border border-slate-200 overflow-x-auto shadow-inner">
+                <!-- Conteúdo do card injetado via JS -->
+            </div>
+            
+            <p class="text-[11px] text-slate-500 dark:text-zinc-400 text-center">
+                Dica: Você pode clicar em "Copiar Imagem" e colar direto na conversa do WhatsApp, ou tirar print com <strong>Win + Shift + S</strong>.
+            </p>
+        </div>
+    </div>
+
+    <!-- MODAL: HISTÓRICO DE IMAGENS SALVAS NA PASTA ROTAS_IMAGENS/ -->
+    <div id="modalSavedImages" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-200 dark:border-zinc-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="image" class="w-5 h-5 text-purple-500"></i>
+                    <div>
+                        <h3 class="text-sm font-black uppercase text-slate-900 dark:text-white">Imagens Salvas na Pasta (rotas_imagens/)</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">Arquivos padronizados por Turno e Data (Manhã e Tarde)</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="loadSavedImagesList()" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition" title="Recarregar">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button type="button" onclick="closeModal('modalSavedImages')" class="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="savedImagesListContainer" class="space-y-2.5">
+                <div class="text-center py-8 text-slate-400 text-xs">Carregando lista de imagens...</div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL 1: NOVA O.S. -->
     <div id="newOsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
@@ -507,6 +827,7 @@
                 localStorage.setItem("a5_theme", "clean");
             }
             applyTheme(savedTheme);
+            updateAdminShiftButtons();
             fetchBoard();
 
             document.addEventListener("click", (ev) => {
@@ -2182,6 +2503,907 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                 if (themeBtn) themeBtn.innerHTML = '<i data-lucide="moon" class="w-3.5 h-3.5 text-slate-600"></i>';
             }
             refreshIcons();
+        }
+
+        // ==============================================================================
+        // MÓDULO DE CHAMADOS EXTERNOS & ROTAS DE RUA (PRISCILA / ADM)
+        // ==============================================================================
+        let currentAdminExternosSummary = null;
+        let activeAdminView = "kanban";
+        // Turno inicial automático baseado no relógio do PC (< 11h = Manhã, >= 11h = Tarde)
+        let currentAdminShift = new Date().getHours() < 11 ? "manha" : "tarde";
+
+        function setAdminShift(shift) {
+            currentAdminShift = shift;
+            updateAdminShiftButtons();
+            loadAdminExternosData();
+        }
+
+        function updateAdminShiftButtons() {
+            const btnManha = document.getElementById("btnAdminShiftManha");
+            const btnTarde = document.getElementById("btnAdminShiftTarde");
+            if (!btnManha || !btnTarde) return;
+
+            if (currentAdminShift === "manha") {
+                btnManha.className = "px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20";
+                btnTarde.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white";
+            } else {
+                btnTarde.className = "px-3 py-1.5 rounded-lg text-xs font-black transition flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20";
+                btnManha.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white";
+            }
+        }
+
+        function switchAdminView(view) {
+            activeAdminView = view;
+            const kanbanMain = document.getElementById("kanbanMainView");
+            const externosMain = document.getElementById("externosMainView");
+            const btnKanban = document.getElementById("tabBtnKanban");
+            const btnExternos = document.getElementById("tabBtnExternos");
+
+            const activeCls = "bg-white dark:bg-zinc-800 text-sky-600 dark:text-sky-300 shadow-sm";
+            const inactiveCls = "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white";
+
+            if (view === "kanban") {
+                kanbanMain.classList.remove("hidden");
+                externosMain.classList.add("hidden");
+                btnKanban.className = `px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeCls}`;
+                btnExternos.className = `px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${inactiveCls} relative`;
+                fetchBoard();
+            } else {
+                kanbanMain.classList.add("hidden");
+                externosMain.classList.remove("hidden");
+                btnKanban.className = `px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${inactiveCls}`;
+                btnExternos.className = `px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${activeCls} relative`;
+
+                // Remove ping de rotas finalizadas ao visualizar
+                const ping = document.getElementById("pingFinalizedExternos");
+                if (ping) ping.classList.add("hidden");
+
+                loadAdminExternosData();
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Socket.IO: Notificação quando o Sr. Jacson finaliza as rotas
+        socket.on("external_routes_finalized", (data) => {
+            const ping = document.getElementById("pingFinalizedExternos");
+            if (ping) ping.classList.remove("hidden");
+
+            const shiftStr = (data.route_shift || "").toLowerCase() === "manha" ? "MANHÃ" : "TARDE";
+            showToast(`✅ Sr. Jacson finalizou e liberou as rotas da ${shiftStr} de ${data.route_date}! Prontas para envio aos técnicos.`, "success");
+
+            if (activeAdminView === "externos") {
+                loadAdminExternosData();
+            }
+        });
+
+        socket.on("external_order_created", (data) => {
+            const badge = document.getElementById("badgePendingExternos");
+            if (badge) {
+                const cur = parseInt(badge.textContent || "0") + 1;
+                badge.textContent = cur;
+                badge.classList.remove("hidden");
+            }
+            if (activeAdminView === "externos") {
+                loadAdminExternosData();
+            }
+        });
+
+        async function loadAdminExternosData() {
+            updateAdminShiftButtons();
+            const dateInput = document.getElementById("adminExtDateFilter");
+            if (!dateInput.value) {
+                dateInput.value = new Date().toISOString().split("T")[0];
+            }
+            const dateVal = dateInput.value;
+
+            // Atualiza link de exportação do CSV com a data e turno
+            const btnCsv = document.getElementById("btnExportCsvExternos");
+            if (btnCsv) {
+                btnCsv.href = `/api/externos/export/csv?date=${encodeURIComponent(dateVal)}&shift=${encodeURIComponent(currentAdminShift)}`;
+            }
+
+            const refreshIcon = document.getElementById("adminExtRefreshIcon");
+            if (refreshIcon) refreshIcon.classList.add("animate-spin");
+
+            try {
+                const res = await fetch(`/api/externos/routes/summary?date=${encodeURIComponent(dateVal)}&shift=${encodeURIComponent(currentAdminShift)}`);
+                const json = await res.json();
+                if (json.success) {
+                    currentAdminExternosSummary = json.summary;
+                    renderAdminExternosUI(json.summary);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar chamados externos:", err);
+            } finally {
+                if (refreshIcon) setTimeout(() => refreshIcon.classList.remove("animate-spin"), 400);
+            }
+        }
+
+        function renderAdminExternosUI(summary) {
+            const statusBadge = document.getElementById("adminRouteStatusBadge");
+            const statusAlert = document.getElementById("adminExtStatusAlert");
+            const statusText = document.getElementById("adminExtStatusText");
+            const pendingBadge = document.getElementById("badgePendingExternos");
+            const pendingCallsCountBadge = document.getElementById("adminPendingCallsCountBadge");
+
+            // 1. Status Geral da Rota
+            const isFinalized = summary.status === "finalized";
+            const isPendingDirector = summary.status === "pending_director";
+
+            if (isFinalized) {
+                statusBadge.textContent = "✅ Rotas Liberadas pelo Sr. Jacson";
+                statusBadge.className = "text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
+                statusAlert.className = "p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-700 dark:text-emerald-300 flex items-center justify-between gap-3";
+                statusText.innerHTML = `<strong>Rotas prontas!</strong> Sr. Jacson finalizou os atendimentos para esta data. Você já pode enviar para os técnicos via WhatsApp (texto ou imagem).`;
+            } else if (isPendingDirector) {
+                statusBadge.textContent = "🔔 Aguardando Montagem na Diretoria";
+                statusBadge.className = "text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30";
+                statusAlert.className = "p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-3";
+                statusText.innerHTML = `<strong>Chamados enviados!</strong> Aguardando o Sr. Jacson organizar a rota e a sequência por bairros.`;
+            } else {
+                statusBadge.textContent = "⏳ Chamados Pendentes de Envio";
+                statusBadge.className = "text-[10px] font-mono px-2.5 py-0.5 rounded-full font-bold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700";
+                statusAlert.className = "p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-300 flex items-center justify-between gap-3";
+                statusText.innerHTML = `Revise os chamados pendentes abaixo e clique em <strong>"Enviar p/ Sr. Jacson"</strong> quando todos estiverem prontos.`;
+            }
+
+            // 2. Tabela de Chamados Pendentes de Rota (Foto 1)
+            const unassigned = summary.unassigned || [];
+            if (pendingBadge) {
+                pendingBadge.textContent = unassigned.length;
+                pendingBadge.classList.toggle("hidden", unassigned.length === 0);
+            }
+            if (pendingCallsCountBadge) {
+                pendingCallsCountBadge.textContent = `${unassigned.length} pendente(s)`;
+            }
+
+            const pendingTableBody = document.getElementById("adminPendingCallsTableBody");
+            if (unassigned.length === 0) {
+                pendingTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="py-6 text-center text-slate-400 dark:text-zinc-500 text-xs">
+                            <i data-lucide="check-circle" class="w-7 h-7 mx-auto text-emerald-500/60 mb-1.5"></i>
+                            <p class="font-bold">Nenhum chamado pendente de rota para esta data.</p>
+                            <p class="text-[11px] text-slate-400">Arraste os PDFs para <strong>entrada_chamados_externos/</strong> ou clique em <strong>+ Novo Chamado</strong>.</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                pendingTableBody.innerHTML = unassigned.map(o => {
+                    const osStr = o.os_number || 'S/N';
+                    const taskHighlight = o.tasks_notes ? `<span class="text-rose-600 dark:text-rose-400 font-black">${o.tasks_notes}</span>` : '-';
+                    return `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition">
+                            <td class="py-2.5 px-3 font-black text-slate-900 dark:text-white">${o.client_name}</td>
+                            <td class="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-zinc-400">${o.open_date || '-'}</td>
+                            <td class="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-zinc-400">${o.open_time || '-'}</td>
+                            <td class="py-2.5 px-3 text-center font-mono font-bold text-sky-600 dark:text-sky-400">${osStr}</td>
+                            <td class="py-2.5 px-3 font-semibold text-slate-700 dark:text-zinc-300">${o.sector || '-'}</td>
+                            <td class="py-2.5 px-3 font-semibold text-slate-700 dark:text-zinc-300">${o.equipment_model || '-'}</td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-zinc-400 max-w-[200px] truncate" title="${o.reported_defect || ''}">${o.reported_defect || '-'}</td>
+                            <td class="py-2.5 px-3">${taskHighlight}</td>
+                            <td class="py-2.5 px-3 text-center">
+                                <div class="flex items-center justify-center gap-1">
+                                    <button type="button" onclick="openNewExternalModal(${JSON.stringify(o).replace(/"/g, '&quot;')})"
+                                        class="p-1 rounded text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/40" title="Editar">
+                                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <button type="button" onclick="deleteExternalOrder(${o.id})"
+                                        class="p-1 rounded text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40" title="Excluir">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+
+            // 3. Seção de Rotas Montadas por Técnico (Foto 2)
+            const routesContainer = document.getElementById("adminFinalizedRoutesContainer");
+            const techs = summary.technicians || {};
+            const techKeys = Object.keys(techs);
+
+            if (techKeys.length === 0) {
+                routesContainer.innerHTML = `
+                    <div class="bg-white dark:bg-zinc-900 rounded-2xl p-8 border border-slate-200 dark:border-zinc-800 text-center text-slate-400 dark:text-zinc-500 text-xs">
+                        <i data-lucide="map-pin" class="w-8 h-8 mx-auto text-amber-500/50 mb-2"></i>
+                        <p class="font-bold text-sm text-slate-700 dark:text-zinc-300">Nenhuma rota montada ainda para esta data/turno.</p>
+                        <p class="text-[11px] mt-1 text-slate-400">Assim que o Sr. Jacson organizar a rota na Diretoria e finalizar, ela aparecerá aqui dividida por técnicos e com a Rota Geral Conjunta.</p>
+                    </div>
+                `;
+            } else {
+                const shiftLabel = (summary.route_shift || currentAdminShift || "manha").toLowerCase() === "manha" ? "MANHÃ" : "TARDE";
+                const routeDateStr = summary.route_date || new Date().toLocaleDateString('pt-BR');
+                const totalCalls = Object.values(techs).reduce((acc, cur) => acc + cur.length, 0);
+
+                let html = "";
+
+                // BARRA SUPERIOR DE EXPORTAÇÃO RÁPIDA DE IMAGENS
+                html += `
+                    <div class="p-4 bg-gradient-to-r from-amber-500/10 via-sky-500/10 to-emerald-500/10 rounded-2xl border border-amber-500/20 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm shadow-sm">
+                                <i data-lucide="layers" class="w-4 h-4"></i>
+                            </span>
+                            <div>
+                                <h4 class="text-xs font-black uppercase text-slate-900 dark:text-white">Exportação e Disparo das Rotas (${shiftLabel})</h4>
+                                <p class="text-[11px] text-slate-500 dark:text-zinc-400">${techKeys.length} equipe(s) • ${totalCalls} atendimento(s) no total</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button type="button" onclick="saveAllRouteImagesToFolder()"
+                                class="bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-black text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-md shadow-purple-600/20"
+                                title="Salva os arquivos PNG na pasta rotas_imagens/ automaticamente">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span>💾 Salvar Imagens na Pasta</span>
+                            </button>
+                            <button type="button" onclick="openSavedImagesModal()"
+                                class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                                <i data-lucide="image" class="w-4 h-4 text-purple-500"></i>
+                                <span>Ver Imagens Salvas</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // =====================================================================
+                // 1. CARD DA ROTA GERAL CONJUNTA (EDSON + ANTONIO UNIFICADOS) - FOTO 2
+                // =====================================================================
+                html += `
+                    <div class="bg-white dark:bg-zinc-900 rounded-2xl border-2 border-amber-500/40 shadow-lg overflow-hidden space-y-3">
+                        <div class="px-5 py-3.5 bg-gradient-to-r from-amber-500/15 to-transparent border-b border-amber-500/20 flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-sm shrink-0">
+                                    <i data-lucide="users" class="w-4 h-4"></i>
+                                </span>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-sm font-black uppercase text-slate-900 dark:text-white tracking-wide">
+                                            ROTA CONJUNTA GERAL (${shiftLabel})
+                                        </h4>
+                                        <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                            Todas as Equipes
+                                        </span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-500 dark:text-zinc-400">Visão unificada em uma única imagem pronta para envio</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <button type="button" onclick="copyWhatsappText('CONJUNTA')"
+                                    class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                                    <span>Copiar Texto Geral</span>
+                                </button>
+                                <button type="button" onclick="copyWhatsappImage('adminCombinedRouteCard', 'CONJUNTA')"
+                                    class="bg-amber-500 hover:bg-amber-400 active:scale-95 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                                    title="Copia a imagem com todas as rotas para o WhatsApp">
+                                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    <span>Copiar Imagem Conjunta</span>
+                                </button>
+                                <button type="button" onclick="downloadWhatsappImage('adminCombinedRouteCard', 'CONJUNTA')"
+                                    class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black text-xs px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                                    title="Baixar imagem conjunta PNG">
+                                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                    <span>Baixar PNG Conjunta</span>
+                                </button>
+                                <button type="button" onclick="previewWhatsappCard('adminCombinedRouteCard', 'CONJUNTA')"
+                                    class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                                    <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                                    <span>Visualizar</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- CARD VISUAL DA ROTA CONJUNTA FORMATADO PARA EXCEL / WHATSAPP -->
+                        <div class="p-4 overflow-x-auto">
+                            <div id="adminCombinedRouteCard" class="p-4 bg-white text-slate-900 rounded-xl border-2 border-slate-300 shadow-sm min-w-[760px] space-y-4">
+                                
+                                <!-- CABEÇALHO DA ROTA CONJUNTA -->
+                                <div class="flex items-center justify-between border-b-2 border-slate-900 pb-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="bg-[#254a93] text-white font-bold font-serif px-3 py-1 rounded text-sm tracking-tight">
+                                            A5 TECNOLOGIA
+                                        </div>
+                                        <div>
+                                            <h3 class="text-sm font-black text-slate-900 uppercase">
+                                                ROTA EXTERNA GERAL • TURNO: ${shiftLabel}
+                                            </h3>
+                                            <p class="text-[11px] font-semibold text-slate-600">
+                                                ${techKeys.join(' • ')} — Ordem sequencial de atendimentos em campo
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-mono font-black px-2.5 py-1 bg-slate-100 rounded border border-slate-300">
+                                            DATA: ${routeDateStr}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- TABELAS DE CADA TÉCNICO CONJUNTAMENTE -->
+                                ${techKeys.map(tName => {
+                                    const stops = techs[tName] || [];
+                                    return `
+                                        <div class="space-y-1.5 pt-1">
+                                            <div class="bg-slate-100 px-3 py-1 border-l-4 border-[#254a93] border-y border-r border-slate-300 flex items-center justify-between">
+                                                <span class="font-black text-xs uppercase text-slate-900">👨‍🔧 ROTA DO TÉCNICO: ${tName}</span>
+                                                <span class="text-[10px] font-bold text-slate-600">${stops.length} atendimento(s)</span>
+                                            </div>
+                                            <table class="w-full text-left text-xs border border-slate-900 border-collapse">
+                                                <thead>
+                                                    <tr class="bg-sky-100 border-b border-slate-900 text-slate-900 font-black text-[11px] uppercase">
+                                                        <th class="py-2 px-2.5 border-r border-slate-900 text-center w-12">Seq.</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900">Cliente</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900 text-center">Data O.S.</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900 text-center">Horário</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900 text-center">O.S.</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900">Setor</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900">Mod. Equip.</th>
+                                                        <th class="py-2 px-2.5 border-r border-slate-900">Defeito</th>
+                                                        <th class="py-2 px-2.5 text-center font-bold text-red-600">Técnico</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-slate-400">
+                                                    ${stops.map((s, idx) => {
+                                                        const osStr = s.os_number || 'S/N';
+                                                        const hasTask = s.tasks_notes && s.tasks_notes.trim();
+                                                        const isSpecialYellow = s.tasks_notes && (s.tasks_notes.toUpperCase().includes('QUARTA') || s.tasks_notes.toUpperCase().includes('ATENDER'));
+                                                        return `
+                                                            <tr class="border-b border-slate-400">
+                                                                <td class="py-2 px-2 text-center font-black bg-slate-100 border-r border-slate-400">${idx + 1}º</td>
+                                                                <td class="py-2 px-2.5 font-black text-slate-900 border-r border-slate-400">${s.client_name}</td>
+                                                                <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${s.open_date || '-'}</td>
+                                                                <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${s.open_time || '-'}</td>
+                                                                <td class="py-2 px-2 text-center font-mono font-black text-sky-800 border-r border-slate-400">${osStr}</td>
+                                                                <td class="py-2 px-2.5 font-bold ${isSpecialYellow ? 'bg-yellow-200' : ''} border-r border-slate-400">${s.sector || '-'}</td>
+                                                                <td class="py-2 px-2.5 font-bold border-r border-slate-400">${s.equipment_model || '-'}</td>
+                                                                <td class="py-2 px-2.5 border-r border-slate-400 font-medium">${s.reported_defect || '-'}</td>
+                                                                <td class="py-2 px-2.5 text-center font-black text-red-600">${tName}</td>
+                                                            </tr>
+                                                            ${hasTask ? `
+                                                                <tr class="bg-red-50 border-b border-slate-400 font-bold">
+                                                                    <td colspan="8" class="py-1.5 px-4 text-red-700 border-r border-slate-400">
+                                                                        ⚠️ <strong>TAREFA:</strong> ${s.tasks_notes.toUpperCase()}
+                                                                    </td>
+                                                                    <td class="py-1.5 px-2 text-center text-red-600 font-black">${tName}</td>
+                                                                </tr>
+                                                            ` : ''}
+                                                        `;
+                                                    }).join("")}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    `;
+                                }).join("")}
+
+                                <!-- RODAPÉ DE FINALIZAÇÃO -->
+                                <div class="mt-3 pt-2 border-t border-slate-300 flex items-center justify-between text-[11px] text-slate-600">
+                                    <span>🏁 Retorno obrigatório à firma após a conclusão dos atendimentos.</span>
+                                    <span>A5 Tecnologia e Automação • (92) 3342-2315</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // =====================================================================
+                // 2. CARDS INDIVIDUAIS DE CADA TÉCNICO (EDSON, ANTONIO, ETC.)
+                // =====================================================================
+                html += techKeys.map(tName => {
+                    const stops = techs[tName] || [];
+                    const cardId = `adminTechRouteCard_${tName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                    return `
+                        <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-md overflow-hidden space-y-3">
+                            
+                            <!-- BARRA DE AÇÕES DA ROTA DO TÉCNICO -->
+                            <div class="px-5 py-3.5 bg-slate-50 dark:bg-zinc-850/80 border-b border-slate-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm shrink-0">
+                                        <i data-lucide="truck" class="w-4 h-4"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="text-sm font-black uppercase text-slate-900 dark:text-white tracking-wide">
+                                            ROTA INDIVIDUAL: ${tName} (${shiftLabel})
+                                        </h4>
+                                        <span class="text-[11px] text-slate-500 dark:text-zinc-400">${stops.length} atendimento(s) em sequência</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <!-- 1. Copiar Texto WhatsApp -->
+                                    <button type="button" onclick="copyWhatsappText('${tName}')"
+                                        class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                                        <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                                        <span>Copiar Texto WhatsApp</span>
+                                    </button>
+
+                                    <!-- 2. Copiar Imagem WhatsApp -->
+                                    <button type="button" onclick="copyWhatsappImage('${cardId}', '${tName}')"
+                                        class="bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black text-xs px-3.5 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                                        title="Copia a imagem para colar direto no WhatsApp com Ctrl+V">
+                                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                        <span>Copiar Imagem (Ctrl+V)</span>
+                                    </button>
+
+                                    <!-- 3. Baixar PNG -->
+                                    <button type="button" onclick="downloadWhatsappImage('${cardId}', '${tName}')"
+                                        class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                                        title="Baixar imagem como arquivo PNG">
+                                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                        <span>Baixar PNG</span>
+                                    </button>
+
+                                    <!-- 4. Visualizar Card (para Print) -->
+                                    <button type="button" onclick="previewWhatsappCard('${cardId}', '${tName}')"
+                                        class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm"
+                                        title="Visualizar em tamanho real para tirar printscreen">
+                                        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                                        <span>Visualizar Card</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CARD VISUAL FORMATADO (IDÊNTICO À PLANILHA DA FOTO 2) -->
+                            <div class="p-4 overflow-x-auto">
+                                <div id="${cardId}" class="p-4 bg-white text-slate-900 rounded-xl border-2 border-slate-300 shadow-sm min-w-[760px]">
+                                    
+                                    <!-- CABEÇALHO DO CARD COM IDENTIDADE DA A5 TECNOLOGIA -->
+                                    <div class="flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="bg-[#254a93] text-white font-bold font-serif px-3 py-1 rounded text-sm tracking-tight">
+                                                A5 TECNOLOGIA
+                                            </div>
+                                            <div>
+                                                <h3 class="text-sm font-black text-slate-900 uppercase">
+                                                    ROTA EXTERNA: ${tName} • ${shiftLabel}
+                                                </h3>
+                                                <p class="text-[11px] font-semibold text-slate-600">
+                                                    Ordem sequencial de atendimentos em campo
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="text-xs font-mono font-black px-2.5 py-1 bg-slate-100 rounded border border-slate-300">
+                                                DATA: ${routeDateStr}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- TABELA EXATA CONFORME AS FOTOS DO USUÁRIO -->
+                                    <table class="w-full text-left text-xs border border-slate-900 border-collapse">
+                                        <thead>
+                                            <tr class="bg-sky-100 border-b border-slate-900 text-slate-900 font-black text-[11px] uppercase">
+                                                <th class="py-2 px-2.5 border-r border-slate-900 text-center w-12">Seq.</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900">Cliente</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900 text-center">Data O.S.</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900 text-center">Horário</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900 text-center">O.S.</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900">Setor</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900">Mod. Equip.</th>
+                                                <th class="py-2 px-2.5 border-r border-slate-900">Defeito</th>
+                                                <th class="py-2 px-2.5 text-center font-bold text-red-600">Técnico</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-400">
+                                            ${stops.map((s, idx) => {
+                                                const osStr = s.os_number || 'S/N';
+                                                const hasTask = s.tasks_notes && s.tasks_notes.trim();
+                                                const isSpecialYellow = s.tasks_notes && (s.tasks_notes.toUpperCase().includes('QUARTA') || s.tasks_notes.toUpperCase().includes('ATENDER'));
+                                                return `
+                                                    <tr class="border-b border-slate-400">
+                                                        <td class="py-2 px-2 text-center font-black bg-slate-100 border-r border-slate-400">${idx + 1}º</td>
+                                                        <td class="py-2 px-2.5 font-black text-slate-900 border-r border-slate-400">${s.client_name}</td>
+                                                        <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${s.open_date || '-'}</td>
+                                                        <td class="py-2 px-2 text-center font-mono border-r border-slate-400">${s.open_time || '-'}</td>
+                                                        <td class="py-2 px-2 text-center font-mono font-black text-sky-800 border-r border-slate-400">${osStr}</td>
+                                                        <td class="py-2 px-2.5 font-bold ${isSpecialYellow ? 'bg-yellow-200' : ''} border-r border-slate-400">${s.sector || '-'}</td>
+                                                        <td class="py-2 px-2.5 font-bold border-r border-slate-400">${s.equipment_model || '-'}</td>
+                                                        <td class="py-2 px-2.5 border-r border-slate-400 font-medium">${s.reported_defect || '-'}</td>
+                                                        <td class="py-2 px-2.5 text-center font-black text-red-600">${tName}</td>
+                                                    </tr>
+                                                    ${hasTask ? `
+                                                        <tr class="bg-red-50 border-b border-slate-400 font-bold">
+                                                             <td colspan="8" class="py-1.5 px-4 text-red-700 border-r border-slate-400">
+                                                                ⚠️ <strong>TAREFA:</strong> ${s.tasks_notes.toUpperCase()}
+                                                            </td>
+                                                            <td class="py-1.5 px-2 text-center text-red-600 font-black">${tName}</td>
+                                                        </tr>
+                                                    ` : ''}
+                                                `;
+                                            }).join("")}
+                                        </tbody>
+                                    </table>
+
+                                    <!-- RODAPÉ DE FINALIZAÇÃO -->
+                                    <div class="mt-3 pt-2 border-t border-slate-300 flex items-center justify-between text-[11px] text-slate-600">
+                                        <span>🏁 Retorno obrigatório à firma após a conclusão dos atendimentos.</span>
+                                        <span>A5 Tecnologia e Automação • (92) 3342-2315</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                routesContainer.innerHTML = html;
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function getRouteImageFilename(techName) {
+            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const cleanDate = dateVal.includes('-') ? dateVal.split('-').reverse().join('-') : dateVal.replace(/\//g, '-');
+            const shift = (currentAdminShift || "manha").toUpperCase();
+            const techClean = (techName || "CONJUNTA").replace(/[^A-Z0-9]/gi, '_').toUpperCase();
+            return `ROTA_${techClean}_${shift}_${cleanDate}.png`;
+        }
+
+        function openNewExternalModal(editOrder = null) {
+            const modal = document.getElementById("modalNovoChamadoExterno");
+            const title = document.getElementById("modalExtTitle");
+            const orderIdInput = document.getElementById("extOrderId");
+            const shiftSelect = document.getElementById("extRouteShift");
+
+            if (editOrder) {
+                title.textContent = `Editar Chamado - O.S. ${editOrder.os_number || ''}`;
+                orderIdInput.value = editOrder.id;
+                document.getElementById("extClientName").value = editOrder.client_name || '';
+                document.getElementById("extOsNumber").value = editOrder.os_number || '';
+                document.getElementById("extOpenDate").value = editOrder.open_date || '';
+                document.getElementById("extOpenTime").value = editOrder.open_time || '';
+                document.getElementById("extSector").value = editOrder.sector || '';
+                document.getElementById("extModel").value = editOrder.equipment_model || '';
+                document.getElementById("extDefect").value = editOrder.reported_defect || '';
+                document.getElementById("extTasksNotes").value = editOrder.tasks_notes || '';
+                document.getElementById("extTechnician").value = editOrder.technician || '';
+                if (shiftSelect) shiftSelect.value = editOrder.route_shift || currentAdminShift;
+            } else {
+                title.textContent = "Cadastrar Chamado Externo";
+                orderIdInput.value = "";
+                document.getElementById("formNovoChamadoExterno").reset();
+                document.getElementById("extOpenDate").value = new Date().toLocaleDateString("pt-BR");
+                const now = new Date();
+                document.getElementById("extOpenTime").value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                if (shiftSelect) shiftSelect.value = currentAdminShift;
+            }
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            document.getElementById("extClientName").focus();
+        }
+
+        async function submitExternalOrder(event) {
+            event.preventDefault();
+            const orderId = document.getElementById("extOrderId").value;
+            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const shiftVal = document.getElementById("extRouteShift") ? document.getElementById("extRouteShift").value : currentAdminShift;
+
+            const payload = {
+                client_name: document.getElementById("extClientName").value.trim(),
+                os_number: document.getElementById("extOsNumber").value.trim(),
+                open_date: document.getElementById("extOpenDate").value.trim(),
+                open_time: document.getElementById("extOpenTime").value.trim(),
+                sector: document.getElementById("extSector").value.trim(),
+                equipment_model: document.getElementById("extModel").value.trim(),
+                reported_defect: document.getElementById("extDefect").value.trim(),
+                tasks_notes: document.getElementById("extTasksNotes").value.trim(),
+                technician: document.getElementById("extTechnician").value,
+                route_date: dateVal,
+                route_shift: shiftVal
+            };
+
+            try {
+                const url = orderId ? `/api/externos/orders/${orderId}` : "/api/externos/orders";
+                const method = orderId ? "PUT" : "POST";
+
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    closeModal("modalNovoChamadoExterno");
+                    showToast(orderId ? "Chamado atualizado com sucesso!" : "Novo chamado cadastrado com sucesso!", "success");
+                    loadAdminExternosData();
+                } else {
+                    alert(json.error || "Erro ao salvar chamado.");
+                }
+            } catch (err) {
+                alert("Erro de comunicação: " + err.message);
+            }
+        }
+
+        async function deleteExternalOrder(orderId) {
+            if (!confirm("Deseja realmente excluir este chamado externo?")) return;
+            try {
+                const res = await fetch(`/api/externos/orders/${orderId}`, { method: "DELETE" });
+                const json = await res.json();
+                if (json.success) {
+                    showToast("Chamado excluído com sucesso.", "info");
+                    loadAdminExternosData();
+                } else {
+                    alert(json.error || "Erro ao excluir.");
+                }
+            } catch (err) {
+                alert("Erro ao excluir: " + err.message);
+            }
+        }
+
+        async function notifyDirectorFromAdmin() {
+            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const btn = document.getElementById("btnNotifyDirector");
+            if (btn) btn.disabled = true;
+
+            try {
+                const res = await fetch("/api/externos/routes/notify-director", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date: dateVal, shift: currentAdminShift })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const shiftLabel = currentAdminShift === "manha" ? "Manhã" : "Tarde";
+                    showToast(`🔔 Chamados da ${shiftLabel} enviados ao Sr. Jacson! Ele foi notificado na Diretoria com alerta sonoro.`, "success");
+                    loadAdminExternosData();
+                } else {
+                    alert(json.error || "Erro ao notificar Diretoria.");
+                }
+            } catch (err) {
+                alert("Erro de comunicação: " + err.message);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function copyWhatsappText(techName) {
+            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            try {
+                const res = await fetch(`/api/externos/whatsapp-text?date=${encodeURIComponent(dateVal)}&shift=${encodeURIComponent(currentAdminShift)}&technician=${encodeURIComponent(techName)}`);
+                const json = await res.json();
+                if (json.success && json.message) {
+                    await navigator.clipboard.writeText(json.message);
+                    showToast(`📲 Texto da rota (${techName}) copiado! Cole direto no WhatsApp.`, "success");
+                } else {
+                    alert("Não foi possível gerar a mensagem de texto da rota.");
+                }
+            } catch (err) {
+                alert("Erro ao copiar texto: " + err.message);
+            }
+        }
+
+        async function copyWhatsappImage(cardId, techName) {
+            const el = document.getElementById(cardId);
+            if (!el) {
+                alert("Card da rota não encontrado.");
+                return;
+            }
+
+            showToast("📷 Gerando imagem em alta resolução...", "info");
+
+            try {
+                const canvas = await html2canvas(el, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff"
+                });
+
+                const filename = getRouteImageFilename(techName);
+
+                // Salva silenciosamente na pasta rotas_imagens/ do servidor
+                try {
+                    fetch("/api/externos/save-image", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            image_base64: canvas.toDataURL("image/png"),
+                            filename: filename
+                        })
+                    });
+                } catch (e) {}
+
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        alert("Falha ao criar imagem da rota.");
+                        return;
+                    }
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ "image/png": blob })
+                        ]);
+                        showToast(`📷 Imagem (${techName}) copiada! Cole com Ctrl+V no WhatsApp. (Arquivo salvo em rotas_imagens/)`, "success");
+                    } catch (err) {
+                        console.warn("Clipboard API restrita, fazendo download alternativo:", err);
+                        downloadCanvas(canvas, filename);
+                        showToast(`📷 Imagem baixada como ${filename}! Envie pelo WhatsApp.`, "success");
+                    }
+                }, "image/png");
+            } catch (err) {
+                alert("Erro ao gerar imagem: " + err.message);
+            }
+        }
+
+        async function downloadWhatsappImage(cardId, techName) {
+            const el = document.getElementById(cardId);
+            if (!el) return;
+
+            showToast("📥 Preparando download da imagem PNG...", "info");
+            try {
+                const canvas = await html2canvas(el, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: "#ffffff"
+                });
+                const filename = getRouteImageFilename(techName);
+
+                // Salva também na pasta rotas_imagens/ do servidor
+                try {
+                    fetch("/api/externos/save-image", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            image_base64: canvas.toDataURL("image/png"),
+                            filename: filename
+                        })
+                    });
+                } catch (e) {}
+
+                downloadCanvas(canvas, filename);
+                showToast(`📥 Imagem salva como ${filename}!`, "success");
+            } catch (err) {
+                alert("Erro ao baixar imagem: " + err.message);
+            }
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement("a");
+            link.download = filename;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }
+
+        function previewWhatsappCard(cardId, techName) {
+            const sourceEl = document.getElementById(cardId);
+            const container = document.getElementById("modalPreviewCardContent");
+            if (!sourceEl || !container) return;
+
+            container.innerHTML = sourceEl.outerHTML;
+
+            // Liga os botões do modal
+            const btnCopy = document.getElementById("btnCopyImgFromModal");
+            const btnDownload = document.getElementById("btnDownloadImgFromModal");
+
+            btnCopy.onclick = () => copyWhatsappImage(cardId, techName);
+            btnDownload.onclick = () => downloadWhatsappImage(cardId, techName);
+
+            const modal = document.getElementById("modalPreviewCard");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        async function saveAllRouteImagesToFolder() {
+            if (!currentAdminExternosSummary || !currentAdminExternosSummary.technicians) {
+                alert("Nenhuma rota disponível para salvar imagens.");
+                return;
+            }
+
+            const techs = currentAdminExternosSummary.technicians;
+            const techKeys = Object.keys(techs);
+            if (techKeys.length === 0) {
+                alert("Nenhuma rota organizada ainda para esta data.");
+                return;
+            }
+
+            showToast("💾 Gerando e salvando imagens das rotas na pasta...", "info");
+
+            let savedCount = 0;
+
+            // 1. Salva cada técnico individual
+            for (const tName of techKeys) {
+                const cardId = `adminTechRouteCard_${tName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                const el = document.getElementById(cardId);
+                if (el) {
+                    try {
+                        const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+                        const dataUrl = canvas.toDataURL("image/png");
+                        const filename = getRouteImageFilename(tName);
+                        const res = await fetch("/api/externos/save-image", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                image_base64: dataUrl,
+                                filename: filename
+                            })
+                        });
+                        const json = await res.json();
+                        if (json.success) savedCount++;
+                    } catch (e) {
+                        console.warn(`Erro ao salvar imagem de ${tName}:`, e);
+                    }
+                }
+            }
+
+            // 2. Salva a Rota Geral Conjunta
+            const combinedEl = document.getElementById("adminCombinedRouteCard");
+            if (combinedEl) {
+                try {
+                    const canvas = await html2canvas(combinedEl, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+                    const dataUrl = canvas.toDataURL("image/png");
+                    const filename = getRouteImageFilename("CONJUNTA");
+                    const res = await fetch("/api/externos/save-image", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            image_base64: dataUrl,
+                            filename: filename
+                        })
+                    });
+                    const json = await res.json();
+                    if (json.success) savedCount++;
+                } catch (e) {
+                    console.warn("Erro ao salvar imagem conjunta:", e);
+                }
+            }
+
+            showToast(`💾 ${savedCount} imagem(ns) salvas na pasta rotas_imagens/ com sucesso!`, "success");
+        }
+
+        async function openSavedImagesModal() {
+            const modal = document.getElementById("modalSavedImages");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            await loadSavedImagesList();
+        }
+
+        async function loadSavedImagesList() {
+            const container = document.getElementById("savedImagesListContainer");
+            container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs">Carregando lista de imagens...</div>';
+            try {
+                const res = await fetch("/api/externos/saved-images");
+                const json = await res.json();
+                if (json.success && json.images && json.images.length > 0) {
+                    container.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${json.images.map(img => `
+                                <div class="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 flex items-center justify-between gap-3 hover:border-amber-500/50 transition">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <a href="${img.url}" target="_blank" class="w-12 h-12 rounded-lg bg-slate-200 dark:bg-zinc-800 flex items-center justify-center overflow-hidden shrink-0 border border-slate-300 dark:border-zinc-700">
+                                            <img src="${img.url}" class="w-full h-full object-cover" alt="Preview">
+                                        </a>
+                                        <div class="min-w-0">
+                                            <p class="font-mono text-xs font-bold text-slate-900 dark:text-white truncate" title="${img.filename}">${img.filename}</p>
+                                            <p class="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">${img.created_at} • ${img.size_kb} KB</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <a href="${img.url}" download="${img.filename}" class="p-1.5 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 transition" title="Baixar">
+                                            <i data-lucide="download" class="w-4 h-4"></i>
+                                        </a>
+                                        <a href="${img.url}" target="_blank" class="p-1.5 rounded-lg bg-slate-200 dark:bg-zinc-800 hover:bg-slate-300 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 transition" title="Abrir imagem">
+                                            <i data-lucide="external-link" class="w-4 h-4"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            `).join("")}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-10 text-slate-400 dark:text-zinc-500 text-xs">
+                            <i data-lucide="image" class="w-8 h-8 mx-auto text-slate-300 dark:text-zinc-600 mb-2"></i>
+                            <p class="font-bold">Nenhuma imagem salva na pasta rotas_imagens/ ainda.</p>
+                            <p class="text-[11px] mt-1 text-slate-400">Clique em "Salvar Imagens na Pasta" para gerar e salvar os arquivos automaticamente.</p>
+                        </div>
+                    `;
+                }
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                container.innerHTML = `<div class="text-center py-6 text-rose-500 text-xs">Erro ao carregar imagens: ${err.message}</div>`;
+            }
         }
     </script>
 </body>

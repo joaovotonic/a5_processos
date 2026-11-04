@@ -15,9 +15,10 @@ from datetime import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-from ..config import ENTRADA_PDFS_DIR, ARQUIVADOS_PDFS_DIR
+from ..config import ENTRADA_PDFS_DIR, ARQUIVADOS_PDFS_DIR, ENTRADA_EXTERNOS_DIR, ARQUIVADOS_EXTERNOS_DIR
 from ..database import connect
 from ..services.pdf_parser import parse_os_pdf
+from ..services.externos import parse_external_os_pdf, create_external_order
 
 logger = logging.getLogger("kanban.pdf_watcher")
 
@@ -192,6 +193,82 @@ def process_pdf_file(pdf_path: str):
         logger.error(f"Erro fatal ao processar PDF {pdf_path}: {exc}", exc_info=True)
 
 
+def process_external_pdf_file(pdf_path: str):
+    """Processa um arquivo PDF de chamado externo colocado em ./entrada_chamados_externos/."""
+    if not os.path.isfile(pdf_path) or not pdf_path.lower().endswith(".pdf"):
+        return
+
+    with _lock:
+        norm_path = os.path.abspath(pdf_path)
+        if norm_path in _processed_files:
+            return
+        _processed_files.add(norm_path)
+
+    # Aguarda gravação completa do arquivo no disco
+    file_size = -1
+    for _ in range(10):
+        try:
+            curr_size = os.path.getsize(pdf_path)
+            if curr_size > 0 and curr_size == file_size:
+                break
+            file_size = curr_size
+        except Exception:
+            pass
+        time.sleep(0.4)
+
+    try:
+        from ..utils import format_os_number
+        data = parse_external_os_pdf(pdf_path)
+        os_number = format_os_number(data.get("os_number") or "")
+        now_dt = datetime.now()
+
+        if not os_number:
+            os_number = f"EXT-{now_dt.strftime('%H%M%S')}"
+            data["os_number"] = os_number
+
+        # Arquiva o PDF externo na pasta dedicada por Ano-Mês
+        month_dir = os.path.join(ARQUIVADOS_EXTERNOS_DIR, now_dt.strftime("%Y-%m"))
+        os.makedirs(month_dir, exist_ok=True)
+        dest_filename = f"OS_{os_number}_{os.path.basename(pdf_path)}"
+        dest_path = os.path.join(month_dir, dest_filename)
+
+        try:
+            shutil.move(pdf_path, dest_path)
+            relative_dest = os.path.relpath(dest_path, os.path.dirname(ARQUIVADOS_EXTERNOS_DIR))
+        except Exception as e:
+            logger.warning(f"Não foi possível mover PDF externo {pdf_path}: {e}")
+            relative_dest = pdf_path
+
+        data["pdf_source_path"] = relative_dest
+        created_order = create_external_order(data)
+        logger.info(f"Chamado externo O.S. {os_number} importado com sucesso!")
+
+        # Emite notificação Socket.IO em tempo real
+        try:
+            from ..realtime import _emit_safe
+            _emit_safe("external_order_created", {
+                "order": created_order,
+                "message": f"Novo chamado externo O.S. {os_number} ({data.get('client_name')}) recebido!"
+            })
+        except Exception as e:
+            logger.warning(f"Erro ao emitir socketio para chamado externo {os_number}: {e}")
+
+    except Exception as exc:
+        logger.error(f"Erro ao processar PDF externo {pdf_path}: {exc}", exc_info=True)
+
+
+class ExternalPdfDropHandler(FileSystemEventHandler):
+    """Handler acionado quando um arquivo é solto na pasta entrada_chamados_externos."""
+
+    def on_created(self, event):
+        if not event.is_directory and event.src_path.lower().endswith(".pdf"):
+            threading.Thread(target=process_external_pdf_file, args=(event.src_path,), daemon=True).start()
+
+    def on_moved(self, event):
+        if not event.is_directory and event.dest_path.lower().endswith(".pdf"):
+            threading.Thread(target=process_external_pdf_file, args=(event.dest_path,), daemon=True).start()
+
+
 class PdfDropHandler(FileSystemEventHandler):
     """Handler acionado quando um arquivo é solto na pasta entrada_pdfs."""
 
@@ -206,25 +283,35 @@ class PdfDropHandler(FileSystemEventHandler):
 
 
 def start_pdf_watcher():
-    """Inicia o monitoramento contínuo da pasta ./entrada_pdfs/."""
+    """Inicia o monitoramento contínuo das pastas ./entrada_pdfs/ e ./entrada_chamados_externos/."""
     global _observer
     os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
     os.makedirs(ARQUIVADOS_PDFS_DIR, exist_ok=True)
+    os.makedirs(ENTRADA_EXTERNOS_DIR, exist_ok=True)
+    os.makedirs(ARQUIVADOS_EXTERNOS_DIR, exist_ok=True)
 
     if _observer is not None:
         return
 
-    # Processa arquivos que já estejam porventura na pasta de entrada
+    # Processa arquivos que já estejam porventura nas pastas de entrada
     for fname in os.listdir(ENTRADA_PDFS_DIR):
         if fname.lower().endswith(".pdf"):
             full_p = os.path.join(ENTRADA_PDFS_DIR, fname)
             threading.Thread(target=process_pdf_file, args=(full_p,), daemon=True).start()
 
+    for fname in os.listdir(ENTRADA_EXTERNOS_DIR):
+        if fname.lower().endswith(".pdf"):
+            full_p = os.path.join(ENTRADA_EXTERNOS_DIR, fname)
+            threading.Thread(target=process_external_pdf_file, args=(full_p,), daemon=True).start()
+
     _observer = Observer()
     handler = PdfDropHandler()
+    ext_handler = ExternalPdfDropHandler()
+
     _observer.schedule(handler, ENTRADA_PDFS_DIR, recursive=False)
+    _observer.schedule(ext_handler, ENTRADA_EXTERNOS_DIR, recursive=False)
     _observer.start()
-    logger.info(f"Monitor Watchdog de PDFs iniciado em: {ENTRADA_PDFS_DIR}")
+    logger.info(f"Monitor Watchdog de PDFs iniciado em: {ENTRADA_PDFS_DIR} e {ENTRADA_EXTERNOS_DIR}")
 
 
 def stop_pdf_watcher():
