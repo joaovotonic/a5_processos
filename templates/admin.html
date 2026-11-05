@@ -2233,6 +2233,29 @@
             const isNaoAutorizado = phase === "NAO_AUTORIZADO" || lTitle.includes("NÃO AUTORIZAD") || lTitle.includes("NAO AUTORIZAD");
             const displayOs = String(card.os_number || "");
 
+            // Opções de listas/colunas para transferência direta pela Priscila
+            const availableLists = boardData?.lists || [];
+            const processLists = availableLists.filter(l => !l.is_tech);
+            const techLists = availableLists.filter(l => Boolean(l.is_tech));
+            const curListId = card.list_id;
+
+            const listOptionsHTML = `
+                <optgroup label="📋 Etapas do Processo">
+                    ${processLists.map(l => `
+                        <option value="${l.id}" ${l.id == curListId ? 'selected' : ''}>
+                            ${esc(l.title)} ${l.id == curListId ? '(Atual)' : ''}
+                        </option>
+                    `).join("")}
+                </optgroup>
+                <optgroup label="🔧 Bancadas dos Técnicos">
+                    ${techLists.map(l => `
+                        <option value="${l.id}" ${l.id == curListId ? 'selected' : ''}>
+                            ${esc(l.title)} ${l.id == curListId ? '(Atual)' : ''}
+                        </option>
+                    `).join("")}
+                </optgroup>
+            `;
+
             const steps = [
                 { num: 1, name: "Orçamentos a Fazer", tag: "Fase Inicial" },
                 { num: 2, name: "Em Diagnóstico", tag: "Bancada" },
@@ -2387,6 +2410,37 @@
                         </span>
                     </div>
 
+                    <!-- SELETOR RÁPIDO DE ESTÁGIO / LISTA (PRISCILA) -->
+                    <div class="p-3 rounded-xl bg-white/90 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
+                                <i data-lucide="layers" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-black text-slate-800 dark:text-zinc-100 flex items-center gap-1.5">
+                                    <span>Alterar Estágio / Coluna</span>
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-400 font-mono font-bold">1 Clique</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500 dark:text-zinc-400">
+                                    Mova a balança para qualquer etapa ou bancada:
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <select id="cardDetailListSelect" onchange="onCardDetailListSelectChange()"
+                                class="flex-1 sm:w-64 px-3 py-2 rounded-xl border border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-950 font-bold text-xs text-slate-900 dark:text-zinc-100 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                                ${listOptionsHTML}
+                            </select>
+                            <button type="button" id="btnMoveCardDetail" onclick="moveCardToSelectedList(${card.id})"
+                                class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 active:scale-[0.98] text-slate-950 font-black text-xs shadow transition flex items-center gap-1.5 shrink-0"
+                                title="Mover balança para a lista selecionada">
+                                <i data-lucide="arrow-right-circle" class="w-4 h-4"></i>
+                                <span>Mover</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <p class="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
                         ${phaseDesc}
                     </p>
@@ -2446,6 +2500,75 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             document.getElementById("cardDetailModal")?.classList.remove("hidden");
             document.getElementById("cardDetailModal")?.classList.add("flex");
             refreshIcons();
+        }
+
+        function onCardDetailListSelectChange() {
+            const select = document.getElementById("cardDetailListSelect");
+            const btn = document.getElementById("btnMoveCardDetail");
+            if (!select || !btn) return;
+            const currentListId = window._lastOpenedCard?.list_id;
+            if (select.value != currentListId) {
+                btn.classList.add("ring-2", "ring-sky-400/50");
+                const selText = select.options[select.selectedIndex]?.text?.replace('(Atual)', '').trim();
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> <span>Mover p/ ${esc(selText)}</span>`;
+            } else {
+                btn.classList.remove("ring-2", "ring-sky-400/50");
+                btn.innerHTML = `<i data-lucide="arrow-right-circle" class="w-4 h-4"></i> <span>Mover</span>`;
+            }
+            refreshIcons();
+        }
+
+        async function moveCardToSelectedList(cardId) {
+            const select = document.getElementById("cardDetailListSelect");
+            if (!select) return;
+            const targetListId = parseInt(select.value);
+            if (!targetListId) return;
+
+            const currentListId = window._lastOpenedCard?.list_id;
+            if (targetListId === currentListId) {
+                alert("A balança já está nesta coluna.");
+                return;
+            }
+
+            const btn = document.getElementById("btnMoveCardDetail");
+            const origHTML = btn ? btn.innerHTML : "";
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span> Movendo...`;
+            }
+
+            try {
+                const res = await fetch(`/api/cards/${cardId}/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        target_list_id: targetListId,
+                        new_position: 0,
+                        actor: "Priscila (Recepção)"
+                    })
+                });
+
+                if (res.ok) {
+                    await fetchBoard();
+                    const osNumber = window._lastOpenedCard?.os_number;
+                    if (osNumber) {
+                        await openCardDetail(osNumber);
+                    }
+                } else {
+                    const err = await res.json();
+                    alert(err.error || "Erro ao transferir balança de lista.");
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = origHTML;
+                    }
+                }
+            } catch (e) {
+                alert("Falha de comunicação ao mover balança.");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHTML;
+                }
+            }
         }
 
         async function saveAdminNotes() {
