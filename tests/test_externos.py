@@ -425,6 +425,111 @@ Reduzido Descrição:
             dir_src = f.read()
         self.assertIn('playDoorbellSound', dir_src)
 
+    def test_11_folder_consumption_scale_and_external_pdfs(self):
+        """
+        Testa o consumo real de arquivos PDF nas duas pastas:
+        1) entrada_pdfs (Entrada de Balança -> coluna ORÇAMENTOS, inclusive re-consumo do mesmo nome de arquivo)
+        2) entrada_chamados_externos (Entrada de Chamado Externo -> data de hoje e turno atual, inclusive re-consumo)
+        """
+        import os
+        from unittest.mock import patch
+        from kanban.config import ENTRADA_PDFS_DIR, ENTRADA_EXTERNOS_DIR, ARQUIVADOS_PDFS_DIR, ARQUIVADOS_EXTERNOS_DIR
+        from kanban.services.pdf_watcher import scan_pending_input_folders
+
+        os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
+        os.makedirs(ENTRADA_EXTERNOS_DIR, exist_ok=True)
+
+        sample_scale_text = """
+        Ordem de Serviço: 0000998877
+        Data de abertura: 04/11/2026 09:15
+        Fantasia : SUPERMERCADO TESTE WATCHER
+        MARCA / MODELO : TOLEDO PRIX 5 PLUS
+        Defeito : BALANÇA NÃO LIGA E TECLADO TRAVANDO.
+        """
+
+        sample_ext_text = """
+        Ordem de Serviço: 0000887766
+        Data de abertura: 04/11/2026 08:40
+        Fantasia : ATACADÃO TESTE EXTERNO
+        MARCA / MODELO : TOLEDO - PL - 3000/6
+        Defeito : BALANÇA DO ATACADÃO, SETOR RECEBIMENTO, PRAZO DE CALIBRAÇÃO VENCIDO. CHAMADO SOLICITADO PELO ADM JOAO.
+        """
+
+        scale_pdf_path = os.path.join(ENTRADA_PDFS_DIR, "O.S._998877_Teste_Balanca.pdf")
+        ext_pdf_path = os.path.join(ENTRADA_EXTERNOS_DIR, "O.S._887766_Teste_Externo.pdf")
+
+        with patch("kanban.services.pdf_parser.extract_text_from_pdf", return_value=sample_scale_text), \
+             patch("kanban.services.externos.extract_text_from_pdf", return_value=sample_ext_text):
+
+            # 1ª rodada: cria os arquivos nas pastas de entrada e varre
+            with open(scale_pdf_path, "wb") as f:
+                f.write(b"%PDF-1.4 dummy scale pdf content")
+            with open(ext_pdf_path, "wb") as f:
+                f.write(b"%PDF-1.4 dummy external pdf content")
+
+            scan_pending_input_folders()
+            self.assertFalse(os.path.exists(scale_pdf_path), "PDF de balança deveria ter sido movido de entrada_pdfs")
+            self.assertFalse(os.path.exists(ext_pdf_path), "PDF externo deveria ter sido movido de entrada_chamados_externos")
+
+            # Verifica que o card da balança entrou no topo da coluna ORÇAMENTOS (mesmo se existisse antes)
+            with connect() as conn:
+                card = conn.execute("SELECT * FROM cards WHERE os_number = '998877'").fetchone()
+                self.assertIsNotNone(card)
+                self.assertEqual(card["pipeline_phase"], "ORCAMENTOS_A_FAZER")
+                self.assertEqual(card["position"], 0)
+
+                # Simula que o card estava em FINALIZADAS e o usuário joga o mesmo PDF novamente na pasta
+                fin_list = conn.execute("SELECT id FROM lists WHERE role = 'finalizada' LIMIT 1").fetchone()
+                if fin_list:
+                    conn.execute("UPDATE cards SET list_id = ?, pipeline_phase = 'FINALIZADAS' WHERE id = ?", (fin_list["id"], card["id"]))
+
+            # 2ª rodada: joga novamente arquivos com O MESMO NOME nas pastas (valida correção do bug de _processed_files)
+            with open(scale_pdf_path, "wb") as f:
+                f.write(b"%PDF-1.4 dummy scale pdf content 2")
+            with open(ext_pdf_path, "wb") as f:
+                f.write(b"%PDF-1.4 dummy external pdf content 2")
+
+            scan_pending_input_folders()
+            self.assertFalse(os.path.exists(scale_pdf_path), "Deve re-consumir arquivo com mesmo nome em entrada_pdfs")
+            self.assertFalse(os.path.exists(ext_pdf_path), "Deve re-consumir arquivo com mesmo nome em entrada_chamados_externos")
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            with connect() as conn:
+                card_re = conn.execute("SELECT * FROM cards WHERE os_number = '998877'").fetchone()
+                orc_list = conn.execute("SELECT id FROM lists WHERE role = 'orcamento' LIMIT 1").fetchone()
+                self.assertEqual(card_re["list_id"], orc_list["id"], "Card re-importado deve voltar para a coluna ORÇAMENTOS")
+                self.assertEqual(card_re["pipeline_phase"], "ORCAMENTOS_A_FAZER")
+
+                ext_order = conn.execute("SELECT * FROM external_orders WHERE os_number = '887766'").fetchone()
+                self.assertIsNotNone(ext_order)
+                self.assertEqual(ext_order["open_date"], "04/11/2026", "Deve preservar a data de abertura original do PDF")
+                self.assertEqual(ext_order["route_date"], today_str, "A data da rota deve ser a data de hoje em que o PDF entrou na pasta")
+                self.assertEqual(ext_order["sector"], "RECEBIMENTO")
+
+        # Limpa os arquivos e registros de teste criados
+        month_str = datetime.now().strftime("%Y-%m")
+        for p in [
+            os.path.join(ARQUIVADOS_PDFS_DIR, month_str, "OS_998877_O.S._998877_Teste_Balanca.pdf"),
+            os.path.join(ARQUIVADOS_EXTERNOS_DIR, month_str, "OS_887766_O.S._887766_Teste_Externo.pdf"),
+        ]:
+            if os.path.exists(p):
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+
+        with connect() as conn:
+            conn.execute("DELETE FROM card_history WHERE os_number = '998877'")
+            conn.execute("DELETE FROM cards WHERE os_number = '998877'")
+            conn.execute("DELETE FROM external_orders WHERE os_number = '887766'")
+
+    @classmethod
+    def tearDownClass(cls):
+        with connect() as conn:
+            conn.execute("DELETE FROM external_orders WHERE os_number IN ('26999', '887766') OR os_number LIKE 'TEST%' OR client_name LIKE '%TESTE%' OR client_name LIKE 'TEST%'")
+            conn.execute("UPDATE external_orders SET route_date = ? WHERE id IN (115, 116)", (datetime.now().strftime("%Y-%m-%d"),))
+            conn.commit()
+
 
 if __name__ == "__main__":
     unittest.main()

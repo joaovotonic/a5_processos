@@ -11,7 +11,12 @@ bp = Blueprint("api_lists", __name__, url_prefix="/api")
 
 @bp.route("/board", methods=["GET"])
 def get_board():
-    """Retorna todos os dados do quadro Kanban em tempo real."""
+    """Retorna todos os dados do quadro Kanban em tempo real (varrendo entrada_pdfs se houver arquivos)."""
+    try:
+        from ..services.pdf_watcher import scan_pending_input_folders
+        scan_pending_input_folders()
+    except Exception:
+        pass
     return jsonify(get_full_board())
 
 

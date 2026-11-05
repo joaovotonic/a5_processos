@@ -35,24 +35,33 @@ env/
 .env.local
 *.local
 
-# Database & Backups
-*.db
+# Database & Backups (permite o banco oficial e o backup em nuvem no GitHub)
+*.db-wal
+*.db-shm
+*.db-journal
 *.sqlite
 *.sqlite3
-database/*.db
 database/tts_cache/
-backups/
+backups/*
+!backups/a5_kanban_nuvem_latest.db
+!backups/a5_kanban_nuvem_latest.json
 scratch/
 
 # User Uploads (mantém a pasta mas ignora arquivos de upload)
 static/uploads/*
 !static/uploads/.gitkeep
 
-# PDFs de Esteira
+# PDFs de Esteira e Rotas Externas
 entrada_pdfs/*
 !entrada_pdfs/.gitkeep
 arquivados_pdfs/*
 !arquivados_pdfs/.gitkeep
+entrada_chamados_externos/*
+!entrada_chamados_externos/.gitkeep
+arquivados_chamados_externos/*
+!arquivados_chamados_externos/.gitkeep
+rotas_imagens/*
+!rotas_imagens/.gitkeep
 
 # Logs & Temporary Files
 *.log
@@ -68,4 +77,3 @@ temp/
 Thumbs.db
 Desktop.ini
 .DS_Store
-

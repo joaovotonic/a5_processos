@@ -48,3 +48,43 @@ def api_diretoria_report():
     )
     return jsonify(report)
 
+
+@bp.route("/diretoria/reset-metrics", methods=["POST"])
+def api_reset_diretoria_metrics():
+    """
+    Zera os contadores históricos pós-organização manual do Kanban pela Priscila
+    e inicia a contabilização oficial de relatórios a partir deste momento.
+    """
+    from .. import realtime
+    from ..services.diretoria import reset_and_start_official_metrics
+
+    data = request.get_json(silent=True) or {}
+    actor = (data.get("actor") or "Priscila (Recepção)").strip()
+    result = reset_and_start_official_metrics(actor=actor)
+    realtime.broadcast_board()
+    return jsonify(result)
+
+
+@bp.route("/backup/github-status", methods=["GET"])
+def api_github_backup_status():
+    """Retorna o status do backup diário em nuvem no GitHub (alerta fixo das 16h40 de seg a sex)."""
+    from ..backup import get_cloud_backup_status
+    return jsonify(get_cloud_backup_status())
+
+
+@bp.route("/backup/github-cloud", methods=["POST"])
+def api_github_cloud_backup():
+    """Gera o backup consolidado do banco de dados e envia para o GitHub (joaovotonic/a5_processos)."""
+    from .. import realtime
+    from ..backup import upload_database_to_github
+
+    data = request.get_json(silent=True) or {}
+    dry_run = bool(data.get("dry_run", False))
+    res = upload_database_to_github(dry_run=dry_run)
+    if res.get("success"):
+        realtime.broadcast_board()
+        return jsonify(res)
+    return jsonify(res), 500
+
+
+

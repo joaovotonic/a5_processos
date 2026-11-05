@@ -190,19 +190,22 @@ def get_full_board():
             p_item["photos"] = json.loads(p_item.get("photos_json") or "[]")
             pending_entries.append(p_item)
 
-        # Produtividade do dia (O.S. finalizadas hoje)
+        metrics_start_at = settings.get("metrics_start_at") or ""
+
+        # Produtividade do dia (O.S. finalizadas hoje após o marco de início oficial)
         finished_today = conn.execute(
-            "SELECT COUNT(*) as total FROM cards WHERE finished_at LIKE ?", (today_prefix,)
+            "SELECT COUNT(*) as total FROM cards WHERE finished_at LIKE ? AND finished_at >= ?",
+            (today_prefix, metrics_start_at)
         ).fetchone()["total"]
 
         # Produtividade de hoje por técnico
         tech_scores_today = [dict(r) for r in conn.execute("""
-            SELECT tech_name, COUNT(*) as count
+            SELECT COALESCE(NULLIF(finisher_tech, ''), tech_name) as tech_name, COUNT(*) as count
             FROM cards
-            WHERE finished_at LIKE ? AND tech_name != ''
-            GROUP BY tech_name
+            WHERE finished_at LIKE ? AND finished_at >= ? AND COALESCE(NULLIF(finisher_tech, ''), tech_name) != ''
+            GROUP BY COALESCE(NULLIF(finisher_tech, ''), tech_name)
             ORDER BY count DESC
-        """, (today_prefix,)).fetchall()]
+        """, (today_prefix, metrics_start_at)).fetchall()]
 
     list_map = {lst["id"]: lst for lst in lists}
     cards_by_list = {lst["id"]: [] for lst in lists}
@@ -240,30 +243,34 @@ def get_analytics_summary():
     month_str = now.strftime("%Y-%m")
     year_str = now.strftime("%Y")
 
-    def count_finished(prefix):
-        return conn.execute(
-            "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ?", (f"{prefix}%",)
-        ).fetchone()["c"]
-
     with connect() as conn:
+        cutoff_row = conn.execute("SELECT value FROM settings WHERE key = 'metrics_start_at'").fetchone()
+        metrics_start_at = (cutoff_row["value"] if cutoff_row else "") or ""
+
+        def count_finished(prefix):
+            return conn.execute(
+                "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ? AND finished_at >= ?",
+                (f"{prefix}%", metrics_start_at)
+            ).fetchone()["c"]
+
         daily_count = count_finished(today_str)
         monthly_count = count_finished(month_str)
         yearly_count = count_finished(year_str)
 
         # Ranking de técnicos no mês
         tech_ranking = [dict(r) for r in conn.execute("""
-            SELECT COALESCE(NULLIF(tech_name, ''), 'Não Informado') as tech,
+            SELECT COALESCE(NULLIF(finisher_tech, ''), NULLIF(tech_name, ''), 'Não Informado') as tech,
                    COUNT(*) as total
             FROM cards
-            WHERE finished_at LIKE ?
+            WHERE finished_at LIKE ? AND finished_at >= ?
             GROUP BY tech
             ORDER BY total DESC
-        """, (f"{month_str}%",)).fetchall()]
+        """, (f"{month_str}%", metrics_start_at)).fetchall()]
 
         finished_cards = conn.execute("""
             SELECT created_at, finished_at FROM cards
-            WHERE finished_at IS NOT NULL AND finished_at != ''
-        """).fetchall()
+            WHERE finished_at IS NOT NULL AND finished_at != '' AND finished_at >= ?
+        """, (metrics_start_at,)).fetchall()
 
         recent_history = [dict(r) for r in conn.execute(
             "SELECT * FROM card_history ORDER BY id DESC LIMIT 100"

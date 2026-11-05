@@ -109,6 +109,12 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
             data["os_number"] = format_external_os_number(m.group(1).strip())
             break
 
+    if not data["os_number"] and pdf_path:
+        fname_no_ext = os.path.splitext(os.path.basename(pdf_path))[0]
+        m_fn = re.search(r"(?:O\.?S\.?|ORDEM)?[_\-\s]*(\d{4,14})", fname_no_ext, re.IGNORECASE)
+        if m_fn:
+            data["os_number"] = format_external_os_number(m_fn.group(1).strip())
+
     # 2. Cliente (Fantasia prioritário)
     fantasia_patterns = [
         r"Fantasia\s*:\s*([^\n\r]+)",
@@ -141,27 +147,17 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
                     data["client_name"] = cand.upper()
                     break
 
-    # 3. Data de Abertura (DD/MM/YYYY)
+    # 3. Data de Abertura (DD/MM/YYYY) — exibida na planilha, mantendo route_date como a data atual de entrada na rota
     date_m = re.search(r"Data\s+(?:de\s+)?abertura\s*:\s*(\d{2}/\d{2}/\d{4})", text, re.IGNORECASE)
+    if not date_m:
+        date_m = re.search(r"\b(\d{2}/\d{2}/\d{4})\b", text)
     if date_m:
         data["open_date"] = date_m.group(1)
-        try:
-            d_obj = datetime.strptime(data["open_date"], "%d/%m/%Y")
-            data["route_date"] = d_obj.strftime("%Y-%m-%d")
-        except Exception:
-            pass
 
-    # 4. Horário
+    # 4. Horário de abertura da O.S. (mantendo route_shift pelo horário atual do PC: < 11h manhã, >= 11h tarde)
     time_m = re.search(r"\b(\d{2}:\d{2})(?::\d{2})?\b", text)
     if time_m:
         data["open_time"] = time_m.group(1)
-        # Se extrair horário e for após 11:00, ajusta turno para tarde
-        try:
-            h = int(data["open_time"].split(":")[0])
-            if h >= 11:
-                data["route_shift"] = "tarde"
-        except Exception:
-            pass
 
     # 5. Modelo de Equipamento
     model_patterns = [
@@ -335,6 +331,35 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
     pdf_source = data.get("pdf_source_path") or ""
 
     with connect() as conn:
+        # Se veio de PDF e já existe o mesmo número de O.S. pendente na mesma data de rota, atualiza em vez de duplicar
+        if pdf_source and os_num:
+            existing = conn.execute("""
+                SELECT id FROM external_orders
+                WHERE os_number = ? AND route_date = ? AND status IN ('pending_route', 'pending_director')
+                ORDER BY id DESC LIMIT 1
+            """, (os_num, route_date)).fetchone()
+            if existing:
+                oid = existing["id"]
+                conn.execute("""
+                    UPDATE external_orders
+                    SET client_name = COALESCE(NULLIF(?, ''), client_name),
+                        open_date = COALESCE(NULLIF(?, ''), open_date),
+                        open_time = COALESCE(NULLIF(?, ''), open_time),
+                        sector = COALESCE(NULLIF(?, ''), sector),
+                        equipment_model = COALESCE(NULLIF(?, ''), equipment_model),
+                        reported_defect = COALESCE(NULLIF(?, ''), reported_defect),
+                        route_shift = ?,
+                        pdf_source_path = ?,
+                        pdf_imported_at = ?,
+                        updated_at = ?
+                    WHERE id = ?
+                """, (
+                    client, open_date, open_time, sector, model, defect,
+                    route_shift, pdf_source, now_iso, now_iso, oid
+                ))
+                row = conn.execute("SELECT * FROM external_orders WHERE id = ?", (oid,)).fetchone()
+                return dict(row) if row else {}
+
         cur = conn.execute("""
             INSERT INTO external_orders (
                 os_number, client_name, open_date, open_time, sector,

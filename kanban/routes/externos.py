@@ -33,6 +33,11 @@ bp = Blueprint("externos", __name__, url_prefix="/api/externos")
 @bp.route("/orders", methods=["GET"])
 def get_orders():
     """Lista chamados externos com filtros opcionais de data, turno (Manhã/Tarde), status, técnico ou busca."""
+    try:
+        from ..services.pdf_watcher import scan_pending_input_folders
+        scan_pending_input_folders()
+    except Exception:
+        pass
     date_filter = request.args.get("date")
     shift_filter = request.args.get("shift")
     status_filter = request.args.get("status")
@@ -123,6 +128,11 @@ def reschedule_orders():
 @bp.route("/routes/summary", methods=["GET"])
 def route_summary():
     """Retorna o quadro de rota da data e turno selecionados (agrupado por técnico e chamados sem técnico)."""
+    try:
+        from ..services.pdf_watcher import scan_pending_input_folders
+        scan_pending_input_folders()
+    except Exception:
+        pass
     date_str = request.args.get("date") or datetime.now().strftime("%Y-%m-%d")
     shift = request.args.get("shift") or get_current_shift()
     summary = get_grouped_routes(date_str, shift=shift)

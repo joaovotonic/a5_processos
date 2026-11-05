@@ -401,13 +401,13 @@ class TestA5KanbanComplete(unittest.TestCase):
         st_mob = get_os_status_for_mobile(test_os)
         self.assertEqual(st_mob["state"], "NAO_AUTORIZADO")
 
-        # 7. Verifica no Board que a coluna NÃO AUTORIZADOS agora possui 1 cartão
+        # 7. Verifica no Board que a coluna NÃO AUTORIZADOS possui o cartão de teste
         r_board = self.client.get("/api/board")
         self.assertEqual(r_board.status_code, 200)
         board_data = r_board.get_json()
         target_col = next((l for l in board_data["lists"] if l["role"] == "nao_autorizados" or "NÃO AUTORIZAD" in l["title"]), None)
         self.assertIsNotNone(target_col)
-        self.assertEqual(len(target_col["cards"]), 1)
+        self.assertTrue(any(c["os_number"] == test_os for c in target_col["cards"]))
 
         # 8. Técnico fecha a balança (vai para FINALIZADAS)
         r_fechar = self.client.post("/api/esteira/fechar-balanca", json={"os_number": test_os, "tech_name": "Guilherme"})
@@ -421,11 +421,116 @@ class TestA5KanbanComplete(unittest.TestCase):
             self.assertEqual(card_closed["pipeline_phase"], "PRONTAS")
             self.assertIsNotNone(card_closed["finished_at"])
 
-        # 9. No Board, a coluna NÃO AUTORIZADOS agora possui 0 cartões (não mostrará na TV)
+        # 9. No Board, a coluna NÃO AUTORIZADOS não possui mais o cartão de teste
         r_board2 = self.client.get("/api/board")
         board_data2 = r_board2.get_json()
         target_col2 = next((l for l in board_data2["lists"] if l["role"] == "nao_autorizados" or "NÃO AUTORIZAD" in l["title"]), None)
-        self.assertEqual(len(target_col2["cards"]), 0)
+        self.assertFalse(any(c["os_number"] == test_os for c in target_col2["cards"]))
+
+    def test_10_reset_metrics_after_manual_kanban_organization(self):
+        """
+        Testa o fluxo em que a Priscila organiza o Kanban manualmente (arrastando cartões),
+        aciona o marco inicial (/api/diretoria/reset-metrics / .bat) para zerar os relatórios
+        do Sr. Jacson, e em seguida inicia a contabilização oficial.
+        """
+        import time
+        from kanban.services.esteira import create_manual_os, claim_orcamento, concluir_orcamento, claim_manutencao, finalizar_balanca
+
+        os_org_fin = "880001"
+        os_org_orc = "880002"
+        os_new_live = "880003"
+        with connect() as conn:
+            conn.execute("DELETE FROM card_history WHERE os_number IN (?, ?, ?)", (os_org_fin, os_org_orc, os_new_live))
+            conn.execute("DELETE FROM cards WHERE os_number IN (?, ?, ?)", (os_org_fin, os_org_orc, os_new_live))
+
+        # 1. Priscila organiza cartões antigos manualmente (inclusive movendo para FINALIZADAS)
+        create_manual_os({"os_number": os_org_fin, "client_name": "CLIENTE ANTIGO FINALIZADO", "equipment_model": "Prix 4"})
+        create_manual_os({"os_number": os_org_orc, "client_name": "CLIENTE EM ORCAMENTO", "equipment_model": "Prix 5"})
+
+        c1_id = self.client.get(f"/api/cards/{os_org_fin}").get_json()["id"]
+        c2_id = self.client.get(f"/api/cards/{os_org_orc}").get_json()["id"]
+
+        with connect() as conn:
+            fin_list_id = conn.execute("SELECT id FROM lists WHERE role = 'finalizada' OR title = 'FINALIZADAS' LIMIT 1").fetchone()["id"]
+            orc_list_id = conn.execute("SELECT id FROM lists WHERE role = 'orcamento' OR title = 'ORÇAMENTOS' LIMIT 1").fetchone()["id"]
+
+        self.client.post(f"/api/cards/{c1_id}/move", json={"target_list_id": fin_list_id, "new_position": 0})
+        self.client.post(f"/api/cards/{c2_id}/move", json={"target_list_id": orc_list_id, "new_position": 0})
+
+        # 2. Priscila aperta o .bat (/api/diretoria/reset-metrics) para começar a valer
+        r_reset = self.client.post("/api/diretoria/reset-metrics", json={"actor": "Priscila (Recepção)"})
+        self.assertEqual(r_reset.status_code, 200)
+        res_reset = r_reset.get_json()
+        self.assertTrue(res_reset["success"])
+
+        # 3. Imediatamente após o reset, o relatório do Sr. Jacson deve estar zerado (0 prontas, 0 orçamentos feitos)
+        r_rep0 = self.client.get("/api/diretoria/report?period=today")
+        self.assertEqual(r_rep0.status_code, 200)
+        rep0 = r_rep0.get_json()
+        self.assertEqual(rep0["kpis"]["total_prontas"], 0)
+        self.assertEqual(rep0["kpis"]["total_orcamentos_feitos"], 0)
+
+        # 4. E os cartões continuam exatamente nas colunas onde a Priscila deixou
+        c1_check = self.client.get(f"/api/cards/{os_org_fin}").get_json()
+        c2_check = self.client.get(f"/api/cards/{os_org_orc}").get_json()
+        self.assertEqual(c1_check["list_id"], fin_list_id)
+        self.assertEqual(c2_check["list_id"], orc_list_id)
+
+        # 5. Agora uma O.S. real é orçada e finalizada DEPOIS do marco inicial
+        time.sleep(0.02)
+        create_manual_os({"os_number": os_new_live, "client_name": "CLIENTE NOVO VALENDO", "equipment_model": "Prix 4 Uno"})
+        claim_orcamento(os_new_live, "Guilherme")
+        concluir_orcamento(os_new_live)
+        claim_manutencao(os_new_live, "Guilherme")
+        finalizar_balanca(os_new_live)
+
+        # 6. O relatório do Sr. Jacson agora contabiliza exatamente 1 orçamento e 1 balança pronta para Guilherme
+        r_rep1 = self.client.get("/api/diretoria/report?period=today")
+        self.assertEqual(r_rep1.status_code, 200)
+        rep1 = r_rep1.get_json()
+        self.assertEqual(rep1["kpis"]["total_prontas"], 1)
+        self.assertEqual(rep1["kpis"]["total_orcamentos_feitos"], 1)
+        guilherme_stats = next((t for t in rep1["technicians_performance"] if "GUILHERME" in t["name"].upper()), None)
+        self.assertIsNotNone(guilherme_stats)
+        self.assertEqual(guilherme_stats["prontas_count"], 1)
+        self.assertEqual(guilherme_stats["orcamentos_count"], 1)
+
+        # Limpa os cartões de teste e restaura o marco inicial limpo
+        with connect() as conn:
+            conn.execute("DELETE FROM card_history WHERE os_number IN (?, ?, ?)", (os_org_fin, os_org_orc, os_new_live))
+            conn.execute("DELETE FROM cards WHERE os_number IN (?, ?, ?)", (os_org_fin, os_org_orc, os_new_live))
+            conn.commit()
+        self.client.post("/api/diretoria/reset-metrics", json={"actor": "Priscila (Recepção)"})
+
+    def test_11_github_cloud_backup_and_1640_notification(self):
+        """Testa configuração de backup em nuvem no GitHub (joaovotonic/a5_processos) e banner fixo das 16h40."""
+        r_status = self.client.get("/api/backup/github-status")
+        self.assertEqual(r_status.status_code, 200)
+        st = r_status.get_json()
+        self.assertEqual(st["github_user"], "joaovotonic")
+        self.assertEqual(st["github_email"], "joaovotoni1@gmail.com")
+        self.assertEqual(st["github_repo"], "joaovotonic/a5_processos")
+
+        r_up = self.client.post("/api/backup/github-cloud", json={"dry_run": True})
+        self.assertEqual(r_up.status_code, 200)
+        up = r_up.get_json()
+        self.assertTrue(up["success"])
+        self.assertEqual(up["github_repo"], "joaovotonic/a5_processos")
+
+        # Verifica se o banner fixo está presente no HTML do Admin
+        r_admin = self.client.get("/admin")
+        html = r_admin.get_data(as_text=True)
+        self.assertIn("cloudBackupFixedBanner", html)
+        self.assertIn("triggerGithubCloudBackup", html)
+        self.assertIn("joaovotonic/a5_processos", html)
+
+    @classmethod
+    def tearDownClass(cls):
+        with connect() as conn:
+            conn.execute("DELETE FROM card_history WHERE os_number IN ('990001', '770001', '880001', '880002', '880003')")
+            conn.execute("DELETE FROM cards WHERE os_number IN ('990001', '770001', '880001', '880002', '880003')")
+            conn.execute("DELETE FROM pending_entries WHERE client_name LIKE '%PADARIA CENTRAL%'")
+            conn.commit()
 
 
 if __name__ == "__main__":

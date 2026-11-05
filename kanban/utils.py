@@ -23,8 +23,14 @@ def format_os_number(os_number: str) -> str:
       '997452'     -> '997452'
     """
     raw = str(os_number or "").strip()
-    if not raw or raw.startswith("TEO-"):
+    if not raw or raw.startswith("TEO-") or raw.upper().startswith("S/N"):
         return raw
+    m_suf = re.match(r"^0*(\d+)(-[A-Za-z0-9]+)$", raw)
+    if m_suf:
+        base = m_suf.group(1).lstrip("0") or "0"
+        if len(base) < 6:
+            base = base.zfill(6)
+        return f"{base}{m_suf.group(2).upper()}"
     digits = re.sub(r"\D", "", raw)
     if not digits:
         return raw

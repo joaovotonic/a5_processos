@@ -547,9 +547,11 @@ def finalizar_balanca(os_number: str) -> Dict[str, Any]:
               f"Manutenção Concluída ({dur_man_str}). Tempo Líquido: {dur_liq_str}. Movida para FINALIZADAS.", now_iso))
 
         today_prefix = now_dt.strftime("%Y-%m-%d")
+        cutoff_row = conn.execute("SELECT value FROM settings WHERE key = 'metrics_start_at'").fetchone()
+        metrics_start_at = (cutoff_row["value"] if cutoff_row else "") or ""
         finished_today = conn.execute(
-            "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ?",
-            (f"{today_prefix}%",)
+            "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ? AND finished_at >= ?",
+            (f"{today_prefix}%", metrics_start_at)
         ).fetchone()["c"]
 
         # Anuncia na TV da oficina
@@ -628,9 +630,11 @@ def fechar_balanca(os_number: str, tech_name: str = "") -> Dict[str, Any]:
         """, (card_id, clean_os, card["list_title"], dest_title, actor_tech, now_iso))
 
         today_prefix = now_dt.strftime("%Y-%m-%d")
+        cutoff_row = conn.execute("SELECT value FROM settings WHERE key = 'metrics_start_at'").fetchone()
+        metrics_start_at = (cutoff_row["value"] if cutoff_row else "") or ""
         finished_today = conn.execute(
-            "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ?",
-            (f"{today_prefix}%",)
+            "SELECT COUNT(*) as c FROM cards WHERE finished_at LIKE ? AND finished_at >= ?",
+            (f"{today_prefix}%", metrics_start_at)
         ).fetchone()["c"]
 
         # Anuncia na TV da oficina

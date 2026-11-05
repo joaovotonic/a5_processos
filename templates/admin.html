@@ -195,6 +195,13 @@
                 <span>Diretoria</span>
             </a>
 
+            <button type="button" id="headerCloudBackupBtn" onclick="triggerGithubCloudBackup()"
+                class="bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/35 text-indigo-600 dark:text-indigo-300 px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                title="Subir Banco de Dados para a Nuvem (GitHub: joaovotonic/a5_processos)">
+                <i data-lucide="cloud-upload" class="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400"></i>
+                <span id="headerCloudBackupLabel">☁️ Backup Nuvem</span>
+            </button>
+
             <button onclick="toggleTheme()" id="themeBtn" class="bg-slate-100 hover:bg-slate-200 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-200 p-1.5 rounded-lg text-xs transition" title="Alternar Tema">
                 <i data-lucide="moon" class="w-3.5 h-3.5"></i>
             </button>
@@ -216,6 +223,35 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 Finalizadas Hoje: <span id="statFinishedToday" class="font-mono font-bold">0</span>
             </span>
+        </div>
+    </div>
+
+    <!-- NOTIFICAÇÃO FIXA DE BACKUP NA NUVEM (SEGUNDA A SEXTA ÀS 16h40) -->
+    <div id="cloudBackupFixedBanner" class="hidden px-5 py-3 bg-gradient-to-r from-indigo-950 via-blue-950 to-slate-950 border-b-2 border-indigo-400 text-white shadow-xl items-center justify-between gap-4 flex-wrap z-40">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/25 border border-indigo-400/50 flex items-center justify-center text-xl shrink-0 animate-bounce">
+                ☁️
+            </div>
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                        🔔 LEMBRETE FIXO • SEG A SEX ÀS 16h40
+                    </span>
+                    <span class="text-xs sm:text-sm font-black uppercase tracking-wide text-white">
+                        Hora de subir o Banco de Dados para a Nuvem (GitHub)!
+                    </span>
+                </div>
+                <p class="text-[11px] text-indigo-200 mt-0.5">
+                    Clique no botão ao lado para salvar todas as O.S. de hoje na nuvem (<strong>joaovotonic/a5_processos</strong> • <strong>joaovotoni1@gmail.com</strong>).
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2.5 shrink-0">
+            <button type="button" id="btnFixedCloudBackup" onclick="triggerGithubCloudBackup()"
+                class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs sm:text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/30">
+                <i data-lucide="cloud-upload" class="w-4 h-4"></i>
+                <span id="btnFixedCloudBackupText">☁️ Subir Banco de Dados p/ Nuvem (GitHub)</span>
+            </button>
         </div>
     </div>
 
@@ -1327,6 +1363,7 @@
         }
 
         function renderBoard() {
+            checkCloudBackupSchedule();
             const container = document.getElementById("boardContainer");
             container.innerHTML = "";
 
@@ -1366,6 +1403,34 @@
                 }
                 const canDeleteEmpty = list.cards.length === 0;
 
+                const isLargeList = list.cards.length > 80;
+                const showAll = Boolean(window._showAllFinalizadas);
+                let cardsToRender = list.cards;
+                let loadMoreBtnHTML = "";
+
+                if (isLargeList && !showAll) {
+                    // Ordena os mais recentes primeiro para exibir as últimas 60 O.S.
+                    cardsToRender = [...list.cards].sort((a, b) => {
+                        const da = a.finished_at || a.updated_at || a.created_at || "";
+                        const db = b.finished_at || b.updated_at || b.created_at || "";
+                        return db.localeCompare(da);
+                    }).slice(0, 60);
+                    const hiddenCount = list.cards.length - cardsToRender.length;
+                    loadMoreBtnHTML = `
+                        <button type="button" onclick="window._showAllFinalizadas = true; renderBoard();"
+                            class="w-full py-2 px-3 rounded-lg text-[11px] font-bold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 transition flex items-center justify-center gap-1.5">
+                            <span>📂 Mostrar todas as ${list.cards.length} O.S. (+${hiddenCount} anteriores)</span>
+                        </button>
+                    `;
+                } else if (isLargeList && showAll) {
+                    loadMoreBtnHTML = `
+                        <button type="button" onclick="window._showAllFinalizadas = false; renderBoard();"
+                            class="w-full py-1.5 px-3 rounded-lg text-[11px] font-bold bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 transition flex items-center justify-center gap-1.5 mb-2">
+                            <span>🔼 Mostrar apenas as 60 mais recentes</span>
+                        </button>
+                    `;
+                }
+
                 col.innerHTML = `
                     <div class="px-3.5 py-2.5 font-bold flex items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/40 cursor-grab list-handle ${headerAccent}">
                         <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -1386,7 +1451,9 @@
                         </div>
                     </div>
                     <div class="card-list flex-1 overflow-y-auto p-2 space-y-2 min-h-[120px]" data-list-id="${list.id}">
-                        ${list.cards.map(card => renderCardHTML(card)).join("")}
+                        ${isLargeList && showAll ? loadMoreBtnHTML : ""}
+                        ${cardsToRender.map(card => renderCardHTML(card)).join("")}
+                        ${isLargeList && !showAll ? loadMoreBtnHTML : ""}
                     </div>
                     <div class="p-2 border-t border-slate-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/20">
                         <button type="button" onclick="openNewOsModal(null, ${list.id})"
@@ -1415,9 +1482,11 @@
             updateReopenRequestsBanner();
             refreshIcons();
 
-            // AutoAnimate suave em todas as listas de cartões
+            // AutoAnimate suave em listas com até 150 cartões
             if (window.autoAnimate) {
-                document.querySelectorAll(".card-list").forEach(el => autoAnimate(el));
+                document.querySelectorAll(".card-list").forEach(el => {
+                    if (el.children.length <= 150) autoAnimate(el);
+                });
             }
         }
 
@@ -1491,13 +1560,13 @@
                                 </span>
                                 <span>🔬 ORÇAMENTANDO</span>
                             </span>
-                            <span class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500/25 text-amber-200">Diagnóstico</span>
+                            <span class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black">Diagnóstico</span>
                         </div>
                     `;
                 }
             }
 
-            const searchStr = `${card.os_number} ${card.client_name} ${card.equipment_type} ${card.equipment_model || ''} ${card.tech_name} ${card.inmetro_seal} ${(card.labels||[]).map(x=>x.name).join(' ')}`;
+            const searchStr = `${card.os_number} ${card.client_name} ${card.equipment_type} ${card.equipment_model || ''} ${card.tech_name} ${card.inmetro_seal} ${card.reported_defect || ''} ${card.admin_notes || ''} ${(card.labels||[]).map(x=>x.name).join(' ')}`;
 
             let esteiraActionBtn = "";
             if (currentPhase === "ORCAMENTOS_FEITOS" || listTitleUpper.includes("FEITAS") || listTitleUpper.includes("FEITOS")) {
@@ -1559,6 +1628,11 @@
                         <span>${esc(card.equipment_type)}</span>
                         ${card.equipment_model ? `<span class="opacity-60">•</span><span>${esc(card.equipment_model)}</span>` : ''}
                     </p>
+                    ${(card.admin_notes || card.reported_defect) ? `
+                        <p class="mt-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400/90 bg-amber-500/10 border border-amber-500/20 rounded px-1.5 py-0.5 truncate" title="${esc(card.admin_notes || card.reported_defect)}">
+                            ${esc(card.admin_notes || card.reported_defect)}
+                        </p>
+                    ` : ''}
 
                     ${techPhaseBanner}
 
@@ -1718,16 +1792,33 @@
             }
 
             let matches = [];
+            if (boardData && Array.isArray(boardData.lists)) {
+                boardData.lists.forEach(list => {
+                    (list.cards || []).forEach(card => {
+                        const hay = `${card.os_number || ''} ${card.client_name || ''} ${card.equipment_type || ''} ${card.equipment_model || ''} ${card.tech_name || ''} ${card.inmetro_seal || ''} ${card.reported_defect || ''} ${card.admin_notes || ''} ${(card.labels || []).map(x => x.name).join(' ')}`.toLowerCase();
+                        if (hay.includes(q)) {
+                            matches.push({
+                                osNumber: card.os_number,
+                                client: card.client_name || "",
+                                col: list.title || ""
+                            });
+                        }
+                    });
+                });
+            }
+
             allCards.forEach(c => {
                 const text = (c.dataset.search || "").toLowerCase();
                 if (text.includes(q)) {
                     c.classList.add("search-match");
                     c.classList.remove("search-dimmed");
-                    matches.push({
-                        osNumber: c.dataset.osNumber,
-                        client: c.querySelector("h4")?.innerText || "",
-                        col: c.closest(".kanban-col")?.querySelector("span")?.innerText || ""
-                    });
+                    if (!matches.length) {
+                        matches.push({
+                            osNumber: c.dataset.osNumber,
+                            client: c.querySelector("h4")?.innerText || "",
+                            col: c.closest(".kanban-col")?.querySelector("span")?.innerText || ""
+                        });
+                    }
                 } else {
                     c.classList.remove("search-match");
                     c.classList.add("search-dimmed");
@@ -1737,7 +1828,7 @@
             if (dropdown) {
                 if (matches.length > 0) {
                     dropdown.classList.remove("hidden");
-                    dropdown.innerHTML = matches.slice(0, 8).map(m => `
+                    dropdown.innerHTML = matches.slice(0, 12).map(m => `
                         <div onclick="selectSearchSuggestion('${esc(m.osNumber)}')" class="px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 cursor-pointer flex items-center justify-between text-xs">
                             <div class="min-w-0">
                                 <span class="font-mono font-bold text-sky-500">OS ${esc(m.osNumber)}</span>
@@ -3774,6 +3865,97 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                 container.innerHTML = `<div class="text-center py-6 text-rose-500 text-xs">Erro ao carregar imagens: ${err.message}</div>`;
             }
         }
+
+        // =========================================================================
+        // NOTIFICAÇÃO FIXA DE BACKUP NA NUVEM (SEGUNDA A SEXTA ÀS 16h40 -> GITHUB)
+        // =========================================================================
+        let _cloudBackupChimePlayedDate = "";
+        let _isUploadingCloudBackup = false;
+
+        function getLocalDateYYYYMMDD(dt) {
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, "0");
+            const d = String(dt.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
+        function checkCloudBackupSchedule() {
+            const banner = document.getElementById("cloudBackupFixedBanner");
+            const headerLabel = document.getElementById("headerCloudBackupLabel");
+            if (!banner) return;
+
+            const now = new Date();
+            const day = now.getDay(); // 1 = Segunda ... 5 = Sexta
+            const isWeekday = day >= 1 && day <= 5;
+            const after1640 = (now.getHours() > 16) || (now.getHours() === 16 && now.getMinutes() >= 40);
+            const todayStr = getLocalDateYYYYMMDD(now);
+
+            const lastCloudDate = (boardData && boardData.settings && boardData.settings.cloud_backup_last_date) || "";
+            const doneToday = (lastCloudDate === todayStr);
+
+            if (headerLabel && !_isUploadingCloudBackup) {
+                headerLabel.textContent = doneToday ? "✓ Nuvem OK" : "☁️ Backup Nuvem";
+            }
+
+            if (isWeekday && after1640 && !doneToday) {
+                banner.classList.remove("hidden");
+                banner.classList.add("flex");
+                if (_cloudBackupChimePlayedDate !== todayStr) {
+                    _cloudBackupChimePlayedDate = todayStr;
+                    try {
+                        if (typeof playDoorbellChime === "function") playDoorbellChime();
+                    } catch (e) {}
+                }
+            } else {
+                banner.classList.add("hidden");
+                banner.classList.remove("flex");
+            }
+        }
+
+        async function triggerGithubCloudBackup() {
+            if (_isUploadingCloudBackup) return;
+            _isUploadingCloudBackup = true;
+
+            const fixedBtn = document.getElementById("btnFixedCloudBackup");
+            const fixedText = document.getElementById("btnFixedCloudBackupText");
+            const headerBtn = document.getElementById("headerCloudBackupBtn");
+            const headerLabel = document.getElementById("headerCloudBackupLabel");
+
+            if (fixedBtn) fixedBtn.disabled = true;
+            if (headerBtn) headerBtn.disabled = true;
+            if (fixedText) fixedText.textContent = "⏳ Subindo Banco p/ GitHub...";
+            if (headerLabel) headerLabel.textContent = "⏳ Subindo...";
+
+            try {
+                const res = await fetch("/api/backup/github-cloud", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    if (!boardData.settings) boardData.settings = {};
+                    boardData.settings.cloud_backup_last_date = data.cloud_backup_last_date;
+                    boardData.settings.cloud_backup_last_at = data.cloud_backup_last_at;
+                    showToast(data.message || "✅ Banco de dados salvo na nuvem GitHub com sucesso!", "success");
+                    checkCloudBackupSchedule();
+                } else {
+                    const errMsg = data.error || "Falha ao enviar backup para o GitHub.";
+                    showToast(errMsg, "error");
+                    alert("⚠️ Atenção ao subir para o GitHub:\n\n" + errMsg);
+                }
+            } catch (err) {
+                showToast("Erro de rede ao tentar enviar backup para a nuvem.", "error");
+            } finally {
+                _isUploadingCloudBackup = false;
+                if (fixedBtn) fixedBtn.disabled = false;
+                if (headerBtn) headerBtn.disabled = false;
+                if (fixedText) fixedText.textContent = "☁️ Subir Banco de Dados p/ Nuvem (GitHub)";
+                checkCloudBackupSchedule();
+            }
+        }
+
+        setInterval(checkCloudBackupSchedule, 15000);
     </script>
 </body>
 </html>

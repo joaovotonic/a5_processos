@@ -388,42 +388,103 @@ def move_card(card_id, target_list_id, new_position, actor, ordered_card_ids=Non
         evaluator_tech = card_row["evaluator_tech"] or ""
         finisher_tech = card_row["finisher_tech"] or ""
         quote_started_at = card_row["quote_started_at"]
+        quote_finished_at = card_row["quote_finished_at"]
         quote_status = card_row["quote_status"] or "pending_claim"
         finished_at = card_row["finished_at"]
+        pipeline_phase = card_row["pipeline_phase"] or "ORCAMENTOS_A_FAZER"
+        inicio_orcamento = card_row["inicio_orcamento"]
+        fim_orcamento = card_row["fim_orcamento"]
+        inicio_manutencao = card_row["inicio_manutencao"]
+        fim_manutencao = card_row["fim_manutencao"]
+        tempo_orc = int(card_row["tempo_orcamento_segundos"] or 0)
+        tempo_man = int(card_row["tempo_manutencao_segundos"] or 0)
 
         if list_changed:
             upper_new = (new_list["title"] or "").strip().upper()
+            was_tech_col = bool(old_list and rules.is_tech_list(old_list))
+
             if rules.is_finished_list(new_list) or rules.is_ready_list(new_list):
-                finished_at = card_row["finished_at"] or now_iso
+                finished_at = now_iso
+                fim_manutencao = card_row["fim_manutencao"] or now_iso
                 quote_status = "finished"
+                pipeline_phase = "PRONTAS"
+                if was_tech_col:
+                    finisher_tech = old_list["title"]
+                    tech_name = old_list["title"]
+                elif not finisher_tech and tech_name:
+                    finisher_tech = tech_name
+                if inicio_manutencao and tempo_man == 0:
+                    try:
+                        tempo_man = max(1, int((datetime.fromisoformat(now_iso) - datetime.fromisoformat(inicio_manutencao)).total_seconds()))
+                    except Exception:
+                        pass
             elif rules.is_approved_list(new_list):
                 finished_at = None
                 quote_status = "approved"
+                pipeline_phase = "APROVADOS"
             elif rules.is_orcamento_entry_list(new_list):
                 finished_at = None
                 quote_status = "pending_claim"
+                pipeline_phase = "ORCAMENTOS_A_FAZER"
             elif rules.is_tech_list(new_list):
                 finished_at = None
-                if quote_status in ("done", "approved", "finished") or (old_list and rules.is_approved_list(old_list)):
+                if (
+                    quote_status in ("done", "approved", "finished")
+                    or pipeline_phase in ("APROVADOS", "EM_MANUTENCAO", "PRONTAS")
+                    or (old_list and rules.is_approved_list(old_list))
+                ):
                     quote_status = "approved"
+                    pipeline_phase = "EM_MANUTENCAO"
                     finisher_tech = new_list["title"]
+                    if not inicio_manutencao:
+                        inicio_manutencao = now_iso
                 else:
                     quote_status = "in_progress"
+                    pipeline_phase = "EM_ORCAMENTO"
                     if not evaluator_tech:
                         evaluator_tech = new_list["title"]
                     if not quote_started_at:
                         quote_started_at = now_iso
-            elif "ANALISE" in upper_new or "ANÁLISE" in upper_new or "ENVIADO" in upper_new:
+                    if not inicio_orcamento:
+                        inicio_orcamento = now_iso
+            elif "FEITO" in upper_new or "ANALISE" in upper_new or "ANÁLISE" in upper_new:
                 finished_at = None
                 quote_status = "done"
+                pipeline_phase = "ORCAMENTOS_FEITOS"
+                fim_orcamento = card_row["fim_orcamento"] or now_iso
+                quote_finished_at = card_row["quote_finished_at"] or now_iso
+                if was_tech_col:
+                    if not evaluator_tech:
+                        evaluator_tech = old_list["title"]
+                    tech_name = old_list["title"]
+                if inicio_orcamento and tempo_orc == 0:
+                    try:
+                        tempo_orc = max(1, int((datetime.fromisoformat(now_iso) - datetime.fromisoformat(inicio_orcamento)).total_seconds()))
+                    except Exception:
+                        pass
+            elif "ENVIADO" in upper_new:
+                finished_at = None
+                quote_status = "done"
+                pipeline_phase = "ORCAMENTOS_ENVIADOS"
+                fim_orcamento = card_row["fim_orcamento"] or now_iso
+                quote_finished_at = card_row["quote_finished_at"] or now_iso
+            elif "AUTORIZADO" in upper_new or "CANCELAD" in upper_new:
+                finished_at = None
+                quote_status = "cancelled"
+                pipeline_phase = "NAO_AUTORIZADO"
             else:
                 finished_at = None
+
+        tempo_liq = tempo_orc + tempo_man
 
         conn.execute("""
             UPDATE cards
             SET list_id = ?, position = ?, tech_name = ?,
                 evaluator_tech = ?, finisher_tech = ?,
-                quote_started_at = ?, quote_status = ?,
+                quote_started_at = ?, quote_finished_at = ?, quote_status = ?,
+                pipeline_phase = ?, inicio_orcamento = ?, fim_orcamento = ?,
+                inicio_manutencao = ?, fim_manutencao = ?,
+                tempo_orcamento_segundos = ?, tempo_manutencao_segundos = ?, tempo_liquido_segundos = ?,
                 updated_at = ?,
                 moved_at = CASE WHEN ? THEN ? ELSE moved_at END,
                 finished_at = ?
@@ -431,7 +492,10 @@ def move_card(card_id, target_list_id, new_position, actor, ordered_card_ids=Non
         """, (
             target_list_id, new_position, tech_name,
             evaluator_tech, finisher_tech,
-            quote_started_at, quote_status,
+            quote_started_at, quote_finished_at, quote_status,
+            pipeline_phase, inicio_orcamento, fim_orcamento,
+            inicio_manutencao, fim_manutencao,
+            tempo_orc, tempo_man, tempo_liq,
             now_iso, 1 if list_changed else 0, now_iso, finished_at, card_id
         ))
 
@@ -596,14 +660,17 @@ def submit_quote_mobile(os_number, tech_name, quote_payload, label_before_files,
         quote_finished_at = now_iso if finalize_quote else card_row["quote_finished_at"]
 
         if finalize_quote:
-            # Move automaticamente para ANALISES FEITAS (se existir) para a Priscila enviar o orçamento ao cliente
+            # Move automaticamente para ORÇAMENTOS FEITOS (ou ANALISES FEITAS) para a Priscila enviar o orçamento ao cliente
             analise_list = conn.execute(
-                "SELECT id, title FROM lists WHERE UPPER(title) LIKE '%ANALISE%' OR UPPER(title) LIKE '%ANÁLISE%' ORDER BY position ASC LIMIT 1"
+                "SELECT id, title FROM lists WHERE role = 'orcamentos_feitos' OR UPPER(title) LIKE '%FEITO%' OR UPPER(title) LIKE '%ANALISE%' OR UPPER(title) LIKE '%ANÁLISE%' ORDER BY position ASC LIMIT 1"
             ).fetchone()
             if analise_list:
                 target_list_id = analise_list["id"]
                 target_title = analise_list["title"]
                 new_pos = _next_position(conn, target_list_id)
+
+        new_phase = "ORCAMENTOS_FEITOS" if finalize_quote else (card_row["pipeline_phase"] or "EM_ORCAMENTO")
+        fim_orc = now_iso if finalize_quote else card_row["fim_orcamento"]
 
         conn.execute("""
             UPDATE cards
@@ -612,6 +679,9 @@ def submit_quote_mobile(os_number, tech_name, quote_payload, label_before_files,
                 tech_name = ?,
                 evaluator_tech = ?,
                 quote_status = ?,
+                pipeline_phase = ?,
+                inicio_orcamento = COALESCE(inicio_orcamento, quote_started_at, ?),
+                fim_orcamento = ?,
                 quote_started_at = COALESCE(quote_started_at, ?),
                 quote_finished_at = ?,
                 quote_data_json = ?,
@@ -626,7 +696,7 @@ def submit_quote_mobile(os_number, tech_name, quote_payload, label_before_files,
             WHERE id = ?
         """, (
             target_list_id, new_pos, final_eval_tech, final_eval_tech,
-            new_status, now_iso, quote_finished_at,
+            new_status, new_phase, now_iso, fim_orc, now_iso, quote_finished_at,
             json.dumps(incoming_quote, ensure_ascii=False),
             json.dumps(before_photos),
             json.dumps(quote_photos),
@@ -676,6 +746,7 @@ def approve_card_quote(card_id, actor=RECEPTION_ACTOR):
         conn.execute("""
             UPDATE cards
             SET list_id = ?, position = ?, quote_status = 'approved',
+                pipeline_phase = 'APROVADOS', finished_at = NULL,
                 updated_at = ?, moved_at = ?
             WHERE id = ?
         """, (target_list_id, new_pos, now_iso, now_iso, card_id))
@@ -836,9 +907,11 @@ def send_card_quote(card_id, actor=RECEPTION_ACTOR):
         conn.execute("""
             UPDATE cards
             SET list_id = ?, position = ?, quote_status = 'done',
+                pipeline_phase = 'ORCAMENTOS_ENVIADOS',
+                fim_orcamento = COALESCE(fim_orcamento, ?),
                 labels_json = ?, updated_at = ?, moved_at = ?
             WHERE id = ?
-        """, (target_list_id, new_pos, json.dumps(labels, ensure_ascii=False), now_iso, now_iso, card_id))
+        """, (target_list_id, new_pos, now_iso, json.dumps(labels, ensure_ascii=False), now_iso, now_iso, card_id))
 
         _add_history(
             conn, card_id, card_row["os_number"], old_title, target_title,
@@ -878,9 +951,11 @@ def finalize_card_admin(card_id, actor=RECEPTION_ACTOR):
         conn.execute("""
             UPDATE cards
             SET list_id = ?, position = ?, quote_status = 'finished',
+                pipeline_phase = 'PRONTAS',
+                fim_manutencao = COALESCE(fim_manutencao, ?),
                 reopen_requested = 0, finished_at = ?, updated_at = ?, moved_at = ?
             WHERE id = ?
-        """, (target_list_id, new_pos, fin_at, now_iso, now_iso, card_id))
+        """, (target_list_id, new_pos, fin_at, fin_at, now_iso, now_iso, card_id))
 
         _add_history(
             conn, card_id, card_row["os_number"], old_title, target_title,
@@ -944,6 +1019,7 @@ def cancel_card(card_id, actor=RECEPTION_ACTOR, reason="Cancelado pela Recepçã
         conn.execute("""
             UPDATE cards
             SET list_id = ?, position = ?, quote_status = 'cancelled',
+                pipeline_phase = 'NAO_AUTORIZADO', finished_at = NULL,
                 labels_json = ?, updated_at = ?, moved_at = ?
             WHERE id = ?
         """, (target_list_id, new_pos, json.dumps(labels, ensure_ascii=False), now_iso, now_iso, card_id))
@@ -1125,6 +1201,8 @@ def finish_card_mobile(form, photo_files, label_after_files=None):
                 evaluator_tech = ?,
                 finisher_tech = ?,
                 quote_status = 'finished',
+                pipeline_phase = 'PRONTAS',
+                fim_manutencao = ?,
                 quote_data_json = ?,
                 label_after_photos_json = ?,
                 pop_calibration = ?,
@@ -1142,6 +1220,7 @@ def finish_card_mobile(form, photo_files, label_after_files=None):
             WHERE id = ?
         """, (
             fin_list["id"], new_pos, final_tech, evaluator_tech, final_tech,
+            now_iso,
             json.dumps(quote_data, ensure_ascii=False),
             json.dumps(after_photos),
             form["pop_calibration"], form["pop_cleaning"],
