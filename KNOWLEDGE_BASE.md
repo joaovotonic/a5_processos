@@ -172,6 +172,7 @@ a5_kanban/
 5. **Metrologia e Rastreabilidade IPEM:** O número do lacre físico colocado pelo técnico e o número do Selo IPEM colocado pela Priscila são registrados no sistema, com botão de cópia rápida para o Teorema e histórico permanente.
 6. **Desativação do Sistema de Prateleiras:** Por decisão operacional da diretoria (Item 36 do Backlog), o sistema de localização física em prateleiras foi temporariamente desativado das interfaces para manter o foco na rapidez e simplicidade.
 7. **Resiliência em Rede Local (Intranet):** O sistema opera em servidor local na A5. Se o link externo de internet oscilar, toda a oficina, balcão, bancadas e TV continuam operando normalmente sem interrupções.
+8. **Chamados Externos, WhatsApp e Cloudflare Tunnel:** O planejamento de ponta a ponta para captura de chamados no grupo de WhatsApp da A5, triagem na recepção com O.S. do Teorema, despacho para a diretoria e acesso remoto seguro e gratuito via Cloudflare (`a5painel.online`) para o Sr. Jacson em Fortaleza está detalhado no documento mestre `PLANEJAMENTO_INTEGRACAO.md`.
 
 ---
 
