@@ -63,6 +63,23 @@
             --text-secondary: #A1A1AA;
             --border-color: #27272A;
         }
+        /* Estilos do arrasto suave horizontal do quadro Kanban */
+        #kanbanMainView {
+            cursor: grab;
+            scroll-behavior: auto;
+        }
+        #kanbanMainView.cursor-grabbing,
+        #kanbanMainView.cursor-grabbing * {
+            cursor: grabbing !important;
+            user-select: none !important;
+        }
+        .kanban-card {
+            cursor: pointer;
+        }
+        .list-handle {
+            cursor: grab;
+        }
+
         body {
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-main);
@@ -804,7 +821,7 @@
     </div>
 
     <!-- MODAL 2: DETALHES DA O.S. (CardDetail - Foco em Fase & Defeito) -->
-    <div id="cardDetailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div id="cardDetailModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4" onclick="if(event.target === this) closeModal('cardDetailModal')">
         <div class="bg-white dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 max-h-[93vh] overflow-y-auto select-text">
             <div id="cardDetailContent"></div>
         </div>
@@ -952,6 +969,8 @@
             applyTheme(savedTheme);
             updateAdminShiftButtons();
             fetchBoard();
+            initKanbanDragToScroll();
+            initModalClickOutsideToClose();
 
             document.addEventListener("click", (ev) => {
                 const searchBox = document.getElementById("searchBoxContainer");
@@ -4076,6 +4095,111 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                 if (fixedText) fixedText.textContent = "☁️ Subir Banco de Dados p/ Nuvem (GitHub)";
                 checkCloudBackupSchedule();
             }
+        }
+
+        // =========================================================================
+        // USABILIDADE: ARRASTO HORIZONTAL DA TELA (PAN/DRAG-TO-SCROLL)
+        // =========================================================================
+        function initKanbanDragToScroll() {
+            const slider = document.getElementById("kanbanMainView");
+            if (!slider) return;
+
+            let isDown = false;
+            let startX = 0;
+            let scrollLeft = 0;
+            let hasDragged = false;
+
+            slider.addEventListener("mousedown", (e) => {
+                // Apenas botão principal (esquerdo)
+                if (e.button !== 0) return;
+
+                // Não inicia o arrasto do quadro se clicou em um card, botão, input, select, link ou alça de coluna
+                if (e.target.closest("button, input, select, textarea, a, .kanban-card, .list-handle, [data-no-drag]")) {
+                    return;
+                }
+
+                isDown = true;
+                hasDragged = false;
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+                slider.classList.add("cursor-grabbing");
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (!isDown) return;
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 1.4; // Multiplicador suave de rolagem
+                if (Math.abs(walk) > 4) {
+                    hasDragged = true;
+                    e.preventDefault(); // Evita seleção acidental de texto durante arrasto
+                }
+                slider.scrollLeft = scrollLeft - walk;
+            });
+
+            const endDrag = () => {
+                if (!isDown) return;
+                isDown = false;
+                slider.classList.remove("cursor-grabbing");
+            };
+
+            window.addEventListener("mouseup", endDrag);
+            slider.addEventListener("mouseleave", endDrag);
+
+            // Suprime clique fantasma se houve arrasto expressivo
+            slider.addEventListener("click", (e) => {
+                if (hasDragged) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hasDragged = false;
+                }
+            }, true);
+
+            // Roda do mouse: se estiver fora de colunas verticais longas, rola o quadro horizontalmente
+            slider.addEventListener("wheel", (e) => {
+                const verticalCardList = e.target.closest(".card-list");
+                if (verticalCardList) {
+                    const hasVerticalScroll = verticalCardList.scrollHeight > verticalCardList.clientHeight;
+                    if (hasVerticalScroll) return; // Permite rolagem vertical normal dentro da lista da coluna
+                }
+                if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                    slider.scrollLeft += e.deltaY;
+                }
+            }, { passive: true });
+        }
+
+        // =========================================================================
+        // USABILIDADE: FECHAR MODAL AO CLICAR FORA (BACKDROP) OU TECLAR ESC
+        // =========================================================================
+        function initModalClickOutsideToClose() {
+            const modalIds = [
+                "cardDetailModal",
+                "newOsModal",
+                "callTechModal",
+                "pendingPhotosModal",
+                "deleteAuthModal",
+                "modalNovoChamadoExterno",
+                "modalNaoAtendido",
+                "modalSavedImages",
+                "modalPreviewCard"
+            ];
+
+            modalIds.forEach(id => {
+                const modal = document.getElementById(id);
+                if (!modal) return;
+                modal.addEventListener("click", (e) => {
+                    // Se o clique foi no próprio backdrop (fora do container interno)
+                    if (e.target === modal) {
+                        closeModal(id);
+                    }
+                });
+            });
+
+            // Tecla ESC fecha qualquer modal aberto
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "Escape") {
+                    modalIds.forEach(id => closeModal(id));
+                }
+            });
         }
 
         setInterval(checkCloudBackupSchedule, 15000);

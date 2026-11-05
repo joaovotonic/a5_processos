@@ -434,7 +434,8 @@ Reduzido Descrição:
         import os
         from unittest.mock import patch
         from kanban.config import ENTRADA_PDFS_DIR, ENTRADA_EXTERNOS_DIR, ARQUIVADOS_PDFS_DIR, ARQUIVADOS_EXTERNOS_DIR
-        from kanban.services.pdf_watcher import scan_pending_input_folders
+        from kanban.services.pdf_watcher import scan_pending_input_folders, stop_pdf_watcher
+        stop_pdf_watcher()
 
         os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
         os.makedirs(ENTRADA_EXTERNOS_DIR, exist_ok=True)
