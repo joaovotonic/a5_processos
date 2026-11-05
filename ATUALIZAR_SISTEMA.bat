@@ -3,6 +3,9 @@ chcp 65001 > nul
 title Atualizando Sistema A5 Tecnologia
 cd /d "%~dp0"
 
+:: Garante que o Git esteja no PATH do Windows
+set "PATH=%PATH%;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\Program Files (x86)\Git\cmd;%LOCALAPPDATA%\Programs\Git\cmd"
+
 echo ==========================================================
 echo       ATUALIZANDO SISTEMA A5 TECNOLOGIA (PC PRISCILA)
 echo ==========================================================

@@ -88,11 +88,50 @@ def _rotate_backups():
             break
 
 
+def _resolve_git_executable() -> str:
+    """
+    Localiza o executável `git.exe` no Windows mesmo quando o servidor Python
+    foi iniciado sem o Git na variável de ambiente PATH (evitando [WinError 2]).
+    """
+    import glob
+    import shutil
+
+    found = shutil.which("git")
+    if found and os.path.isfile(found):
+        return found
+
+    candidates = [
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files\Git\bin\git.exe",
+        r"C:\Program Files\Git\mingw64\bin\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe",
+        r"C:\Program Files (x86)\Git\bin\git.exe",
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\Git\cmd\git.exe"),
+        os.path.expandvars(r"%LOCALAPPDATA%\Programs\Git\bin\git.exe"),
+        os.path.expandvars(r"%USERPROFILE%\AppData\Local\Programs\Git\cmd\git.exe"),
+    ]
+    gh_desktop = glob.glob(os.path.expandvars(r"%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe"))
+    candidates.extend(gh_desktop)
+
+    for path in candidates:
+        if path and os.path.isfile(path):
+            return path
+
+    return "git"
+
+
 def _run_git(args, timeout=45):
-    """Executa comando git na pasta raiz do projeto."""
+    """Executa comando git na pasta raiz do projeto garantindo o caminho do git.exe no Windows."""
+    git_exe = _resolve_git_executable()
+    env = os.environ.copy()
+    if os.path.isabs(git_exe):
+        git_dir = os.path.dirname(git_exe)
+        env["PATH"] = f"{git_dir}{os.pathsep}{env.get('PATH', '')}"
+
     return subprocess.run(
-        ["git"] + args,
+        [git_exe] + args,
         cwd=BASE_DIR,
+        env=env,
         capture_output=True,
         text=True,
         encoding="utf-8",

@@ -5,6 +5,9 @@ title Servidor A5 Tecnologia - Esteira & Rotas (Porta 5000)
 :: Garante que o script rode sempre na pasta raiz do projeto (mesmo chamado pelo Inicializar do Windows)
 cd /d "%~dp0"
 
+:: Garante que o Git esteja no PATH mesmo se o Windows iniciou antes de carregar variaveis de usuario
+set "PATH=%PATH%;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\Program Files (x86)\Git\cmd;%LOCALAPPDATA%\Programs\Git\cmd"
+
 echo ====================================================================
 echo   SERVIDOR A5 TECNOLOGIA - ESTEIRA DE PRODUCAO E ROTAS EXTERNAS
 echo ====================================================================
@@ -27,4 +30,3 @@ echo [AVISO] O servidor foi encerrado. Reiniciando automaticamente em 5 segundos
 echo Pressione CTRL+C se desejar fechar definitivamente.
 timeout /t 5
 goto loop
-
