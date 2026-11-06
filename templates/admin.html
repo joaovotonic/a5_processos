@@ -3170,6 +3170,14 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             }
         }
 
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove("hidden");
+                el.classList.add("flex");
+            }
+        }
+
         function closeModal(id) {
             const el = document.getElementById(id);
             if (el) {
@@ -3778,7 +3786,6 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
         function renderAdminAttendanceAndActionsCell(s, tName) {
             const isAttended = s.attendance_status === 'attended';
             const isNotAttended = s.attendance_status === 'not_attended';
-            const orderJsonSafe = JSON.stringify(s).replace(/"/g, '&quot;');
 
             let statusHtml = '';
             if (isAttended) {
@@ -3790,7 +3797,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                         <div class="flex items-center gap-1.5 text-[9px] font-bold">
                             <button type="button" onclick="setOrderAttendance(${s.id}, 'pending')" class="text-slate-500 hover:text-slate-800 hover:underline">Desfazer</button>
                             <span class="text-slate-300">•</span>
-                            <button type="button" onclick="openNaoAtendidoModal(${orderJsonSafe})" class="text-rose-600 hover:text-rose-800 hover:underline" title="Marcar como Não Atendido e informar motivo">Não Atendido</button>
+                            <button type="button" onclick="openNaoAtendidoModal(${s.id})" class="text-rose-600 hover:text-rose-800 hover:underline" title="Marcar como Não Atendido e informar motivo">Não Atendido</button>
                         </div>
                     </div>
                 `;
@@ -3811,7 +3818,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                             title="Marcar como Atendido">
                             <span>✅ Atendido</span>
                         </button>
-                        <button type="button" onclick="openNaoAtendidoModal(${orderJsonSafe})"
+                        <button type="button" onclick="openNaoAtendidoModal(${s.id})"
                             class="px-2 py-1 rounded bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-black text-[10px] transition flex items-center gap-1 shadow-xs"
                             title="Marcar como Não Atendido (abre tela para informar o motivo)">
                             <span>❌ Não Atendido</span>
@@ -3825,7 +3832,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                     <div class="space-y-1">
                         ${statusHtml}
                         <div class="flex items-center justify-center gap-1 pt-1 border-t border-slate-200">
-                            <button type="button" onclick="openNewExternalModal(${orderJsonSafe})"
+                            <button type="button" onclick="openNewExternalModal(${s.id})"
                                 class="p-1 rounded text-sky-700 hover:bg-sky-100 transition" title="Editar chamado (cliente, O.S., defeito, tarefas, etc)">
                                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                             </button>
@@ -3839,7 +3846,20 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             `;
         }
 
-        function openNaoAtendidoModal(order) {
+        function openNaoAtendidoModal(orderOrId) {
+            let order = orderOrId;
+            if (typeof orderOrId === 'number' || typeof orderOrId === 'string') {
+                const oid = parseInt(orderOrId, 10);
+                if (currentAdminExternosSummary) {
+                    const allOrders = [
+                        ...(currentAdminExternosSummary.unassigned || []),
+                        ...Object.values(currentAdminExternosSummary.technicians || {}).flat()
+                    ];
+                    order = allOrders.find(o => o.id === oid) || { id: oid };
+                } else {
+                    order = { id: oid };
+                }
+            }
             if (!order || !order.id) return;
             document.getElementById("modalNaoAtendidoOrderId").value = order.id;
             document.getElementById("modalNaoAtendidoClient").textContent = order.client_name || "Cliente";
@@ -3847,10 +3867,10 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             document.getElementById("modalNaoAtendidoTech").textContent = `Técnico responsável: ${order.technician || "-"}`;
             
             const reasonInput = document.getElementById("modalNaoAtendidoReason");
-            reasonInput.value = order.unattended_reason || "";
+            if (reasonInput) reasonInput.value = order.unattended_reason || "";
             
             openModal("modalNaoAtendido");
-            setTimeout(() => reasonInput.focus(), 150);
+            setTimeout(() => { if (reasonInput) reasonInput.focus(); }, 150);
             if (window.lucide) lucide.createIcons();
         }
 
@@ -3935,7 +3955,20 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             return `ROTA_${techClean}_${shift}_${cleanDate}.png`;
         }
 
-        function openNewExternalModal(editOrder = null) {
+        function openNewExternalModal(editOrderOrId = null) {
+            let editOrder = editOrderOrId;
+            if (typeof editOrderOrId === 'number' || typeof editOrderOrId === 'string') {
+                const oid = parseInt(editOrderOrId, 10);
+                if (currentAdminExternosSummary) {
+                    const allOrders = [
+                        ...(currentAdminExternosSummary.unassigned || []),
+                        ...Object.values(currentAdminExternosSummary.technicians || {}).flat()
+                    ];
+                    editOrder = allOrders.find(o => o.id === oid) || { id: oid };
+                } else {
+                    editOrder = { id: oid };
+                }
+            }
             const modal = document.getElementById("modalNovoChamadoExterno");
             const title = document.getElementById("modalExtTitle");
             const orderIdInput = document.getElementById("extOrderId");
