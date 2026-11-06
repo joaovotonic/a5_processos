@@ -42,16 +42,94 @@ def os_mobile_page(os_number):
 @bp.route("/chamado", methods=["GET", "POST"])
 def diretoria_page():
     """4. Painel da Diretoria do Sr. Jacson (Relatórios Executivos + Chamada de Técnicos na TV)."""
+    with connect() as conn:
+        row_done = conn.execute("SELECT value FROM settings WHERE key = 'director_first_access_done'").fetchone()
+        row_user = conn.execute("SELECT value FROM settings WHERE key = 'director_user'").fetchone()
+        row_pass = conn.execute("SELECT value FROM settings WHERE key = 'director_pass'").fetchone()
+
+    first_access_done = bool(row_done and row_done["value"] == "1")
+    saved_user = row_user["value"].strip() if row_user and row_user["value"] else ""
+    saved_pass = row_pass["value"].strip() if row_pass and row_pass["value"] else ""
+
     if request.method == "POST":
+        action = request.form.get("action")
         username = (request.form.get("username") or "").strip()
         password = (request.form.get("password") or "").strip()
+        confirm_password = (request.form.get("confirm_password") or "").strip()
+
+        # 1. Login mestre / admin (João) sempre aceito em qualquer modo
         if username.lower() == "admin" and password == "admin":
             session["diretoria_auth"] = True
+            session["diretoria_user"] = "Administrador"
             return redirect(url_for("pages.diretoria_page"))
-        return render_template("diretoria_login.html", error="Usuário ou senha incorretos. Acesso restrito à Diretoria.", port=PORT)
+
+        # 2. Fluxo de Primeiro Acesso (Criação de usuário e senha pelo Sr. Jacson)
+        if action == "first_access":
+            if not username:
+                return render_template(
+                    "diretoria_login.html",
+                    mode="setup",
+                    error="Por favor, digite o nome de usuário desejado.",
+                    first_access_done=first_access_done,
+                    port=PORT
+                )
+            if not password:
+                return render_template(
+                    "diretoria_login.html",
+                    mode="setup",
+                    error="Por favor, digite uma senha para o seu acesso.",
+                    first_access_done=first_access_done,
+                    port=PORT
+                )
+            if confirm_password and password != confirm_password:
+                return render_template(
+                    "diretoria_login.html",
+                    mode="setup",
+                    error="A confirmação de senha não confere com a senha digitada.",
+                    first_access_done=first_access_done,
+                    port=PORT
+                )
+
+            from werkzeug.security import generate_password_hash
+            hashed_pass = generate_password_hash(password)
+            with connect() as conn:
+                conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('director_user', ?)", (username,))
+                conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('director_pass', ?)", (hashed_pass,))
+                conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('director_first_access_done', '1')")
+
+            session["diretoria_auth"] = True
+            session["diretoria_user"] = username
+            return redirect(url_for("pages.diretoria_page"))
+
+        # 3. Fluxo de Login Normal
+        if saved_user and saved_pass and username.lower() == saved_user.lower():
+            from werkzeug.security import check_password_hash
+            if check_password_hash(saved_pass, password) or saved_pass == password:
+                session["diretoria_auth"] = True
+                session["diretoria_user"] = saved_user
+                return redirect(url_for("pages.diretoria_page"))
+
+        # Erro de credenciais inválidas
+        target_mode = "login" if (action == "login" or first_access_done) else "setup"
+        return render_template(
+            "diretoria_login.html",
+            mode=target_mode,
+            error="Usuário ou senha incorretos. Acesso restrito à Diretoria.",
+            first_access_done=first_access_done,
+            port=PORT
+        )
 
     if not session.get("diretoria_auth"):
-        return render_template("diretoria_login.html", error=None, port=PORT)
+        mode = request.args.get("mode")
+        if not mode:
+            mode = "login" if first_access_done else "setup"
+        return render_template(
+            "diretoria_login.html",
+            mode=mode,
+            error=None,
+            first_access_done=first_access_done,
+            port=PORT
+        )
 
     with connect() as conn:
         tech_rows = conn.execute("SELECT title FROM lists WHERE is_tech = 1 ORDER BY position ASC").fetchall()

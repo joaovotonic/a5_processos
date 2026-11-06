@@ -36,7 +36,7 @@
 
         <!-- Header -->
         <div class="text-center space-y-2">
-            <div class="inline-flex items-center justify-center mb-2">
+            <div class="inline-flex items-center justify-center mb-1">
                 <svg viewBox="0 0 48 32" class="w-14 h-9 drop-shadow" xmlns="http://www.w3.org/2000/svg">
                     <rect width="48" height="32" rx="7" fill="#254a93"/>
                     <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
@@ -45,13 +45,33 @@
             </div>
             
             <div class="inline-block">
-                <span class="bg-amber-500 text-slate-950 font-mono font-black px-2.5 py-0.5 rounded-lg text-[10px] uppercase tracking-wider shadow-sm">
-                    Diretoria Executiva
+                <span id="headerBadge" class="bg-amber-500 text-slate-950 font-mono font-black px-2.5 py-0.5 rounded-lg text-[10px] uppercase tracking-wider shadow-sm">
+                    {% if mode == 'setup' %}Primeiro Acesso • Diretoria{% else %}Diretoria Executiva • Acesso Restrito{% endif %}
                 </span>
             </div>
 
-            <h1 class="text-xl font-black text-white tracking-tight">Painel do Sr. Jacson</h1>
-            <p class="text-xs text-zinc-400">Acesso restrito. Digite suas credenciais para visualizar relatórios e acionar a TV.</p>
+            <h1 id="headerTitle" class="text-xl font-black text-white tracking-tight">Painel do Sr. Jacson</h1>
+            <p id="headerSubtitle" class="text-xs text-zinc-400">
+                {% if mode == 'setup' %}
+                    Bem-vindo! Crie seu usuário e senha exclusivos para acessar a Diretoria e os relatórios.
+                {% else %}
+                    Acesso restrito. Digite suas credenciais para visualizar relatórios e acionar a TV.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Abas de Alternância (Primeiro Acesso vs Login Normal) -->
+        <div class="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-2xl border border-zinc-800">
+            <button type="button" id="tabSetupBtn" onclick="switchLoginMode('setup')"
+                class="flex-1 py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 {% if mode == 'setup' %}bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20{% else %}text-zinc-400 hover:text-white{% endif %}">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Primeiro Acesso</span>
+            </button>
+            <button type="button" id="tabLoginBtn" onclick="switchLoginMode('login')"
+                class="flex-1 py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 {% if mode != 'setup' %}bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20{% else %}text-zinc-400 hover:text-white{% endif %}">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                <span>Login Normal</span>
+            </button>
         </div>
 
         <!-- Erro de login se houver -->
@@ -62,23 +82,75 @@
             </div>
         {% endif %}
 
-        <!-- Form de Login -->
-        <form method="POST" action="/diretoria" class="space-y-4">
+        <!-- FORMULÁRIO 1: PRIMEIRO ACESSO (CRIAÇÃO DE USUÁRIO DO SR. JACSON) -->
+        <form id="formSetup" method="POST" action="/diretoria" class="space-y-4 {% if mode != 'setup' %}hidden{% endif %}">
+            <input type="hidden" name="action" value="first_access">
+
+            <div class="p-3 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-xs text-amber-300 space-y-1">
+                <div class="font-bold flex items-center gap-1.5">
+                    <i data-lucide="user-plus" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Configuração Inicial da Sala do Diretor</span>
+                </div>
+                <p class="text-[11px] text-zinc-400">
+                    Escolha o nome de usuário e senha que o Sr. Jacson usará todos os dias para entrar no sistema.
+                </p>
+            </div>
+
             <div class="space-y-1.5">
-                <label for="username" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                <label for="setup_username" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
                     <i data-lucide="user" class="w-3.5 h-3.5 text-amber-400"></i>
-                    <span>Usuário</span>
+                    <span>Nome de Usuário</span>
                 </label>
-                <input type="text" id="username" name="username" required autofocus placeholder="admin"
+                <input type="text" id="setup_username" name="username" required autofocus placeholder="ex: jacson"
                     class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
             </div>
 
             <div class="space-y-1.5">
-                <label for="password" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                <label for="setup_password" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                    <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Criar Nova Senha</span>
+                </label>
+                <input type="password" id="setup_password" name="password" required placeholder="Digite sua senha"
+                    class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
+            </div>
+
+            <div class="space-y-1.5">
+                <label for="setup_confirm_password" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Confirmar Senha</span>
+                </label>
+                <input type="password" id="setup_confirm_password" name="confirm_password" required placeholder="Repita a senha criada"
+                    class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
+            </div>
+
+            <div class="pt-2">
+                <button type="submit"
+                    class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] text-slate-950 font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>Salvar Credenciais e Entrar</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- FORMULÁRIO 2: LOGIN NORMAL (DIRETOR / ADMIN) -->
+        <form id="formLogin" method="POST" action="/diretoria" class="space-y-4 {% if mode == 'setup' %}hidden{% endif %}">
+            <input type="hidden" name="action" value="login">
+
+            <div class="space-y-1.5">
+                <label for="login_username" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
+                    <i data-lucide="user" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Usuário</span>
+                </label>
+                <input type="text" id="login_username" name="username" required placeholder="Digite seu usuário ou admin"
+                    class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
+            </div>
+
+            <div class="space-y-1.5">
+                <label for="login_password" class="block text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
                     <i data-lucide="key-round" class="w-3.5 h-3.5 text-amber-400"></i>
                     <span>Senha</span>
                 </label>
-                <input type="password" id="password" name="password" required placeholder="••••••"
+                <input type="password" id="login_password" name="password" required placeholder="••••••"
                     class="w-full bg-zinc-900 border border-zinc-700 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-xl px-4 py-2.5 text-sm text-white font-medium placeholder-zinc-500 transition outline-none">
             </div>
 
@@ -91,6 +163,15 @@
             </div>
         </form>
 
+        <!-- Informação do Acesso Admin -->
+        <div class="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800 text-[11px] text-zinc-400 flex items-center justify-between gap-2">
+            <span class="flex items-center gap-1.5 text-zinc-400">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-400 shrink-0"></i>
+                <span>Acesso técnico master: <strong>admin</strong> / <strong>admin</strong></span>
+            </span>
+            <span class="text-[10px] font-mono text-zinc-400 bg-zinc-800 px-1.5 py-0.5 rounded">Ativo</span>
+        </div>
+
         <!-- Rodapé -->
         <div class="pt-2 text-center border-t border-zinc-800/80">
             <a href="/admin" class="text-xs text-zinc-400 hover:text-sky-400 transition inline-flex items-center gap-1 font-semibold">
@@ -101,8 +182,38 @@
     </div>
 
     <script>
+        function switchLoginMode(mode) {
+            const formSetup = document.getElementById("formSetup");
+            const formLogin = document.getElementById("formLogin");
+            const tabSetup = document.getElementById("tabSetupBtn");
+            const tabLogin = document.getElementById("tabLoginBtn");
+            const badge = document.getElementById("headerBadge");
+            const subtitle = document.getElementById("headerSubtitle");
+
+            const activeTabClass = "flex-1 py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20";
+            const inactiveTabClass = "flex-1 py-2 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 text-zinc-400 hover:text-white";
+
+            if (mode === "setup") {
+                formSetup.classList.remove("hidden");
+                formLogin.classList.add("hidden");
+                tabSetup.className = activeTabClass;
+                tabLogin.className = inactiveTabClass;
+                badge.textContent = "Primeiro Acesso • Diretoria";
+                subtitle.textContent = "Bem-vindo! Crie seu usuário e senha exclusivos para acessar a Diretoria e os relatórios.";
+                document.getElementById("setup_username")?.focus();
+            } else {
+                formLogin.classList.remove("hidden");
+                formSetup.classList.add("hidden");
+                tabLogin.className = activeTabClass;
+                tabSetup.className = inactiveTabClass;
+                badge.textContent = "Diretoria Executiva • Acesso Restrito";
+                subtitle.textContent = "Acesso restrito. Digite suas credenciais para visualizar relatórios e acionar a TV.";
+                document.getElementById("login_username")?.focus();
+            }
+            if (window.lucide) { lucide.createIcons(); }
+        }
+
         if (window.lucide) { lucide.createIcons(); }
     </script>
 </body>
 </html>
-
