@@ -48,3 +48,4 @@ def restore_db_snapshot(snap: dict):
         with open(p, "wb") as f:
             f.write(data)
     _checkpoint_and_clean_wal()
+
