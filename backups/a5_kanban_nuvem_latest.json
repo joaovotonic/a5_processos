@@ -1,7 +1,7 @@
 {
   "empresa": "A5 Tecnologia",
   "github_repo": "joaovotonic/a5_processos",
-  "backup_date": "2026-11-05T20:30:57.667312",
+  "backup_date": "2026-11-05T21:01:01.100564",
   "lists": [
     {
       "id": 1,
@@ -20,65 +20,9 @@
       "created_at": "2026-11-05 19:51:07"
     },
     {
-      "id": 16,
-      "title": "BALANÇAS PENDENTES",
-      "position": 2,
-      "is_tech": 0,
-      "role": "balancas_pendentes",
-      "created_at": "2026-11-06 00:24:01"
-    },
-    {
-      "id": 2,
-      "title": "TEC. João Otoni",
-      "position": 4,
-      "is_tech": 1,
-      "role": "tech",
-      "created_at": "2026-11-05 19:51:07"
-    },
-    {
-      "id": 3,
-      "title": "TEC. Enzo Gabriel",
-      "position": 5,
-      "is_tech": 1,
-      "role": "tech",
-      "created_at": "2026-11-05 19:51:07"
-    },
-    {
-      "id": 4,
-      "title": "TEC. Guilherme",
-      "position": 6,
-      "is_tech": 1,
-      "role": "tech",
-      "created_at": "2026-11-05 19:51:07"
-    },
-    {
-      "id": 5,
-      "title": "TEC. Wisley",
-      "position": 7,
-      "is_tech": 1,
-      "role": "tech",
-      "created_at": "2026-11-05 19:51:07"
-    },
-    {
-      "id": 6,
-      "title": "TEC. Iago",
-      "position": 8,
-      "is_tech": 1,
-      "role": "tech",
-      "created_at": "2026-11-05 19:51:07"
-    },
-    {
-      "id": 7,
-      "title": "TEC. ANTONIO",
-      "position": 9,
-      "is_tech": 1,
-      "role": "tech",
-      "created_at": "2026-11-05 19:51:07"
-    },
-    {
       "id": 8,
       "title": "ORÇAMENTOS FEITOS",
-      "position": 10,
+      "position": 2,
       "is_tech": 0,
       "role": "orcamentos_feitos",
       "created_at": "2026-11-05 19:51:07"
@@ -86,23 +30,15 @@
     {
       "id": 9,
       "title": "ORÇAMENTOS ENVIADOS",
-      "position": 11,
+      "position": 3,
       "is_tech": 0,
       "role": "orcamentos_enviados",
       "created_at": "2026-11-05 19:51:07"
     },
     {
-      "id": 13,
-      "title": "DB 8217",
-      "position": 12,
-      "is_tech": 0,
-      "role": "processo",
-      "created_at": "2026-11-05 23:18:22"
-    },
-    {
       "id": 11,
       "title": "NÃO AUTORIZADOS",
-      "position": 13,
+      "position": 4,
       "is_tech": 0,
       "role": "nao_autorizados",
       "created_at": "2026-11-05 19:51:07"
@@ -110,10 +46,74 @@
     {
       "id": 12,
       "title": "FINALIZADAS",
-      "position": 14,
+      "position": 5,
       "is_tech": 0,
       "role": "finalizada",
       "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 16,
+      "title": "BALANÇAS PENDENTES",
+      "position": 6,
+      "is_tech": 0,
+      "role": "balancas_pendentes",
+      "created_at": "2026-11-06 00:24:01"
+    },
+    {
+      "id": 2,
+      "title": "TEC. João Otoni",
+      "position": 7,
+      "is_tech": 1,
+      "role": "tech",
+      "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 3,
+      "title": "TEC. Enzo Gabriel",
+      "position": 8,
+      "is_tech": 1,
+      "role": "tech",
+      "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 4,
+      "title": "TEC. Guilherme",
+      "position": 9,
+      "is_tech": 1,
+      "role": "tech",
+      "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 5,
+      "title": "TEC. Wisley",
+      "position": 10,
+      "is_tech": 1,
+      "role": "tech",
+      "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 6,
+      "title": "TEC. Iago",
+      "position": 11,
+      "is_tech": 1,
+      "role": "tech",
+      "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 7,
+      "title": "TEC. ANTONIO",
+      "position": 12,
+      "is_tech": 1,
+      "role": "tech",
+      "created_at": "2026-11-05 19:51:07"
+    },
+    {
+      "id": 13,
+      "title": "DB 8217",
+      "position": 13,
+      "is_tech": 0,
+      "role": "processo",
+      "created_at": "2026-11-05 23:18:22"
     }
   ],
   "cards": [
@@ -68851,65 +68851,6 @@
       "tempo_liquido_segundos": 0,
       "pdf_source_path": "",
       "pdf_imported_at": null
-    },
-    {
-      "id": 1218,
-      "os_number": "770001",
-      "client_name": "CLIENTE RECUSA TESTE",
-      "equipment_type": "Balança Toledo Prix",
-      "equipment_model": "Prix 4 Uno",
-      "serial_number": "",
-      "shelf_location": "",
-      "reported_defect": "Defeito informado na recepção",
-      "list_id": 12,
-      "position": 1091,
-      "labels_json": "[{\"name\": \"NÃO AUTORIZADO\", \"color\": \"#EF4444\", \"text_color\": \"#FFFFFF\", \"priority\": 0}]",
-      "entry_photos_json": "[]",
-      "exit_photos_json": "[]",
-      "previous_service": "",
-      "quote_status": "finished",
-      "evaluator_tech": "Guilherme",
-      "finisher_tech": "Guilherme",
-      "quote_started_at": null,
-      "quote_finished_at": null,
-      "quote_data_json": "{}",
-      "quote_photos_json": "[]",
-      "label_before_photos_json": "[]",
-      "label_after_photos_json": "[]",
-      "tech_name": "Guilherme",
-      "pop_calibration": 0,
-      "pop_cleaning": 0,
-      "inmetro_seal": "",
-      "parts_used": "",
-      "root_cause": "",
-      "tech_notes": "",
-      "admin_notes": "",
-      "reopen_requested": 0,
-      "reopen_requested_by": "",
-      "reopen_requested_at": null,
-      "timer_end_at": null,
-      "timer_label": "",
-      "created_at": "2026-11-05T20:30:51.900716",
-      "updated_at": "2026-11-05T20:30:53.777000",
-      "moved_at": "2000-01-01T00:00:00",
-      "finished_at": "2000-01-01T00:00:00",
-      "cnpj_cpf": "",
-      "trade_name": "",
-      "phone": "",
-      "email": "",
-      "address": "",
-      "city_state": "",
-      "accessories_json": "[]",
-      "pipeline_phase": "PRONTAS",
-      "inicio_orcamento": "2026-11-05T20:30:52.236262",
-      "fim_orcamento": null,
-      "inicio_manutencao": null,
-      "fim_manutencao": null,
-      "tempo_orcamento_segundos": 0,
-      "tempo_manutencao_segundos": 0,
-      "tempo_liquido_segundos": 0,
-      "pdf_source_path": "",
-      "pdf_imported_at": null
     }
   ],
   "clients": [
@@ -75689,7 +75630,7 @@
     "daily_goal": "15",
     "last_backup_date": "2026-11-05",
     "metrics_start_at": "2026-11-05T20:30:57.366983",
-    "cloud_backup_last_at": "2026-11-05T20:30:57.667312",
+    "cloud_backup_last_at": "2026-11-05T21:01:01.100564",
     "cloud_backup_last_date": "2026-11-05"
   }
 }
