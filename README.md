@@ -1,168 +1,176 @@
-# ⚖️ A5 Tecnologia — Esteira de Produção & Kanban Inteligente
+# ⚖️ A5 Tecnologia — Esteira de Produção, Kanban Inteligente & Gestão de Rotas
 
-Sistema web local de gerenciamento e automação da oficina de manutenção de balanças (**Toledo Prix** e industriais) da **A5 Tecnologia**. Integra leitura automática de Ordens de Serviço em PDF geradas pelo **Teorema ERP**, controle de fluxo por **QR Code no celular**, anúncios por voz (**Edge-TTS**) com *audio ducking* na **TV da oficina** e **Painel Executivo da Diretoria** para relatórios de produtividade líquida e chamados de técnicos.
+Sistema web local de gerenciamento e automação da oficina de manutenção de balanças (**Toledo Prix** e linha industrial) e gestão de **Chamados Externos (Rotas de Rua)** da **A5 Tecnologia**.
+
+Integra leitura automática de Ordens de Serviço em PDF geradas pelo **Teorema ERP**, controle de fluxo de bancada por **QR Code no celular**, etiquetas inteligentes com **notificações discretas na TV**, anúncios por voz (**Edge-TTS**) com *audio ducking*, **Triagem e Geração de Cards WhatsApp de Rotas Externas** e **Backup/Sincronização em Nuvem via GitHub**.
 
 ---
 
-## 🧭 Fluxograma da Esteira de Produção
+## 🧭 Fluxograma da Esteira de Produção & Regras de Etiquetas
 
-O ciclo de vida da balança é controlado automaticamente pelo QR Code na bancada e pelas ações da recepção:
+O ciclo de vida da balança na oficina é controlado automaticamente pelo QR Code na bancada e pelas ações da recepção (Priscila):
 
 ```mermaid
 flowchart TD
-    %% Nós do Fluxo
     PDF["📄 PDF da O.S. (Teorema ERP)<br/>Salvo em ./entrada_pdfs/"] --> WATCHDOG["🤖 Monitor Background (Watchdog)<br/>Extrai O.S., Cliente Fantasia, Modelo e Defeito"]
     
-    WATCHDOG --> DB_INSERT["📥 Inserção no SQLite<br/>Padronização 6 dígitos (ex: 026797)<br/>Fase: ORCAMENTOS_A_FAZER"]
+    WATCHDOG --> DB_INSERT["📥 Coluna: ORÇAMENTOS (Topo)<br/>Etiquetas permitidas: URGÊNCIA e EM GARANTIA<br/>(Clique dispara aviso discreto na TV)"]
     
-    DB_INSERT --> LABEL_PRINT["🏷️ Etiqueta Térmica 60x40mm<br/>Modal automático de impressão na Adm<br/>QR Code gerado para a esteira"]
-    DB_INSERT --> TV_ORC["📺 TV Oficina: Coluna ORÇAMENTOS<br/>Entra na fila de diagnóstico"]
+    DB_INSERT --> LABEL_PRINT["🏷️ Etiqueta Térmica 60x40mm<br/>Impressão automática na Recepção com QR Code"]
+    
+    LABEL_PRINT --> SCAN1["📱 1º SCAN QR CODE (Bancada)<br/>Técnico puxa balança para diagnóstico"]
+    
+    SCAN1 --> TECH_ORC["🔬 FASE: EM_ORCAMENTO (Coluna do Técnico)<br/>TV: Crachá 'ORÇAMENTANDO'<br/>Libera demais etiquetas (Aguardando, etc.)"]
+    
+    TECH_ORC --> SCAN2["📱 2º SCAN QR CODE (Fim do Laudo)<br/>Técnico informa peças/serviço e conclui"]
+    
+    SCAN2 --> ORC_FEITOS["📋 Coluna: ORÇAMENTOS FEITOS<br/>Calcula tempo líquido de diagnóstico<br/>Notifica Recepção"]
+    
+    ORC_FEITOS --> ADM_ENVIA["📤 Coluna: ORÇAMENTOS ENVIADOS<br/>Recepção envia orçamento ao cliente<br/>(Tempo líquido pausado aguardando resposta)"]
+    
+    ADM_ENVIA --> DECISAO{"Decisão do Cliente"}
+    
+    DECISAO -- "Recusado" --> NAO_AUT["🚫 Coluna: NÃO AUTORIZADOS<br/>Montagem da balança p/ devolução"]
+    DECISAO -- "Aprovado" --> ADM_APROVA["✅ Coluna: APROVADOS<br/>Limpa tags antigas (mantém só URGÊNCIA / GARANTIA)<br/>Libera tag 'FALTA PEÇA' + Voz na TV"]
+    
+    ADM_APROVA --> PECA_CHECK{"Tem todas as peças?"}
+    
+    PECA_CHECK -- "Falta Peça" --> BAL_PEND["📦 Coluna: BALANÇAS PENDENTES<br/>(Oculta na TV da oficina)<br/>Aguarda chegada da peça sem poluir a TV"]
+    BAL_PEND -- "Peça chegou" --> SCAN3
+    PECA_CHECK -- "Peças OK" --> SCAN3["📱 3º SCAN QR CODE / Arrastar p/ Técnico<br/>Início da Manutenção"]
+    
+    SCAN3 --> TECH_MANUT["🔧 FASE: EM_MANUTENCAO<br/>TV: Crachá 'FINALIZANDO BALANÇA'"]
+    
+    TECH_MANUT --> SCAN4["📱 4º SCAN QR CODE (Conclusão)<br/>Técnico finaliza reparo e calibração"]
+    
+    SCAN4 --> FINALIZADAS["🏁 Coluna: FINALIZADAS<br/>Calcula Tempo Líquido Total<br/>Atualiza Relatório da Diretoria (/diretoria)"]
 
-    LABEL_PRINT & TV_ORC --> SCAN1["📱 1º SCAN QR CODE (Bancada)<br/>Técnico escolhe seu nome no celular"]
-    
-    SCAN1 --> TECH_ORC["🔬 FASE: EM_ORCAMENTO<br/>Card move para coluna do Técnico<br/>TV: Crachá 'ORÇAMENTANDO'<br/>Grava timestamp 'inicio_orcamento'"]
-    
-    TECH_ORC --> SCAN2["📱 2º SCAN QR CODE (Fim Laudo)<br/>Técnico clica em 'ORÇAMENTO OK'"]
-    
-    SCAN2 --> ORC_FEITOS["📋 Coluna: ORÇAMENTOS FEITOS<br/>Grava 'fim_orcamento'<br/>Calcula tempo de diagnóstico<br/>Notifica Priscila na Recepção"]
-    
-    ORC_FEITOS --> ADM_ENVIA["👩‍💼 Recepção: Botão 'OK'<br/>Move para ORÇAMENTOS ENVIADOS<br/>(Tempo líquido pausado aguardando cliente)"]
-    
-    ADM_ENVIA --> ADM_APROVA["👩‍💼 Recepção: Botão 'APROVADO'<br/>Move para APROVADOS<br/>Dispara anúncio sonoro + Edge-TTS na TV<br/>QR Code liberado para reparos"]
-    
-    ADM_APROVA --> SCAN3["📱 3º SCAN QR CODE (Início Reparo)<br/>Técnico puxa balança aprovada"]
-    
-    SCAN3 --> TECH_MANUT["🔧 FASE: EM_MANUTENCAO<br/>Card volta para o Técnico<br/>TV: Crachá 'FINALIZANDO BALANÇA'<br/>Grava 'inicio_manutencao'"]
-    
-    TECH_MANUT --> SCAN4["📱 4º SCAN QR CODE (Conclusão)<br/>Técnico clica em 'FINALIZAR BALANÇA'"]
-    
-    SCAN4 --> FINALIZADAS["✅ Coluna: FINALIZADAS<br/>Grava 'fim_manutencao'<br/>Calcula TEMPO LÍQUIDO TOTAL<br/>Desconta período aguardando cliente<br/>Notifica TV e Recepção"]
-    
-    FINALIZADAS --> RELATORIO["📊 Painel da Diretoria (/diretoria)<br/>KPIs, Médias de Bancada e Ranking"]
-
-    %% Estilos dos Nós
     classDef pdfStyle fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff;
     classDef scanStyle fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff;
     classDef techStyle fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
     classDef admStyle fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff;
+    classDef pendStyle fill:#ea580c,stroke:#c2410c,stroke-width:2px,color:#fff;
     classDef okStyle fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff;
-    
-    class PDF,WATCHDOG,DB_INSERT,LABEL_PRINT,TV_ORC pdfStyle;
+
+    class PDF,WATCHDOG,DB_INSERT,LABEL_PRINT pdfStyle;
     class SCAN1,SCAN2,SCAN3,SCAN4 scanStyle;
     class TECH_ORC,TECH_MANUT techStyle;
-    class ORC_FEITOS,ADM_ENVIA,ADM_APROVA admStyle;
-    class FINALIZADAS,RELATORIO okStyle;
+    class ORC_FEITOS,ADM_ENVIA,ADM_APROVA,NAO_AUT admStyle;
+    class BAL_PEND pendStyle;
+    class FINALIZADAS okStyle;
 ```
 
 ---
 
 ## 🚀 Principais Módulos e Recursos
 
-### 1. Consumo Automático de PDFs do Teorema ERP
-* **Monitoramento em Background (`watchdog`)**: vigia continuamente a pasta `./entrada_pdfs/`.
-* **Extração Resiliente (`pdfplumber` + `pypdf`)**: extrai Número da O.S., Nome Fantasia do Cliente, Modelo/Marca da Balança, Número de Série e Defeito Relatado.
-* **Padronização 6 Dígitos**: normaliza qualquer numeração do Teorema para o padrão da A5 (ex: `0000026797` $\rightarrow$ `026797`).
-* **Arquivamento Seguro**: move o PDF lido para `./arquivados_pdfs/AAAA-MM/` com nome descritivo.
+### 1. Quadro Kanban da Recepção (`/admin` — Priscila)
+* **Navegação Rápida e Ergonômica**:
+  * **Arrastar a Tela (`Click & Drag` Horizontal)**: clique e segure em qualquer espaço livre do fundo ou entre cartões para deslizar a tela para um lado e para o outro com facilidade.
+  * **Fechar Card Clicando Fora (`Backdrop Click`)**: ao abrir qualquer card, basta clicar fora dele (no fundo escurecido) ou apertar `ESC` para fechar imediatamente, sem precisar mirar no `X`.
+  * **Seletor de Estágio / Lista Dentro do Card**: dentro do modal de cada O.S., o seletor **"Mudar Estágio / Coluna da Balança"** permite transferir o equipamento para qualquer lista com 1 clique.
+* **Sistema Inteligente de Etiquetas (Tags) por Fase**:
+  1. **Fase `ORÇAMENTOS`**: exibe exclusivamente as opções **🚨 URGÊNCIA** e **🛡️ EM GARANTIA**. Ao marcar qualquer uma delas, o sistema envia uma **notificação discreta (mini-toast de 6s)** no canto superior direito da TV da oficina.
+  2. **Fora de `ORÇAMENTOS` (Bancada, Orçamentos Feitos, Enviados)**: libera todas as demais opções (`⏳ AGUARDANDO`, `📦 FALTA PEÇA`, `💬 AGUARDANDO CLIENTE`, etc.) e o botão `+ Nova` para criar etiquetas personalizadas.
+  3. **Na Aprovação (`APROVADOS`)**: o sistema **remove automaticamente etiquetas temporárias anteriores** (como *Aguardando*), **mantendo estritamente `URGÊNCIA` e `EM GARANTIA`** caso já estivessem marcadas, e destaca a opção **📦 FALTA PEÇA**.
+  4. **Coluna `BALANÇAS PENDENTES` (Oculta na TV)**: quando uma balança aprovada está marcada com **FALTA PEÇA**, um botão de 1 clique (*"Mover p/ BALANÇAS PENDENTES"*) aparece dentro do card (ou a Priscila pode arrastar para a lista `BALANÇAS PENDENTES`). Essa lista organiza os equipamentos que aguardam peça na recepção **sem exibi-los na TV da oficina**. Quando a peça chegar, basta arrastar para a bancada do técnico ou ler o QR Code.
 
-### 2. Leitor Web de QR Code Local (`/scanner`)
-* Funciona diretamente no navegador do celular (Android/iOS) conectado ao Wi-Fi da oficina.
-* **Técnico Persistente**: seleciona o técnico uma vez (`localStorage`).
-* **Leitura Contínua de Câmera**: processa o QR Code da etiqueta física via `html5-qrcode` com feedback tátil (`navigator.vibrate`) e visual.
+---
 
-### 3. Painel TV da Oficina (`/tv` e `/painel-tv`)
-* **Visual Glassmorphism / Dark Mode** para exibição em TVs de 50"+ na oficina.
-* **Layout Adaptativo**:
-  * Em repouso: colunas simétricas `ORÇAMENTOS` e `APROVADOS`.
-  * Com bancadas ativas: expande a faixa horizontal `BANCADAS EM ATENDIMENTO` destacando os técnicos.
-* **Badges em Tempo Real**:
-  * `🔬 ORÇAMENTANDO` (âmbar pulsante) na fase de orçamento/diagnóstico preliminar.
-  * `🔧 FINALIZANDO BALANÇA` (esmeralda pulsante) na fase de manutenção/reparos.
-* **Voz e Áudio Ducking**: sintetizador **Edge-TTS** (pt-BR) integrado com redutor de volume de áudio de fundo para anunciar ordens aprovadas e chamadas da diretoria.
+### 2. Consumo Automático de PDFs do Teorema ERP (2 Pastas Monitoradas)
+O serviço `pdf_watcher` monitora continuamente duas pastas independentes (via `watchdog` + *polling* resiliente a cada 3 segundos):
+1. **`./entrada_pdfs/` (Entrada de Balanças na Oficina)**:
+   * Extrai O.S. (padronizada em 6 dígitos, ex: `026797`), Nome Fantasia do Cliente, Modelo/Marca, Nº de Série e Defeito.
+   * Insere (ou reativa no topo) na coluna `ORÇAMENTOS`, abre o modal de impressão da etiqueta térmica `60x40mm` e arquiva o PDF em `./arquivados_pdfs/AAAA-MM/`.
+2. **`./entrada_chamados_externos/` (Entrada de Chamados Externos / Rua)**:
+   * Extrai O.S. sem zeros à esquerda excedentes (ex: `0000026803` $\rightarrow$ `26803`), Nome Fantasia, Data/Hora de abertura original, **Setor da Balança** (extraído prioritariamente do descritivo do defeito, ex: `RECEBIMENTO`, `ROTISSERIE`, `AÇOUGUE`), Modelo (`PRIX 6`, `PL 3000`, `8217`) e **Defeito Limpo** (removendo automaticamente o nome do solicitante).
+   * Aloca o chamado na data de hoje e no turno correspondente ao horário do computador (**Manhã** antes das 11h; **Tarde** a partir das 11h) e arquiva o PDF em `./arquivados_chamados_externos/AAAA-MM/`.
 
-### 4. Painel Executivo da Diretoria (`/diretoria`)
-* Protegido por autenticação (`admin` / `admin`).
-* **Central de Chamados TV (1 Clique)**: botões de acesso rápido para o Sr. Jacson chamar qualquer técnico ou a recepção com voz e alerta visual na TV.
-* **Relatório de Produtividade Líquida**:
-  * Filtros dinâmicos: *Hoje*, *Esta Semana*, *Este Mês*, *Geral* e por *Técnico*.
-  * **Tempo Líquido Real**: tempo de orçamento + tempo de manutenção, **descontando integralmente o tempo em que a balança ficou parada aguardando envio ou autorização do cliente**.
-  * Exportação de dados para planilha CSV.
+---
 
-### 5. Quadro Kanban da Recepção (`/admin`)
-* Interface clássica em **Clean Mode** (modo claro nativo de alto contraste).
-* 11 colunas organizadas:
-  * `ORÇAMENTOS`
-  * `APROVADOS`
-  * Bancadas individuais dos técnicos (`TEC. ENZO GABRIEL`, `TEC. GUILHERME`, `TEC. WISLEY`, `TEC. JOÃO OTONI`, `TEC. IAGO`, `TEC. ANTONIO`)
-  * `ORÇAMENTOS FEITOS`
-  * `ORÇAMENTOS ENVIADOS`
-  * `FINALIZADAS`
-* Modal de impressão de etiquetas térmicas 60x40mm com QR Code, alertas de SLA (+24h) e cronômetro de estufa.
+### 3. Gestão de Rotas de Chamados Externos (`/admin` $\leftrightarrow$ `/diretoria`)
+* **Triagem na Recepção (`/admin`)**: Priscila visualiza os chamados externos importados, adiciona observações/tarefas e clica em **"Notificar Sr. Jacson"** (disparando campainha sonora na sala da diretoria).
+* **Montagem de Rota na Diretoria (`/diretoria`)**:
+  * Separação por **Turno da Manhã** e **Turno da Tarde**.
+  * Atribuição para técnicos de campo individuais ou duplas (`EDSON`, `ANTONIO`, `ENZO`, `JOAO`, `ENZO / JOAO`, `ENZO / EDSON`, `EDSON / ANTONIO`, etc.) com ordenação de paradas (`1ª PARADA`, `2ª PARADA`...).
+  * **Geração Automática de Cards PNG e Texto para WhatsApp**: gera imagens prontas por técnico e o card da **Rota Geral Conjunta**, salvando automaticamente em `./rotas_imagens/`.
+  * **Controle de Atendimento e Remarcação**: permite marcar chamados como **Atendido** ou **Não Atendido** (registrando o motivo obrigatório e permitindo remarcar com 1 clique para o turno da tarde ou para outro dia).
+  * **Exportação CSV para Excel**: gera planilha com codificação `UTF-8-BOM` e separador `;` pronta para abrir no Microsoft Excel.
+
+---
+
+### 4. Painel TV da Oficina (`/tv` e `/painel-tv`)
+* **Visual Glassmorphism / Dark Mode** otimizado para TVs de 50"+ na oficina.
+* **Exibição Limpa e Focada**: exibe `ORÇAMENTOS`, `APROVADOS` e `BANCADAS EM ATENDIMENTO` (ocultando automaticamente `BALANÇAS PENDENTES`, `FINALIZADAS` e `NÃO AUTORIZADOS`).
+* **Notificação Discreta de Etiquetas**: ao marcar `URGÊNCIA` ou `EM GARANTIA` em um orçamento, exibe um *toast* discreto de 6 segundos no canto superior direito da TV com chime suave, sem interromper a tela.
+* **Voz Neural Edge-TTS + Campainha (`campainha.wav`)**: anuncia aprovações de O.S., chamadas de técnicos à recepção, chamadas de ADM (*Arthur / Roosevelt*) para balanças não autorizadas e avisos da diretoria com redução automática de música de fundo (*audio ducking*).
+
+---
+
+### 5. Backup em Nuvem (GitHub) e Scripts Automáticos (`.bat`)
+
+O sistema possui integração nativa com o repositório GitHub (`joaovotonic/a5_processos`) para proteger o banco de dados SQLite (`database/a5_kanban.db`) e os snapshots (`backups/a5_kanban_nuvem_latest.db` e `.json`).
+
+* **Lembrete Fixo às 16h40 (Segunda a Sexta)**: a partir das 16h40, o topo do painel `/admin` exibe uma barra roxa lembrando a Priscila de clicar em **"FAZER BACKUP AGORA"**, enviando todos os cartões do dia para o GitHub.
+
+#### Scripts `.bat` na Raiz do Projeto:
+| Script | Função |
+| :--- | :--- |
+| **`ATUALIZAR_SISTEMA.bat`** | Exibe um menu com **2 opções** para a recepção:<br/>• **`[1]` Atualizar apenas Código e Melhorias (Padrão do Dia a Dia)**: baixa novas funções do GitHub **sem alterar nem sobrescrever** os cartões e listas locais.<br/>• **`[2]` Atualizar Tudo + Restaurar Cartões e Posições da Nuvem**: baixa o código e restaura as listas, posições e cartões exatamente como foram salvos no último backup na nuvem. |
+| **`INICIAR_SISTEMA.bat`** | Inicia o servidor Flask/SocketIO em segundo plano (`pythonw`) e abre o navegador em `http://localhost:5000/admin`. |
+| **`INSTALAR_INICIALIZACAO_AUTOMATICA.bat`** | Configura o Windows (`shell:startup`) para iniciar o servidor automaticamente em segundo plano assim que o computador da recepção for ligado pela manhã. |
+| **`CRIAR_ATALHO_AREA_DE_TRABALHO.bat`** | Cria os atalhos na Área de Trabalho do Windows para acesso rápido. |
+| **`ZERAR_RELATORIO_JACSON.bat`** | Define um novo marco inicial para os indicadores de produtividade do relatório da Diretoria sem mover nem apagar nenhum cartão do Kanban. |
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 * **Backend:** Python 3.10+ / Flask, Flask-SocketIO (WebSockets em tempo real)
-* **Banco de Dados:** SQLite3 com WAL mode (`PRAGMA journal_mode=WAL;`)
+* **Banco de Dados:** SQLite3 com modo concorrente WAL (`PRAGMA journal_mode=WAL;`)
 * **Processamento de PDFs:** `pdfplumber`, `pypdf`, `watchdog`
-* **Áudio e Voz:** `edge-tts` (Microsoft Neural Voices pt-BR), Web Audio API
-* **Frontend:** Tailwind CSS, Glassmorphism, SortableJS, Lucide Icons, HTML5-QRCode
-* **Etiquetas:** HTML/CSS 60x40mm calibrado para impressoras térmicas (Zebra, Argox, Elgin)
+* **Áudio e Voz:** `edge-tts` (Microsoft Neural Voices pt-BR), Web Audio API, `campainha.wav`
+* **Frontend:** Tailwind CSS, SortableJS, HTML2Canvas (geração de cards PNG de rotas), HTML5-QRCode
+* **Etiquetas:** Layout térmico `60x40mm` calibrado para impressoras Zebra, Argox e Elgin
 
 ---
 
-## 📦 Como Instalar e Rodar
+## 📦 Requisitos e Instalação
 
-### 1. Clonar o Repositório
-```bash
+1. **Python 3.10+** instalado (marcando *"Add Python to PATH"*).
+2. **Git for Windows** instalado (necessário para o botão de Backup em Nuvem e para o `ATUALIZAR_SISTEMA.bat`).
+
+```powershell
+# 1. Clonar o repositório
 git clone https://github.com/joaovotonic/a5_processos.git
 cd a5_processos
-```
 
-### 2. Criar e Ativar Ambiente Virtual
-```powershell
-# Windows (PowerShell)
+# 2. Criar e ativar o ambiente virtual
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-```
 
-### 3. Instalar Dependências
-```bash
+# 3. Instalar dependências
 pip install -r requirements.txt
-```
 
-### 4. Iniciar o Servidor
-```bash
+# 4. Iniciar o servidor
 python app.py
 ```
 
-O terminal exibirá os links de acesso na rede local:
-```text
-====================================================================
-  ESTEIRA DE PRODUÇÃO AUTOMATIZADA - A5 TECNOLOGIA (TOLEDO PRIX)
-====================================================================
-  [RECEPÇÃO / KANBAN]   -> http://localhost:5000/admin
-  [PAINEL TV OFICINA]   -> http://192.168.100.10:5000/tv
-  [SALA DO SR. JACSON]  -> http://192.168.100.10:5000/diretoria
-  [SCANNER MOBILE QR]   -> http://192.168.100.10:5000/scanner
-====================================================================
-```
+Links principais na rede local:
+* **Recepção / Kanban (`/admin`):** `http://localhost:5000/admin`
+* **Painel TV da Oficina (`/tv`):** `http://localhost:5000/tv`
+* **Sala da Diretoria (`/diretoria`):** `http://localhost:5000/diretoria` (Login padrão: `admin` / `admin`)
+* **Scanner Mobile QR (`/scanner`):** `http://<IP-DO-SERVIDOR>:5000/scanner`
 
 ---
 
 ## 🧪 Suíte de Testes Automatizados
 
-O sistema inclui testes automatizados cobrindo autenticação, parser de PDF, WebSocket e a esteira de produção completa:
+Os testes automatizados possuem **isolamento completo de snapshot (`tests/_db_snapshot.py`)**, garantindo que a execução da bateria de testes valide todas as rotas e regras de negócio sem alterar o banco de dados de produção (`database/a5_kanban.db`):
 
 ```bash
-# Executa todos os testes unitários
-python -m unittest discover tests
-
-# Executa o ciclo de vida ponta a ponta da esteira (9 etapas)
-python tests/test_esteira.py
-
-# Testa controle de acesso e segurança da diretoria
-python tests/test_diretoria_auth.py
+# Executa toda a bateria de testes (Kanban, Etiquetas, Balanças Pendentes, PDFs e Rotas Externas)
+python -m unittest discover -v tests
 ```
 
 ---
@@ -170,30 +178,39 @@ python tests/test_diretoria_auth.py
 ## 📂 Estrutura de Pastas
 
 ```text
-esteira_a5/
-├── entrada_pdfs/           # Pasta monitorada onde o Teorema salva os PDFs
-├── arquivados_pdfs/        # PDFs processados e arquivados por Ano-Mês
-├── database/               # Banco de dados SQLite (a5_kanban.db)
+a5_processos/
+├── entrada_pdfs/                   # Pasta monitorada: PDFs de balanças de bancada (Teorema)
+├── arquivados_pdfs/                # PDFs de bancada processados e arquivados por AAAA-MM
+├── entrada_chamados_externos/      # Pasta monitorada: PDFs de O.S. externas / rua (Teorema)
+├── arquivados_chamados_externos/   # PDFs de chamados externos arquivados por AAAA-MM
+├── rotas_imagens/                  # Cards PNG gerados para envio de rotas no WhatsApp
+├── backups/                        # Backups diários locais e snapshots em nuvem (GitHub)
+├── database/                       # Banco de dados SQLite principal (a5_kanban.db)
 ├── kanban/
-│   ├── routes/             # Endpoints Flask (cards, lists, pages, diretoria)
+│   ├── routes/                     # Endpoints Flask (board, cards, lists, esteira, diretoria, externos)
 │   ├── services/
-│   │   ├── esteira.py      # Máquina de estados do QR Code e cálculo de tempos
-│   │   ├── pdf_parser.py   # Extração inteligente de dados do Teorema
-│   │   ├── pdf_watcher.py  # Serviço background watchdog
-│   │   ├── diretoria.py    # KPIs e consolidação de produtividade líquida
-│   │   └── board.py        # Serialização do quadro e enriquecimento de cards
-│   ├── database.py         # Conexão segura e migrações SQLite
-│   ├── realtime.py         # Broadcasts Socket.IO e notificações sonoras
-│   └── utils.py            # Padronização de O.S. e utilitários de fotos
+│   │   ├── board.py                # Estado completo do quadro e enriquecimento de cartões
+│   │   ├── cards.py                # Movimentação, criação, histórico e regras de etiquetas
+│   │   ├── esteira.py              # Máquina de estados do QR Code e cálculo de tempo líquido
+│   │   ├── externos.py             # Parser de O.S. externa, rotas por turno, WhatsApp e CSV
+│   │   ├── pdf_parser.py           # Extração de dados de PDFs de bancada do Teorema
+│   │   ├── pdf_watcher.py          # Monitoramento background das duas pastas de entrada
+│   │   └── diretoria.py            # KPIs executivos e relatório de produtividade
+│   ├── backup.py                   # Backup local e sincronização em nuvem via Git/GitHub
+│   ├── database.py                 # Conexão SQLite WAL, schema e migrações automáticas
+│   ├── realtime.py                 # Broadcasts Socket.IO, alertas discretos na TV e voz TTS
+│   └── rules.py                    # Regras de colunas, fases da esteira e limpeza de etiquetas
 ├── templates/
-│   ├── admin.html          # Kanban da Recepção (Clean Mode)
-│   ├── tv.html             # Painel TV da Oficina (Glassmorphism / TTS)
-│   ├── diretoria.html      # Sala da Diretoria (Sr. Jacson)
-│   ├── scanner.html        # Leitor de QR Code para celular dos técnicos
-│   └── etiqueta.html       # Layout térmico 60x40mm com QR Code
-├── tests/                  # Testes automatizados de esteira e autenticação
-├── app.py                  # Ponto de entrada da aplicação
-└── requirements.txt        # Dependências do projeto
+│   ├── admin.html                  # Kanban da Recepção + Triagem de Chamados Externos
+│   ├── tv.html                     # Painel TV da Oficina (Dark Mode / TTS / Mini-Alertas)
+│   ├── diretoria.html              # Painel do Sr. Jacson (Rotas de Rua, Chamados TV e KPIs)
+│   ├── os_tecnico.html             # Interface Mobile do Técnico ao ler o QR Code
+│   └── etiqueta.html               # Impressão térmica 60x40mm com QR Code
+├── tests/                          # Bateria de testes automatizados com isolamento de DB
+├── ATUALIZAR_SISTEMA.bat           # Atualizador com menu [1] Só Código / [2] Código + Cartões
+├── INICIAR_SISTEMA.bat             # Inicializador silencioso do servidor + abertura do navegador
+├── app.py                          # Ponto de entrada da aplicação
+└── requirements.txt                # Dependências Python do projeto
 ```
 
 ---

@@ -20,12 +20,14 @@ from kanban.services.externos import (
     format_whatsapp_route_message,
     export_external_routes_csv
 )
+from tests._db_snapshot import restore_db_snapshot, take_db_snapshot
 
 
 class TestExternalRoutes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls._db_snap = take_db_snapshot()
         init_db()
         cls.app = create_app()
         cls.client = cls.app.test_client()
@@ -279,6 +281,11 @@ class TestExternalRoutes(unittest.TestCase):
         self.assertEqual(r_img.status_code, 200)
         self.assertEqual(r_img.content_type, "image/png")
         r_img.close()
+        import os
+        from kanban.config import ROTAS_IMAGENS_DIR
+        test_img_p = os.path.join(ROTAS_IMAGENS_DIR, "ROTA_EDSON_TARDE_04-11-2026.png")
+        if os.path.exists(test_img_p):
+            os.remove(test_img_p)
 
     def test_09_os_pdf_parsing_sector_and_defect(self):
         """Testa parametrização do parser de O.S. externa do Teorema (O.S. sem zeros, setor no defeito, defeito sem solicitante)."""
@@ -432,8 +439,9 @@ Reduzido Descrição:
         2) entrada_chamados_externos (Entrada de Chamado Externo -> data de hoje e turno atual, inclusive re-consumo)
         """
         import os
+        import shutil
+        import tempfile
         from unittest.mock import patch
-        from kanban.config import ENTRADA_PDFS_DIR, ENTRADA_EXTERNOS_DIR, ARQUIVADOS_PDFS_DIR, ARQUIVADOS_EXTERNOS_DIR
         from kanban.services.pdf_watcher import scan_pending_input_folders, stop_pdf_watcher
         stop_pdf_watcher()
 
@@ -441,6 +449,11 @@ Reduzido Descrição:
             conn.execute("DELETE FROM external_orders WHERE os_number = '887766'")
             conn.execute("DELETE FROM cards WHERE os_number = '998877'")
 
+        tmp_root = tempfile.mkdtemp(prefix="a5_test_pdfs_")
+        ENTRADA_PDFS_DIR = os.path.join(tmp_root, "entrada_pdfs")
+        ARQUIVADOS_PDFS_DIR = os.path.join(tmp_root, "arquivados_pdfs")
+        ENTRADA_EXTERNOS_DIR = os.path.join(tmp_root, "entrada_chamados_externos")
+        ARQUIVADOS_EXTERNOS_DIR = os.path.join(tmp_root, "arquivados_chamados_externos")
         os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
         os.makedirs(ENTRADA_EXTERNOS_DIR, exist_ok=True)
 
@@ -463,7 +476,11 @@ Reduzido Descrição:
         scale_pdf_path = os.path.join(ENTRADA_PDFS_DIR, "O.S._998877_Teste_Balanca.pdf")
         ext_pdf_path = os.path.join(ENTRADA_EXTERNOS_DIR, "O.S._887766_Teste_Externo.pdf")
 
-        with patch("kanban.services.pdf_parser.extract_text_from_pdf", return_value=sample_scale_text), \
+        with patch("kanban.services.pdf_watcher.ENTRADA_PDFS_DIR", ENTRADA_PDFS_DIR), \
+             patch("kanban.services.pdf_watcher.ARQUIVADOS_PDFS_DIR", ARQUIVADOS_PDFS_DIR), \
+             patch("kanban.services.pdf_watcher.ENTRADA_EXTERNOS_DIR", ENTRADA_EXTERNOS_DIR), \
+             patch("kanban.services.pdf_watcher.ARQUIVADOS_EXTERNOS_DIR", ARQUIVADOS_EXTERNOS_DIR), \
+             patch("kanban.services.pdf_parser.extract_text_from_pdf", return_value=sample_scale_text), \
              patch("kanban.services.externos.extract_text_from_pdf", return_value=sample_ext_text):
 
             # 1ª rodada: cria os arquivos nas pastas de entrada e varre
@@ -512,21 +529,7 @@ Reduzido Descrição:
                 self.assertEqual(ext_order["sector"], "RECEBIMENTO")
 
         # Limpa os arquivos e registros de teste criados
-        with connect() as conn:
-            conn.execute("DELETE FROM external_orders WHERE os_number = '887766'")
-            conn.execute("DELETE FROM cards WHERE os_number = '998877'")
-
-        month_str = datetime.now().strftime("%Y-%m")
-        for p in [
-            os.path.join(ARQUIVADOS_PDFS_DIR, month_str, "OS_998877_O.S._998877_Teste_Balanca.pdf"),
-            os.path.join(ARQUIVADOS_EXTERNOS_DIR, month_str, "OS_887766_O.S._887766_Teste_Externo.pdf"),
-        ]:
-            if os.path.exists(p):
-                try:
-                    os.remove(p)
-                except OSError:
-                    pass
-
+        shutil.rmtree(tmp_root, ignore_errors=True)
         with connect() as conn:
             conn.execute("DELETE FROM card_history WHERE os_number = '998877'")
             conn.execute("DELETE FROM cards WHERE os_number = '998877'")
@@ -534,10 +537,7 @@ Reduzido Descrição:
 
     @classmethod
     def tearDownClass(cls):
-        with connect() as conn:
-            conn.execute("DELETE FROM external_orders WHERE os_number IN ('26999', '887766') OR os_number LIKE 'TEST%' OR client_name LIKE '%TESTE%' OR client_name LIKE 'TEST%'")
-            conn.execute("UPDATE external_orders SET route_date = ? WHERE id IN (115, 116)", (datetime.now().strftime("%Y-%m-%d"),))
-            conn.commit()
+        restore_db_snapshot(getattr(cls, "_db_snap", None))
 
 
 if __name__ == "__main__":

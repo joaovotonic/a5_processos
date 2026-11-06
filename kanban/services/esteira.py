@@ -137,7 +137,7 @@ def get_os_status_for_mobile(os_number: str) -> Dict[str, Any]:
         state = "ORCAMENTOS_FEITOS"
     elif "ENVIADO" in list_title or card.get("pipeline_phase") == "ORCAMENTOS_ENVIADOS":
         state = "ORCAMENTOS_ENVIADOS"
-    elif "APROVAD" in list_title or card.get("pipeline_phase") == "APROVADOS":
+    elif "APROVAD" in list_title or "PENDENTE" in list_title or card.get("pipeline_phase") in ("APROVADOS", "BALANCAS_PENDENTES"):
         state = "APROVADOS"
     else:
         state = "OUTRO"

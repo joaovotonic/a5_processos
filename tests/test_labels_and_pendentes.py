@@ -4,10 +4,20 @@ from kanban import create_app
 from kanban.database import connect, init_db
 from kanban.services import cards as cards_service
 from kanban.services import esteira as esteira_service
+from kanban.services.board import enrich_card
 from kanban import rules
+from tests._db_snapshot import restore_db_snapshot, take_db_snapshot
 
 
 class TestLabelsAndBalancasPendentes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls._db_snap = take_db_snapshot()
+
+    @classmethod
+    def tearDownClass(cls):
+        restore_db_snapshot(getattr(cls, "_db_snap", None))
+
     def setUp(self):
         self.app = create_app()
         self.client = self.app.test_client()
@@ -91,9 +101,29 @@ class TestLabelsAndBalancasPendentes(unittest.TestCase):
         self.assertEqual(move_res.status_code, 200)
 
         with connect() as conn:
-            c_row = conn.execute("SELECT list_id, pipeline_phase FROM cards WHERE id = ?", (card_id,)).fetchone()
+            c_row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
             self.assertEqual(c_row["list_id"], pend_list["id"])
             self.assertEqual(c_row["pipeline_phase"], "BALANCAS_PENDENTES")
+            enriched = enrich_card(dict(c_row))
+            self.assertTrue(enriched["is_urgent"])
+            self.assertTrue(enriched["is_warranty"])
+
+        # 7. QR Code mobile em BALANÇAS PENDENTES deve ser reconhecido como APROVADOS (permitindo puxar quando a peça chegar)
+        mob_status = esteira_service.get_os_status_for_mobile(test_os)
+        self.assertEqual(mob_status["state"], "APROVADOS")
+
+        # 8. Ao arrastar de BALANÇAS PENDENTES para a bancada do técnico, entra direto em EM_MANUTENCAO
+        move_tech = self.client.post(f"/api/cards/{card_id}/move", json={
+            "target_list_id": tech_list["id"],
+            "new_position": 0,
+            "actor": "Priscila (Recepção)"
+        })
+        self.assertEqual(move_tech.status_code, 200)
+        with connect() as conn:
+            c_row2 = conn.execute("SELECT list_id, pipeline_phase, quote_status FROM cards WHERE id = ?", (card_id,)).fetchone()
+            self.assertEqual(c_row2["list_id"], tech_list["id"])
+            self.assertEqual(c_row2["pipeline_phase"], "EM_MANUTENCAO")
+            self.assertEqual(c_row2["quote_status"], "approved")
 
             # Limpeza do card de teste
             conn.execute("DELETE FROM cards WHERE id = ?", (card_id,))

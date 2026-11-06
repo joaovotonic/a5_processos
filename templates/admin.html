@@ -1388,7 +1388,9 @@
 
             let activeCards = 0;
             boardData.lists.forEach(l => {
-                if (l.role !== "finished") activeCards += l.cards.length;
+                if (l.role !== "finished" && l.role !== "finalizada" && !(l.title || "").toUpperCase().includes("FINALIZADA")) {
+                    activeCards += l.cards.length;
+                }
             });
             document.getElementById("statActive").innerText = activeCards;
             document.getElementById("statFinishedToday").innerText = boardData.stats?.finished_today || 0;
@@ -1556,6 +1558,8 @@
                 quoteBadge = `<span class="text-[10px] bg-sky-500/15 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 rounded font-bold">Enviado</span>`;
             } else if (currentPhase === "APROVADOS") {
                 quoteBadge = `<span class="text-[10px] bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded font-black">Aprovado</span>`;
+            } else if (currentPhase === "BALANCAS_PENDENTES" || listTitleUpper.includes("PENDENTE")) {
+                quoteBadge = `<span class="text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/40 px-1.5 py-0.5 rounded font-black">📦 Pendente</span>`;
             }
 
             let techPhaseBanner = "";
@@ -2234,6 +2238,11 @@
                 phaseColor = "text-rose-400 bg-rose-500/20 border-rose-500/40 font-black";
                 phaseDesc = "Cliente não autorizou o orçamento. Equipamento aguardando técnico fechar/montar a balança para devolução.";
                 activeStepIndex = 3;
+            } else if (phase === "BALANCAS_PENDENTES" || lTitle.includes("PENDENTE")) {
+                phaseName = "5. Aprovado • Aguardando Peça (Pendente)";
+                phaseColor = "text-orange-400 bg-orange-500/20 border-orange-500/40 font-black";
+                phaseDesc = "Equipamento aprovado pelo cliente, aguardando chegada/reposição de peça (oculto na TV da oficina).";
+                activeStepIndex = 4;
             } else if (phase === "APROVADOS" || lTitle.includes("APROVAD")) {
                 phaseName = "5. Orçamento Aprovado (Liberado)";
                 phaseColor = "text-slate-950 bg-emerald-500 border-emerald-400 font-black";

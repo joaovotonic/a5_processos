@@ -149,9 +149,9 @@ def enrich_card(row_dict):
     card["hours_in_stage"] = round(hours_in_stage, 1)
     card["sla_expired"] = hours_in_stage >= SLA_HOURS and card.get("finished_at") is None
 
-    # Identifica se tem etiqueta crítica (URGENTE ou EM GARANTIA)
+    # Identifica se tem etiqueta crítica (URGENTE / URGÊNCIA ou EM GARANTIA)
     label_names = [lbl.get("name", "").upper() for lbl in card["labels"]]
-    card["is_urgent"] = "URGENTE" in label_names
+    card["is_urgent"] = any(u in label_names for u in ("URGENTE", "URGÊNCIA", "URGENCIA"))
     card["is_warranty"] = "EM GARANTIA" in label_names
 
     return card

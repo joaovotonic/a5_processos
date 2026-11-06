@@ -20,11 +20,13 @@ from kanban.rules import arrival_stage, is_approved_list, is_finished_list, is_r
 from kanban.services.board import detect_weight_unit, enrich_card, get_analytics_summary, get_full_board, normalize_quote_data
 from kanban.services.parts import load_parts_catalog, search_parts
 from kanban.services.scales import evaluate_weight_test, get_scale_division, search_scale_models
+from tests._db_snapshot import restore_db_snapshot, take_db_snapshot
 
 
 class TestA5KanbanComplete(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls._db_snap = take_db_snapshot()
         cls.app = create_app()
         cls.app.config["TESTING"] = True
         db.init_db()
@@ -526,11 +528,7 @@ class TestA5KanbanComplete(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        with connect() as conn:
-            conn.execute("DELETE FROM card_history WHERE os_number IN ('990001', '770001', '880001', '880002', '880003')")
-            conn.execute("DELETE FROM cards WHERE os_number IN ('990001', '770001', '880001', '880002', '880003')")
-            conn.execute("DELETE FROM pending_entries WHERE client_name LIKE '%PADARIA CENTRAL%'")
-            conn.commit()
+        restore_db_snapshot(getattr(cls, "_db_snap", None))
 
 
 if __name__ == "__main__":

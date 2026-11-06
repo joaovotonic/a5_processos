@@ -441,8 +441,8 @@ def move_card(card_id, target_list_id, new_position, actor, ordered_card_ids=Non
                 finished_at = None
                 if (
                     quote_status in ("done", "approved", "finished")
-                    or pipeline_phase in ("APROVADOS", "EM_MANUTENCAO", "PRONTAS")
-                    or (old_list and rules.is_approved_list(old_list))
+                    or pipeline_phase in ("APROVADOS", "BALANCAS_PENDENTES", "EM_MANUTENCAO", "PRONTAS")
+                    or (old_list and (rules.is_approved_list(old_list) or rules.is_balancas_pendentes_list(old_list)))
                 ):
                     quote_status = "approved"
                     pipeline_phase = "EM_MANUTENCAO"
