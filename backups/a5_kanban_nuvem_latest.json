@@ -1,7 +1,7 @@
 {
   "empresa": "A5 Tecnologia",
   "github_repo": "joaovotonic/a5_processos",
-  "backup_date": "2026-11-06T16:15:28.142368",
+  "backup_date": "2026-11-06T16:16:22.620503",
   "lists": [
     {
       "id": 1,
@@ -76281,7 +76281,7 @@
     "daily_goal": "15",
     "last_backup_date": "2026-11-06",
     "metrics_start_at": "2026-11-06T07:26:09.816865",
-    "cloud_backup_last_at": "2026-11-06T16:15:28.142368",
+    "cloud_backup_last_at": "2026-11-06T16:16:22.620503",
     "cloud_backup_last_date": "2026-11-06",
     "director_user": "Jacson",
     "director_pass": "scrypt:32768:8:1$PtW3dRDu80djel8O$131a031a480c48c5053d81a02712d26a8585eafdd535cdf3fa39c9c8764645e9075775c096363ea945cee47b6b160b2093833c268de53a771ccf5dbecdfd51c0",
