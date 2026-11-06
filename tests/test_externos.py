@@ -437,6 +437,10 @@ Reduzido Descrição:
         from kanban.services.pdf_watcher import scan_pending_input_folders, stop_pdf_watcher
         stop_pdf_watcher()
 
+        with connect() as conn:
+            conn.execute("DELETE FROM external_orders WHERE os_number = '887766'")
+            conn.execute("DELETE FROM cards WHERE os_number = '998877'")
+
         os.makedirs(ENTRADA_PDFS_DIR, exist_ok=True)
         os.makedirs(ENTRADA_EXTERNOS_DIR, exist_ok=True)
 
@@ -508,6 +512,10 @@ Reduzido Descrição:
                 self.assertEqual(ext_order["sector"], "RECEBIMENTO")
 
         # Limpa os arquivos e registros de teste criados
+        with connect() as conn:
+            conn.execute("DELETE FROM external_orders WHERE os_number = '887766'")
+            conn.execute("DELETE FROM cards WHERE os_number = '998877'")
+
         month_str = datetime.now().strftime("%Y-%m")
         for p in [
             os.path.join(ARQUIVADOS_PDFS_DIR, month_str, "OS_998877_O.S._998877_Teste_Balanca.pdf"),
