@@ -942,6 +942,10 @@
         const socket = io();
         let boardData = { lists: [], labels: [], settings: {}, stats: {} };
         let selectedNewOsLabels = [];
+        let currentAdminExternosSummary = null;
+        let activeAdminView = "kanban";
+        let currentAdminShift = new Date().getHours() < 11 ? "manha" : "tarde";
+        var _fetchBoardRetryTimeout = null;
 
         function esc(str) {
             return String(str ?? "")
@@ -959,7 +963,7 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
+        function initApp() {
             // Força o padrão limpo / claro da Recepção (Clean Mode)
             let savedTheme = localStorage.getItem("a5_theme");
             if (!savedTheme || savedTheme === "dark") {
@@ -993,6 +997,16 @@
                     editModelSug.classList.add("hidden");
                 }
             });
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", initApp);
+        } else {
+            initApp();
+        }
+
+        socket.on("connect", () => {
+            fetchBoard();
         });
 
         socket.on("board_updated", (data) => {
@@ -1370,20 +1384,30 @@
         }
 
         async function fetchBoard() {
+            if (_fetchBoardRetryTimeout) {
+                clearTimeout(_fetchBoardRetryTimeout);
+                _fetchBoardRetryTimeout = null;
+            }
             try {
                 const res = await fetch("/api/board");
                 if (res.ok) {
                     boardData = await res.json();
                     renderBoard();
+                } else {
+                    console.warn("Resposta não-OK ao carregar quadro:", res.status);
+                    _fetchBoardRetryTimeout = setTimeout(fetchBoard, 1500);
                 }
             } catch (err) {
-                console.error("Erro ao carregar quadro:", err);
+                console.warn("Aguardando servidor carregar quadro:", err);
+                _fetchBoardRetryTimeout = setTimeout(fetchBoard, 1500);
             }
         }
 
         function renderBoard() {
+            if (!boardData || !Array.isArray(boardData.lists)) return;
             checkCloudBackupSchedule();
             const container = document.getElementById("boardContainer");
+            if (!container) return;
             container.innerHTML = "";
 
             let activeCards = 0;
@@ -1803,7 +1827,7 @@
 
         function filterCards() {
             const input = document.getElementById("searchInput");
-            const q = input.value.trim().toLowerCase();
+            const q = (input && typeof input.value === "string") ? input.value.trim().toLowerCase() : "";
             const clearBtn = document.getElementById("clearSearchBtn");
             const dropdown = document.getElementById("searchSuggestionsDropdown");
 
@@ -3179,10 +3203,6 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
         // ==============================================================================
         // MÓDULO DE CHAMADOS EXTERNOS & ROTAS DE RUA (PRISCILA / ADM)
         // ==============================================================================
-        let currentAdminExternosSummary = null;
-        let activeAdminView = "kanban";
-        // Turno inicial automático baseado no relógio do PC (< 11h = Manhã, >= 11h = Tarde)
-        let currentAdminShift = new Date().getHours() < 11 ? "manha" : "tarde";
 
         function setAdminShift(shift) {
             currentAdminShift = shift;
