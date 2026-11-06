@@ -436,5 +436,10 @@ def stop_pdf_watcher():
         except Exception:
             pass
         _observer = None
+    if _poll_thread and _poll_thread.is_alive():
+        try:
+            _poll_thread.join(timeout=2.0)
+        except Exception:
+            pass
     _poll_thread = None
     logger.info("Monitor Watchdog de PDFs finalizado.")

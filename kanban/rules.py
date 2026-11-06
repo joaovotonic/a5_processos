@@ -85,3 +85,32 @@ def is_nao_autorizados_list(lst):
     return "nao_autorizado" in role or "NÃO AUTORIZAD" in title or "NAO AUTORIZAD" in title
 
 
+def is_balancas_pendentes_list(lst):
+    """Coluna de balanças aprovadas aguardando reposição de peças (oculto na TV)."""
+    if lst is None:
+        return False
+    d = _as_dict(lst)
+    role = (d.get("role") or "").lower()
+    title = (d.get("title") or "").upper()
+    return "balancas_pendentes" in role or "PENDENTE" in title
+
+
+def clean_approved_labels(labels_list):
+    """
+    Ao aprovar um equipamento, remove etiquetas temporárias (como AGUARDANDO, FEITO ORÇ.),
+    mas MANTÉM estritamente 'EM GARANTIA' ou 'URGENTE' / 'URGÊNCIA'.
+    """
+    if not labels_list:
+        return []
+    kept = []
+    for lbl in labels_list:
+        name = ""
+        if isinstance(lbl, dict):
+            name = (lbl.get("name") or "").strip().upper()
+        elif isinstance(lbl, str):
+            name = lbl.strip().upper()
+        if name in ("URGENTE", "URGÊNCIA", "EM GARANTIA"):
+            kept.append(lbl)
+    return kept
+
+

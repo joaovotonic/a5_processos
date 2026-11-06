@@ -4,7 +4,7 @@ import re
 import sqlite3
 from datetime import datetime, timedelta
 
-from .. import rules
+from .. import rules, realtime
 from ..config import DEFAULT_EQUIPMENT_TYPE, UPLOAD_FOLDER
 from ..database import connect
 from ..errors import ApiError, NotFound
@@ -422,6 +422,17 @@ def move_card(card_id, target_list_id, new_position, actor, ordered_card_ids=Non
                 finished_at = None
                 quote_status = "approved"
                 pipeline_phase = "APROVADOS"
+                if not (old_list and rules.is_approved_list(old_list)):
+                    try:
+                        cur_labels = json.loads(card_row["labels_json"] or "[]")
+                        cleaned_lbls = rules.clean_approved_labels(cur_labels)
+                        conn.execute("UPDATE cards SET labels_json = ? WHERE id = ?", (json.dumps(cleaned_lbls, ensure_ascii=False), card_id))
+                    except Exception:
+                        pass
+            elif rules.is_balancas_pendentes_list(new_list):
+                finished_at = None
+                quote_status = "approved"
+                pipeline_phase = "BALANCAS_PENDENTES"
             elif rules.is_orcamento_entry_list(new_list):
                 finished_at = None
                 quote_status = "pending_claim"
@@ -743,13 +754,21 @@ def approve_card_quote(card_id, actor=RECEPTION_ACTOR):
         new_pos = _next_position(conn, target_list_id) if target_list_id != card_row["list_id"] else card_row["position"]
         now_iso = _now()
 
+        try:
+            cur_labels = json.loads(card_row["labels_json"] or "[]")
+            cleaned_lbls = rules.clean_approved_labels(cur_labels)
+            cleaned_json = json.dumps(cleaned_lbls, ensure_ascii=False)
+        except Exception:
+            cleaned_json = card_row["labels_json"] or "[]"
+
         conn.execute("""
             UPDATE cards
             SET list_id = ?, position = ?, quote_status = 'approved',
                 pipeline_phase = 'APROVADOS', finished_at = NULL,
+                labels_json = ?,
                 updated_at = ?, moved_at = ?
             WHERE id = ?
-        """, (target_list_id, new_pos, now_iso, now_iso, card_id))
+        """, (target_list_id, new_pos, cleaned_json, now_iso, now_iso, card_id))
 
         _add_history(
             conn, card_id, card_row["os_number"], old_title, target_title,
@@ -1032,6 +1051,127 @@ def cancel_card(card_id, actor=RECEPTION_ACTOR, reason="Cancelado pela Recepçã
         updated_row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
 
     return enrich_card(updated_row)
+
+
+def toggle_card_label(card_id, label_name, color=None, text_color="#FFFFFF", priority=1, actor=RECEPTION_ACTOR):
+    """
+    Alterna (marca/desmarca) uma etiqueta no cartão.
+    Regras de Negócio:
+    1. Se a balança estiver na coluna ORÇAMENTOS:
+       - Permite apenas 'URGENTE' / 'URGÊNCIA' e 'EM GARANTIA'.
+       - Ao marcar URGÊNCIA ou EM GARANTIA, emite notificação pequena na TV.
+    2. Se a balança sair de ORÇAMENTOS (técnicos, feitos, aprovados, etc.):
+       - Libera todas as opções de etiquetas padrão ou novas personalizadas.
+    """
+    clean_name = str(label_name or "").strip()
+    if not clean_name:
+        raise ApiError("Nome da etiqueta não informado.")
+
+    u_name = clean_name.upper()
+
+    with connect() as conn:
+        card_row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
+        if not card_row:
+            raise NotFound("Cartão não encontrado.")
+
+        cur_list = _get_list(conn, card_row["list_id"])
+        is_orcamentos = bool(cur_list and rules.is_orcamento_entry_list(cur_list))
+
+        if is_orcamentos:
+            if u_name not in ("URGENTE", "URGÊNCIA", "EM GARANTIA"):
+                raise ApiError("Na fila de Orçamentos, apenas as opções URGÊNCIA e EM GARANTIA são permitidas.")
+
+        try:
+            labels = json.loads(card_row["labels_json"] or "[]")
+        except Exception:
+            labels = []
+
+        existing_idx = next(
+            (i for i, l in enumerate(labels) if (l.get("name") or "").strip().upper() == u_name),
+            -1
+        )
+
+        is_active = False
+        if existing_idx >= 0:
+            labels.pop(existing_idx)
+            is_active = False
+            action_desc = f"Etiqueta '{clean_name}' desmarcada"
+        else:
+            db_label = conn.execute("SELECT * FROM labels WHERE UPPER(name) = ? LIMIT 1", (u_name,)).fetchone()
+            if db_label:
+                final_color = color or db_label["color"]
+                final_text_color = db_label["text_color"] or text_color
+                final_priority = db_label["priority"] or priority
+            else:
+                if u_name in ("URGENTE", "URGÊNCIA"):
+                    final_color = color or "#EF4444"
+                    final_priority = 10
+                elif u_name == "EM GARANTIA":
+                    final_color = color or "#8B5CF6"
+                    final_priority = 9
+                elif u_name == "FALTA PEÇA":
+                    final_color = color or "#F97316"
+                    final_priority = 3
+                elif u_name == "AGUARDANDO":
+                    final_color = color or "#F59E0B"
+                    final_priority = 1
+                elif u_name == "FEITO ORÇ.":
+                    final_color = color or "#0EA5E9"
+                    final_priority = 2
+                elif u_name == "AGUARDANDO PAGAMENTO":
+                    final_color = color or "#EC4899"
+                    final_priority = 1
+                else:
+                    final_color = color or "#3B82F6"
+                    final_priority = priority
+
+                final_text_color = text_color
+                try:
+                    conn.execute(
+                        "INSERT OR IGNORE INTO labels (name, color, text_color, priority) VALUES (?, ?, ?, ?)",
+                        (clean_name, final_color, final_text_color, final_priority)
+                    )
+                except Exception:
+                    pass
+
+            labels.append({
+                "name": clean_name,
+                "color": final_color,
+                "text_color": final_text_color,
+                "priority": final_priority
+            })
+            is_active = True
+            action_desc = f"Etiqueta '{clean_name}' marcada"
+
+            # Se marcou e está em ORÇAMENTOS (URGÊNCIA ou EM GARANTIA), notifica na TV!
+            if is_orcamentos and u_name in ("URGENTE", "URGÊNCIA", "EM GARANTIA"):
+                realtime.emit_tv_mini_alert(
+                    os_number=card_row["os_number"],
+                    client_name=card_row["client_name"],
+                    label_name=clean_name,
+                    color=final_color
+                )
+
+        now_iso = _now()
+        new_labels_json = json.dumps(labels, ensure_ascii=False)
+        conn.execute("UPDATE cards SET labels_json = ?, updated_at = ? WHERE id = ?", (new_labels_json, now_iso, card_id))
+
+        _add_history(
+            conn, card_id, card_row["os_number"],
+            cur_list["title"] if cur_list else "",
+            cur_list["title"] if cur_list else "",
+            actor, action_desc, now_iso
+        )
+
+        updated_row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
+
+    realtime.broadcast_board()
+    return {
+        "success": True,
+        "active": is_active,
+        "labels": labels,
+        "card": enrich_card(updated_row)
+    }
 
 
 # ==============================================================================

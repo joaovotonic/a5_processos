@@ -257,6 +257,17 @@ def cancel_card(card_id):
     return jsonify({"success": True, "card": card, "board": board})
 
 
+@bp.route("/cards/<int:card_id>/toggle-label", methods=["POST"])
+def toggle_card_label(card_id):
+    """Alterna (marca/desmarca) uma etiqueta na balança."""
+    data = json_body()
+    label_name = (data.get("name") or data.get("label_name") or "").strip()
+    color = (data.get("color") or "").strip() or None
+    actor = data.get("actor") or "Priscila (Recepção)"
+    result = cards_service.toggle_card_label(card_id, label_name, color=color, actor=actor)
+    return jsonify(result)
+
+
 @bp.route("/cards/<int:card_id>/update", methods=["POST"])
 def update_card(card_id):
     """Atualiza etiquetas, Nº da O.S., dados do cliente, anotações da Priscila, prateleira ou fotos."""

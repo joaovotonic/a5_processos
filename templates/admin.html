@@ -1420,6 +1420,10 @@
                 if (isNaoAutCol) {
                     headerAccent = "border-l-4 border-rose-500 bg-rose-500/10";
                 }
+                const isPendentesCol = list.role === "balancas_pendentes" || (list.title && list.title.toUpperCase().includes("PENDENTE"));
+                if (isPendentesCol) {
+                    headerAccent = "border-l-4 border-orange-500 bg-orange-500/10";
+                }
                 const canDeleteEmpty = list.cards.length === 0;
 
                 const isLargeList = list.cards.length > 80;
@@ -2343,6 +2347,210 @@
                 </div>
             `;
 
+            // -------------------------------------------------------------
+            // REGRAS E ETIQUETAS DA BALANÇA (PRISCILA)
+            // -------------------------------------------------------------
+            const curListTitle = (card.list_title || "").toUpperCase();
+            const curListRole = (card.list_role || "").toLowerCase();
+            const isOrcamentosCol = curListRole === "orcamento" || (curListTitle === "ORÇAMENTOS" || curListTitle === "ORCAMENTOS");
+            const isAprovadosCol = curListRole.includes("aprovad") || curListTitle.includes("APROVAD");
+            const isPendentesCol = curListRole.includes("pendente") || curListTitle.includes("PENDENTE");
+
+            const activeLabels = card.labels || [];
+            const isLabelActive = (name) => activeLabels.some(l => l.name && l.name.trim().toUpperCase() === name.trim().toUpperCase());
+            const hasFaltaPeca = isLabelActive("FALTA PEÇA") || isLabelActive("Falta Peça");
+            const isUrgent = isLabelActive("URGENTE") || isLabelActive("URGÊNCIA");
+            const isWarranty = isLabelActive("EM GARANTIA");
+
+            let labelsSectionHTML = "";
+
+            if (isOrcamentosCol) {
+                // REGRA 1: Na coluna de ORÇAMENTOS, APENAS URGÊNCIA e EM GARANTIA
+                labelsSectionHTML = `
+                    <div class="p-4 mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/5 dark:bg-rose-950/20 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🚨</span>
+                                <span class="text-xs font-black uppercase tracking-wider text-rose-500 dark:text-rose-400">Prioridades em Orçamentos</span>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                Notifica na TV da Oficina
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-zinc-400">
+                            Na fase de Orçamentos, marque se a balança possui atendimento prioritário:
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <button type="button" onclick="toggleCardLabelDirect(${card.id}, 'URGENTE', '#EF4444')"
+                                class="px-4 py-2.5 rounded-xl border text-xs font-black transition flex items-center justify-between shadow-sm ${
+                                    isUrgent 
+                                        ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-600 shadow-rose-600/30 ring-2 ring-rose-400/50' 
+                                        : 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-rose-400'
+                                }">
+                                <span class="flex items-center gap-2">
+                                    <span>🔥</span>
+                                    <span>URGÊNCIA</span>
+                                </span>
+                                <span class="text-xs">${isUrgent ? '✓ Marcado' : '+ Marcar'}</span>
+                            </button>
+
+                            <button type="button" onclick="toggleCardLabelDirect(${card.id}, 'EM GARANTIA', '#8B5CF6')"
+                                class="px-4 py-2.5 rounded-xl border text-xs font-black transition flex items-center justify-between shadow-sm ${
+                                    isWarranty 
+                                        ? 'bg-purple-600 hover:bg-purple-500 text-white border-purple-600 shadow-purple-600/30 ring-2 ring-purple-400/50' 
+                                        : 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-purple-400'
+                                }">
+                                <span class="flex items-center gap-2">
+                                    <span>🛡️</span>
+                                    <span>EM GARANTIA</span>
+                                </span>
+                                <span class="text-xs">${isWarranty ? '✓ Marcado' : '+ Marcar'}</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else if (isAprovadosCol || isPendentesCol) {
+                // REGRA 2: Na coluna APROVADOS ou BALANÇAS PENDENTES:
+                // Dá a opção de FALTA PEÇA com destaque, além de manter URGÊNCIA e EM GARANTIA
+                labelsSectionHTML = `
+                    <div class="p-4 mb-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🏷️</span>
+                                <span class="text-xs font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Etiquetas do Equipamento Aprovado</span>
+                            </div>
+                            ${isPendentesCol ? `
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/40">
+                                    📦 BALANÇAS PENDENTES (Oculto na TV)
+                                </span>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="toggleCardLabelDirect(${card.id}, 'FALTA PEÇA', '#F97316')"
+                                class="px-3.5 py-2 rounded-xl border text-xs font-black transition flex items-center gap-2 shadow-sm ${
+                                    hasFaltaPeca 
+                                        ? 'bg-orange-500 hover:bg-orange-400 text-white border-orange-500 shadow-orange-500/30 ring-2 ring-orange-400/50' 
+                                        : 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-orange-400'
+                                }">
+                                <span>📦</span>
+                                <span>FALTA PEÇA</span>
+                                <span class="text-[10px] opacity-80">${hasFaltaPeca ? '✓' : '+'}</span>
+                            </button>
+
+                            <button type="button" onclick="toggleCardLabelDirect(${card.id}, 'URGENTE', '#EF4444')"
+                                class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 shadow-sm ${
+                                    isUrgent 
+                                        ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-600' 
+                                        : 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-rose-400'
+                                }">
+                                <span>🔥</span>
+                                <span>URGÊNCIA</span>
+                                <span class="text-[10px] opacity-80">${isUrgent ? '✓' : '+'}</span>
+                            </button>
+
+                            <button type="button" onclick="toggleCardLabelDirect(${card.id}, 'EM GARANTIA', '#8B5CF6')"
+                                class="px-3.5 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 shadow-sm ${
+                                    isWarranty 
+                                        ? 'bg-purple-600 hover:bg-purple-500 text-white border-purple-600' 
+                                        : 'bg-white dark:bg-zinc-900 border-slate-300 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-purple-400'
+                                }">
+                                <span>🛡️</span>
+                                <span>EM GARANTIA</span>
+                                <span class="text-[10px] opacity-80">${isWarranty ? '✓' : '+'}</span>
+                            </button>
+
+                            <button type="button" onclick="addNewCustomLabel(${card.id})"
+                                class="px-3 py-2 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 hover:border-sky-500 hover:text-sky-400 text-xs font-semibold transition flex items-center gap-1.5">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                <span>+ Nova Opção</span>
+                            </button>
+                        </div>
+
+                        ${hasFaltaPeca ? `
+                            <div class="p-3 rounded-xl bg-orange-500/15 border border-orange-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-xl">⚠️</span>
+                                    <div>
+                                        <div class="text-xs font-black text-orange-400">
+                                            Equipamento Aprovado Faltando Peça!
+                                        </div>
+                                        <div class="text-[11px] text-slate-600 dark:text-zinc-300">
+                                            ${isPendentesCol ? 'A balança está guardada na lista BALANÇAS PENDENTES (oculta da TV).' : 'Mova para a coluna de BALANÇAS PENDENTES para não poluir a TV da oficina.'}
+                                        </div>
+                                    </div>
+                                </div>
+                                ${!isPendentesCol ? `
+                                    <button type="button" onclick="moveToBalancasPendentes(${card.id})"
+                                        class="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 active:scale-[0.98] text-slate-950 font-black text-xs shadow-md transition flex items-center justify-center gap-1.5 shrink-0">
+                                        <i data-lucide="inbox" class="w-4 h-4"></i>
+                                        <span>Mover p/ BALANÇAS PENDENTES</span>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                // REGRA 3: Fora de Orçamentos (Bancadas, Feitos, Enviados, etc.):
+                const standardTags = [
+                    { name: 'URGENTE', label: '🔥 Urgência', color: '#EF4444' },
+                    { name: 'EM GARANTIA', label: '🛡️ Garantia', color: '#8B5CF6' },
+                    { name: 'FALTA PEÇA', label: '📦 Falta Peça', color: '#F97316' },
+                    { name: 'AGUARDANDO', label: '⏳ Aguardando', color: '#F59E0B' },
+                    { name: 'FEITO ORÇ.', label: '🔬 Feito Orç.', color: '#0EA5E9' },
+                    { name: 'AGUARDANDO PAGAMENTO', label: '💳 Aguard. Pagto', color: '#EC4899' }
+                ];
+
+                const customTagsOnCard = activeLabels.filter(al => 
+                    !standardTags.some(st => st.name.toUpperCase() === (al.name || '').toUpperCase())
+                );
+
+                labelsSectionHTML = `
+                    <div class="p-4 mb-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base">🏷️</span>
+                                <span class="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-zinc-300">Etiquetas e Marcações da O.S.</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 dark:text-zinc-400">Clique para alternar</span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            ${standardTags.map(st => {
+                                const active = isLabelActive(st.name);
+                                return `
+                                    <button type="button" onclick="toggleCardLabelDirect(${card.id}, '${st.name}', '${st.color}')"
+                                        class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 shadow-sm ${
+                                            active 
+                                                ? 'text-white shadow-md ring-2 ring-white/20' 
+                                                : 'bg-white dark:bg-zinc-950 border-slate-300 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:border-sky-400'
+                                        }" style="${active ? `background-color: ${st.color}; border-color: ${st.color}` : ''}">
+                                        <span>${st.label}</span>
+                                        <span class="text-[10px] opacity-80">${active ? '✓' : '+'}</span>
+                                    </button>
+                                `;
+                            }).join("")}
+
+                            ${customTagsOnCard.map(ct => `
+                                <button type="button" onclick="toggleCardLabelDirect(${card.id}, '${esc(ct.name)}', '${esc(ct.color || '#3B82F6')}')"
+                                    class="px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-md ring-2 ring-white/20 flex items-center gap-1.5"
+                                    style="background-color: ${esc(ct.color || '#3B82F6')}; border: 1px solid ${esc(ct.color || '#3B82F6')}">
+                                    <span>${esc(ct.name)}</span>
+                                    <span class="text-[10px]">✕</span>
+                                </button>
+                            `).join("")}
+
+                            <button type="button" onclick="addNewCustomLabel(${card.id})"
+                                class="px-3 py-1.5 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 hover:border-sky-500 hover:text-sky-400 text-xs font-semibold transition flex items-center gap-1.5">
+                                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                <span>+ Nova Etiqueta</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
             const modalContent = document.getElementById("cardDetailContent");
             modalContent.innerHTML = `
                 <!-- 1. HEADER DO MODAL -->
@@ -2416,6 +2624,9 @@
                         <span>Nº Equip / Série: <strong class="text-slate-900 dark:text-zinc-100 font-mono font-bold">${esc(card.serial_number || 'N/I')}</strong></span>
                     </p>
                 </div>
+
+                <!-- 2.1 ETIQUETAS E PRIORIDADES DA BALANÇA (PRISCILA) -->
+                ${labelsSectionHTML}
 
                 <!-- 3. FASE ATUAL DA ESTEIRA DE PRODUÇÃO -->
                 <div class="p-4 mb-4 rounded-2xl border border-sky-500/20 bg-sky-500/5 dark:bg-sky-950/20 space-y-3">
@@ -2587,6 +2798,71 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                     btn.disabled = false;
                     btn.innerHTML = origHTML;
                 }
+            }
+        }
+
+        async function toggleCardLabelDirect(cardId, labelName, color) {
+            try {
+                const res = await fetch(`/api/cards/${cardId}/toggle-label`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: labelName,
+                        color: color,
+                        actor: "Priscila (Recepção)"
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || "Não foi possível atualizar a etiqueta.");
+                    return;
+                }
+                await fetchBoard();
+                if (window._lastOpenedCard?.os_number) {
+                    await openCardDetail(window._lastOpenedCard.os_number);
+                }
+            } catch (err) {
+                alert("Erro de conexão ao alternar etiqueta.");
+            }
+        }
+
+        async function addNewCustomLabel(cardId) {
+            const name = prompt("Digite o nome da nova etiqueta:");
+            if (!name || !name.trim()) return;
+            await toggleCardLabelDirect(cardId, name.trim(), "#3B82F6");
+        }
+
+        async function moveToBalancasPendentes(cardId) {
+            if (!boardData?.lists) return;
+            const pendList = boardData.lists.find(l => 
+                (l.role && l.role.toLowerCase() === "balancas_pendentes") || 
+                (l.title && l.title.toUpperCase().includes("PENDENTE"))
+            );
+            if (!pendList) {
+                alert("Coluna BALANÇAS PENDENTES não encontrada.");
+                return;
+            }
+            try {
+                const res = await fetch(`/api/cards/${cardId}/move`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        target_list_id: pendList.id,
+                        new_position: 0,
+                        actor: "Priscila (Recepção)"
+                    })
+                });
+                if (res.ok) {
+                    await fetchBoard();
+                    if (window._lastOpenedCard?.os_number) {
+                        await openCardDetail(window._lastOpenedCard.os_number);
+                    }
+                } else {
+                    const err = await res.json();
+                    alert(err.error || "Erro ao transferir para Balanças Pendentes.");
+                }
+            } catch (err) {
+                alert("Erro de conexão ao transferir balança.");
             }
         }
 

@@ -353,6 +353,23 @@
     <!-- QUADRO KANBAN DA OFICINA -->
     <main id="tvBoard" class="flex-1 flex items-stretch gap-4 p-4 overflow-hidden"></main>
 
+    <!-- NOTIFICAÇÃO DISCRETA (MINI ALERT SUPERIOR NA TV: URGÊNCIA / EM GARANTIA NA FILA DE ORÇAMENTOS) -->
+    <div id="tvMiniAlert" class="fixed top-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-500 transform -translate-y-36 opacity-0 pointer-events-none max-w-xl w-[90%]">
+        <div id="tvMiniAlertInner" class="flex items-center gap-3.5 px-6 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-white/20 text-white font-bold text-sm">
+            <div id="tvMiniAlertIconBox" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white/20 text-2xl shadow-sm animate-pulse">
+                ⚠️
+            </div>
+            <div class="flex-1 min-w-0">
+                <div id="tvMiniAlertCategory" class="text-[10px] uppercase font-mono font-bold tracking-widest opacity-90 flex items-center gap-1.5">
+                    <span>Atenção Oficina • Fila de Orçamentos</span>
+                </div>
+                <div id="tvMiniAlertMessage" class="text-sm md:text-base font-black truncate text-white drop-shadow-sm">
+                    O.S. marcada como URGÊNCIA!
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- POP-UP GIGANTE DE ANÚNCIO / VOZ (ORÇAMENTO, APROVADA, FINALIZADA, ESTUFA) -->
     <div id="tvAnnouncementModal" class="fixed inset-0 bg-black/85 backdrop-blur-xl hidden items-center justify-center z-50 p-6 md:p-12">
         <div id="tvAnnouncementBox" class="max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 shadow-2xl transform transition-all duration-300 scale-100 overflow-hidden relative">
@@ -670,6 +687,58 @@
         socket.on("tv_announcement", (payload) => {
             registerActivity();
             triggerTvAnnouncement(payload);
+        });
+
+        // MINI ALERTA DISCRETO NA TV (URGENTE / EM GARANTIA EM ORÇAMENTOS)
+        let tvMiniAlertTimer = null;
+        socket.on("tv_mini_alert", (payload) => {
+            registerActivity();
+            const alertEl = document.getElementById("tvMiniAlert");
+            const innerEl = document.getElementById("tvMiniAlertInner");
+            const iconBox = document.getElementById("tvMiniAlertIconBox");
+            const catEl = document.getElementById("tvMiniAlertCategory");
+            const msgEl = document.getElementById("tvMiniAlertMessage");
+            if (!alertEl || !innerEl) return;
+
+            const isUrg = payload.is_urgent || (payload.label_name || "").toUpperCase().includes("URG");
+            const isWarranty = payload.is_warranty || (payload.label_name || "").toUpperCase().includes("GARANTIA");
+
+            if (isUrg) {
+                innerEl.style.background = "linear-gradient(135deg, rgba(220, 38, 38, 0.96), rgba(153, 27, 27, 0.96))";
+                innerEl.style.borderColor = "rgba(248, 113, 113, 0.6)";
+                innerEl.style.boxShadow = "0 10px 40px rgba(239, 68, 68, 0.4)";
+                iconBox.textContent = "🚨";
+                catEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/30 text-rose-200">URGÊNCIA EM ORÇAMENTOS</span>`;
+            } else if (isWarranty) {
+                innerEl.style.background = "linear-gradient(135deg, rgba(124, 58, 237, 0.96), rgba(91, 33, 182, 0.96))";
+                innerEl.style.borderColor = "rgba(167, 139, 250, 0.6)";
+                innerEl.style.boxShadow = "0 10px 40px rgba(139, 92, 246, 0.4)";
+                iconBox.textContent = "🛡️";
+                catEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/30 text-purple-200">EM GARANTIA • ORÇAMENTOS</span>`;
+            } else {
+                innerEl.style.background = "linear-gradient(135deg, rgba(14, 165, 233, 0.96), rgba(2, 132, 199, 0.96))";
+                innerEl.style.borderColor = "rgba(56, 189, 248, 0.6)";
+                innerEl.style.boxShadow = "0 10px 40px rgba(14, 165, 233, 0.4)";
+                iconBox.textContent = "📋";
+                catEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/30 text-sky-200">ORÇAMENTOS</span>`;
+            }
+
+            msgEl.textContent = `O.S. ${payload.os_number} (${payload.client_name}) marcada como ${payload.label_name}!`;
+
+            // Toca um chime discreto se não estiver mutada
+            if (!tvMuted && typeof playSynthesizedSound === "function") {
+                try { playSynthesizedSound("bell", false); } catch(e) {}
+            }
+
+            // Exibe deslizando do topo suavemente
+            alertEl.classList.remove("-translate-y-36", "opacity-0");
+            alertEl.classList.add("translate-y-0", "opacity-100");
+
+            if (tvMiniAlertTimer) clearTimeout(tvMiniAlertTimer);
+            tvMiniAlertTimer = setTimeout(() => {
+                alertEl.classList.remove("translate-y-0", "opacity-100");
+                alertEl.classList.add("-translate-y-36", "opacity-0");
+            }, 7500);
         });
 
         function refreshLucide() {

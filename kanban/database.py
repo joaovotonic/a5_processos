@@ -19,6 +19,8 @@ os.makedirs(ROTAS_IMAGENS_DIR, exist_ok=True)
 # Listas padrões da Esteira de Produção da A5 Tecnologia
 INITIAL_LISTS = [
     {"title": "ORÇAMENTOS", "is_tech": 0, "role": "orcamento"},
+    {"title": "APROVADOS", "is_tech": 0, "role": "aprovados"},
+    {"title": "BALANÇAS PENDENTES", "is_tech": 0, "role": "balancas_pendentes"},
     {"title": "TEC. João Otoni", "is_tech": 1, "role": "tech"},
     {"title": "TEC. Enzo Gabriel", "is_tech": 1, "role": "tech"},
     {"title": "TEC. Guilherme", "is_tech": 1, "role": "tech"},
@@ -27,7 +29,6 @@ INITIAL_LISTS = [
     {"title": "TEC. ANTONIO", "is_tech": 1, "role": "tech"},
     {"title": "ORÇAMENTOS FEITOS", "is_tech": 0, "role": "orcamentos_feitos"},
     {"title": "ORÇAMENTOS ENVIADOS", "is_tech": 0, "role": "orcamentos_enviados"},
-    {"title": "APROVADOS", "is_tech": 0, "role": "aprovados"},
     {"title": "FINALIZADAS", "is_tech": 0, "role": "finalizada"}
 ]
 
@@ -254,6 +255,19 @@ def _ensure_esteira_lists(cursor):
     cursor.execute("UPDATE lists SET title = 'ORÇAMENTOS ENVIADOS', role = 'orcamentos_enviados' WHERE title = 'ORÇAMENTOS ENVIADOS';")
     cursor.execute("UPDATE lists SET title = 'APROVADOS', role = 'aprovados' WHERE title = 'APROVADAS' OR title = 'APROVADOS';")
     cursor.execute("UPDATE lists SET title = 'FINALIZADAS', role = 'finalizada' WHERE title = 'BALANÇAS PRONTAS' OR title = 'FINALIZADAS';")
+    cursor.execute("UPDATE lists SET title = 'BALANÇAS PENDENTES', role = 'balancas_pendentes' WHERE title = 'BALANÇAS PENDENTES' OR role = 'balancas_pendentes';")
+
+    # Garante que a coluna BALANÇAS PENDENTES exista posicionada logo após APROVADOS
+    has_pend = cursor.execute("SELECT id FROM lists WHERE role = 'balancas_pendentes' OR title = 'BALANÇAS PENDENTES'").fetchone()
+    if not has_pend:
+        apr_row = cursor.execute("SELECT position FROM lists WHERE role = 'aprovados' OR title = 'APROVADOS' ORDER BY position ASC LIMIT 1").fetchone()
+        target_pos = (apr_row["position"] + 1) if apr_row else 2
+        cursor.execute("UPDATE lists SET position = position + 1 WHERE position >= ?", (target_pos,))
+        cursor.execute(
+            "INSERT INTO lists (title, position, is_tech, role) VALUES ('BALANÇAS PENDENTES', ?, 0, 'balancas_pendentes')",
+            (target_pos,)
+        )
+
     # Remove colunas desnecessárias do kanban antigo se existirem
     cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'PENDÊNCIAS', 'BALANÇAS PRONTAS');")
 

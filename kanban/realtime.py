@@ -178,3 +178,21 @@ def notify_admin(payload):
     _emit_safe("admin_notification", payload)
 
 
+def emit_tv_mini_alert(os_number, client_name, label_name, color="#EF4444"):
+    """
+    Envia notificação pequena e discreta para a TV da oficina quando uma O.S.
+    em Orçamentos é marcada com URGÊNCIA ou EM GARANTIA.
+    """
+    clean_label = str(label_name or "").strip()
+    payload = {
+        "os_number": str(os_number or ""),
+        "client_name": str(client_name or ""),
+        "label_name": clean_label,
+        "color": color,
+        "is_urgent": "URG" in clean_label.upper(),
+        "is_warranty": "GARANTIA" in clean_label.upper(),
+        "message": f"O.S. {os_number} ({client_name}) marcada como {clean_label} na fila de Orçamentos!"
+    }
+    _emit_safe("tv_mini_alert", payload)
+
+

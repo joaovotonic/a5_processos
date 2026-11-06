@@ -351,15 +351,25 @@ def adm_aprovar(os_number: str) -> Dict[str, Any]:
         dest_title = dest_col["title"] if dest_col else "APROVADOS"
         pos = _next_position(conn, dest_list_id)
 
+        try:
+            import json
+            from ..rules import clean_approved_labels
+            cur_labels = json.loads(card["labels_json"] or "[]")
+            cleaned_lbls = clean_approved_labels(cur_labels)
+            cleaned_json = json.dumps(cleaned_lbls, ensure_ascii=False)
+        except Exception:
+            cleaned_json = card["labels_json"] or "[]"
+
         conn.execute("""
             UPDATE cards
             SET pipeline_phase = 'APROVADOS',
                 list_id = ?,
                 position = ?,
+                labels_json = ?,
                 moved_at = ?,
                 updated_at = ?
             WHERE id = ?
-        """, (dest_list_id, pos, now_iso, now_iso, card_id))
+        """, (dest_list_id, pos, cleaned_json, now_iso, now_iso, card_id))
 
         conn.execute("""
             INSERT INTO card_history (card_id, os_number, from_list, to_list, actor, action_description, timestamp)
