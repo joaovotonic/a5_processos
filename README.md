@@ -93,6 +93,7 @@ O serviço `pdf_watcher` monitora continuamente duas pastas independentes (via `
 * **Montagem de Rota na Diretoria (`/diretoria`)**:
   * Separação por **Turno da Manhã** e **Turno da Tarde**.
   * Atribuição para técnicos de campo individuais ou duplas (`EDSON`, `ANTONIO`, `ENZO`, `JOAO`, `ENZO / JOAO`, `ENZO / EDSON`, `EDSON / ANTONIO`, etc.) com ordenação de paradas (`1ª PARADA`, `2ª PARADA`...).
+  * Após finalizar, o Sr. Jacson também vê abaixo do quadro a mesma visualização da rota liberada para a Recepção.
   * **Geração Automática de Cards PNG e Texto para WhatsApp**: gera imagens prontas por técnico e o card da **Rota Geral Conjunta**, salvando automaticamente em `./rotas_imagens/`.
   * **Controle de Atendimento e Remarcação**: permite marcar chamados como **Atendido** ou **Não Atendido** (registrando o motivo obrigatório e permitindo remarcar com 1 clique para o turno da tarde ou para outro dia).
   * **Exportação CSV para Excel**: gera planilha com codificação `UTF-8-BOM` e separador `;` pronta para abrir no Microsoft Excel.
@@ -104,6 +105,7 @@ O serviço `pdf_watcher` monitora continuamente duas pastas independentes (via `
 * **Exibição Limpa e Focada**: exibe `ORÇAMENTOS`, `APROVADOS` e `BANCADAS EM ATENDIMENTO` (ocultando automaticamente `BALANÇAS PENDENTES`, `FINALIZADAS` e `NÃO AUTORIZADOS`).
 * **Notificação Discreta de Etiquetas**: ao marcar `URGÊNCIA` ou `EM GARANTIA` em um orçamento, exibe um *toast* discreto de 6 segundos no canto superior direito da TV com chime suave, sem interromper a tela.
 * **Voz Neural Edge-TTS + Campainha (`campainha.wav`)**: anuncia aprovações de O.S., chamadas de técnicos à recepção, chamadas de ADM (*Arthur / Roosevelt*) para balanças não autorizadas e avisos da diretoria com redução automática de música de fundo (*audio ducking*).
+* **Chamadas rápidas da Diretoria**: os botões individuais seguem a sequência João Otoni, Wisley, Guilherme, Arthur, Priscila, Roosevelt, Iago, Enzo, Edson e Antonio; cada botão identifica visualmente se a pessoa é Técnico ou ADM.
 
 ---
 
@@ -117,12 +119,24 @@ O sistema possui integração nativa com o repositório GitHub (`joaovotonic/a5_
 | Script | Função |
 | :--- | :--- |
 | **`ATUALIZAR_SISTEMA.bat`** | Exibe um menu com **2 opções** para a recepção:<br/>• **`[1]` Atualizar apenas Código e Melhorias (Padrão do Dia a Dia)**: baixa novas funções do GitHub **sem alterar nem sobrescrever** os cartões e listas locais.<br/>• **`[2]` Atualizar Tudo + Restaurar Cartões e Posições da Nuvem**: baixa o código e restaura as listas, posições e cartões exatamente como foram salvos no último backup na nuvem. |
-| **`INICIAR_SISTEMA.bat`** | Inicia o servidor Flask/SocketIO em segundo plano (`pythonw`) e abre o navegador em `http://localhost:5000/admin`. |
-| **`INSTALAR_INICIALIZACAO_AUTOMATICA.bat`** | Configura o Windows (`shell:startup`) para iniciar o servidor automaticamente em segundo plano assim que o computador da recepção for ligado pela manhã. |
+| **`INICIAR_SERVIDOR.bat`** | Inicia o servidor A5 e o Cloudflare Tunnel protegido, instala dependências ausentes e abre o painel de produção. |
+| **`INSTALAR_INICIALIZACAO_AUTOMATICA.bat`** | Configura o Windows (`shell:startup`) para iniciar o servidor automaticamente quando a conta configurada entrar no Windows. |
 | **`CRIAR_ATALHO_AREA_DE_TRABALHO.bat`** | Cria os atalhos na Área de Trabalho do Windows para acesso rápido. |
 | **`ZERAR_RELATORIO_JACSON.bat`** | Define um novo marco inicial para os indicadores de produtividade do relatório da Diretoria sem mover nem apagar nenhum cartão do Kanban. |
 
 ---
+
+## Acesso remoto protegido com Cloudflare
+
+O `INICIAR_SERVIDOR.bat` inicia o A5 e o Tunnel `a5-producao` para `kanban.a5painel.cloud`. A origem continua na porta local 5000; o acesso pela Internet deve passar pelo aplicativo Cloudflare Access, que libera somente os e-mails autorizados. O domínio, o Tunnel e o aplicativo Access precisam estar configurados no painel Cloudflare antes do uso.
+
+O link e o QR Code **Câmera Mobile** do painel abrem `/recepcao-fotos`, uma tela para registrar fotos antes de criar a O.S. no Teorema. A entrada aparece na fila do painel para ser vinculada à O.S. depois.
+
+Na primeira execução, o BAT solicita o token do Tunnel sem exibir o que é digitado e o salva em `%LOCALAPPDATA%\A5Processos\Cloudflare\producao-token.txt`, com acesso restrito à conta do Windows atual. A chave persistente das sessões é criada e protegida no mesmo diretório. Esses segredos não ficam no projeto nem no Git. Não envie, publique ou grave o token no repositório.
+
+O BAT instala `cloudflared` via `winget` e as dependências Gevent/WebSocket caso estejam ausentes. Ele abre duas janelas (servidor e Tunnel); mantenha ambas abertas. O acesso local pela rede continua na porta 5000. O primeiro acesso público ainda exige autenticação do Cloudflare Access por PIN.
+
+Não feche a janela do Tunnel nem compartilhe o token. Se o token for exposto, revogue/rotacione-o no Cloudflare e atualize o arquivo local.
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -208,7 +222,7 @@ a5_processos/
 │   └── etiqueta.html               # Impressão térmica 60x40mm com QR Code
 ├── tests/                          # Bateria de testes automatizados com isolamento de DB
 ├── ATUALIZAR_SISTEMA.bat           # Atualizador com menu [1] Só Código / [2] Código + Cartões
-├── INICIAR_SISTEMA.bat             # Inicializador silencioso do servidor + abertura do navegador
+├── INICIAR_SERVIDOR.bat            # Inicializador do servidor A5 + Cloudflare Tunnel
 ├── app.py                          # Ponto de entrada da aplicação
 └── requirements.txt                # Dependências Python do projeto
 ```

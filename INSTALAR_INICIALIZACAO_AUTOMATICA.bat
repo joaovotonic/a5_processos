@@ -28,8 +28,7 @@ echo      - Iniciar Servidor A5
 echo      - Atualizar Sistema A5
 echo.
 echo ====================================================================
-echo   PRONTO! Agora o servidor vai abrir sozinho toda vez que ligar o PC!
+echo   PRONTO! O servidor vai iniciar quando esta conta entrar no Windows!
 echo ====================================================================
 echo.
 pause
-

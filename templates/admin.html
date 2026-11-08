@@ -883,7 +883,7 @@
                 <div class="md:col-span-2 space-y-2">
                     <p class="text-xs font-bold uppercase tracking-wider text-sky-500">Link Direto p/ Celular (Wi-Fi Local):</p>
                     <div class="p-2.5 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-mono text-xs font-bold text-sky-400 select-all break-all">
-                        http://{{ local_ip }}:{{ port }}/recepcao-fotos
+                        {{ intake_url }}
                     </div>
                     <p class="text-[11px] text-slate-400">
                         Aponte a câmera do celular para o QR Code ao lado para abrir a tela de fotos no telefone.
@@ -893,7 +893,7 @@
                     </a>
                 </div>
                 <div class="flex flex-col items-center justify-center bg-white p-2.5 rounded-xl border border-slate-200">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=http://{{ local_ip }}:{{ port }}/recepcao-fotos"
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ intake_url|urlencode }}"
                          alt="QR Code Recepção" class="w-28 h-28 object-contain"
                          onerror="this.style.display='none'">
                     <span class="text-[10px] font-bold text-slate-500 mt-1">Escaneie no Celular</span>

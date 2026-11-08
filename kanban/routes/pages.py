@@ -2,7 +2,7 @@
 import json
 from flask import Blueprint, redirect, render_template, request, session, url_for
 
-from ..config import PORT
+from ..config import PORT, TUNNEL_MODE, TUNNEL_PUBLIC_HOSTNAME
 from ..database import connect
 from ..services.board import enrich_card
 from ..services.cards import get_card_row_by_os
@@ -20,7 +20,21 @@ def index():
 @bp.route("/admin")
 def admin_page():
     """1. Painel Kanban da Esteira de Produção (Operado pela Priscila / Adm)."""
-    return render_template("admin.html", local_ip=get_local_ip(), port=PORT)
+    intake_url = f"{request.url_root.rstrip('/')}/recepcao-fotos"
+    if TUNNEL_MODE and TUNNEL_PUBLIC_HOSTNAME:
+        intake_url = f"https://{TUNNEL_PUBLIC_HOSTNAME}/recepcao-fotos"
+    return render_template(
+        "admin.html",
+        local_ip=get_local_ip(),
+        port=PORT,
+        intake_url=intake_url,
+    )
+
+
+@bp.route("/recepcao-fotos")
+def reception_photos_page():
+    """Tela mobile para registrar fotos antes de abrir a O.S. no Teorema."""
+    return render_template("recepcao_fotos.html")
 
 
 @bp.route("/tv")
@@ -131,16 +145,24 @@ def diretoria_page():
             port=PORT
         )
 
-    with connect() as conn:
-        tech_rows = conn.execute("SELECT title FROM lists WHERE is_tech = 1 ORDER BY position ASC").fetchall()
-    technicians = []
-    for r in tech_rows:
-        t = r["title"].replace("TEC. ", "").strip()
-        if t and t not in technicians:
-            technicians.append(t)
-    if not technicians:
-        technicians = ["João Otoni", "Enzo Gabriel", "Guilherme", "Wisley", "Iago", "ANTONIO"]
-    return render_template("diretoria.html", technicians=technicians, local_ip=get_local_ip(), port=PORT)
+    call_targets = [
+        {"name": "João Otoni", "role": "Técnico", "target": "João Otoni"},
+        {"name": "Wisley", "role": "Técnico", "target": "Wisley"},
+        {"name": "Guilherme", "role": "Técnico", "target": "Guilherme"},
+        {"name": "Arthur", "role": "ADM", "target": "Arthur (ADM)"},
+        {"name": "Priscila", "role": "ADM", "target": "Priscila (ADM)"},
+        {"name": "Roosevelt", "role": "ADM", "target": "Roosevelt (ADM)"},
+        {"name": "Iago", "role": "Técnico", "target": "Iago"},
+        {"name": "Enzo", "role": "Técnico", "target": "Enzo"},
+        {"name": "Edson", "role": "Técnico", "target": "Edson"},
+        {"name": "Antonio", "role": "Técnico", "target": "Antonio"},
+    ]
+    return render_template(
+        "diretoria.html",
+        call_targets=call_targets,
+        local_ip=get_local_ip(),
+        port=PORT,
+    )
 
 
 @bp.route("/diretoria/logout")
@@ -159,5 +181,7 @@ def etiqueta_page(os_number):
 
     card = enrich_card(row)
     card["accessories"] = json.loads(card.get("accessories_json") or "[]")
-    qr_url = f"http://{get_local_ip()}:{PORT}/os/{card['os_number']}"
+    qr_url = url_for("pages.os_mobile_page", os_number=card["os_number"], _external=True)
+    if TUNNEL_MODE and TUNNEL_PUBLIC_HOSTNAME:
+        qr_url = f"https://{TUNNEL_PUBLIC_HOSTNAME}/os/{card['os_number']}"
     return render_template("etiqueta.html", card=card, qr_url=qr_url)

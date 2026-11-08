@@ -46,6 +46,7 @@ class TestA5KanbanComplete(unittest.TestCase):
 
         pages = [
             "/admin",
+            "/recepcao-fotos",
             "/painel-tv",
             "/tv",
             "/diretoria",
@@ -54,6 +55,35 @@ class TestA5KanbanComplete(unittest.TestCase):
         for p in pages:
             res = self.client.get(p)
             self.assertEqual(res.status_code, 200, f"Falha ao carregar página {p}")
+
+    def test_director_call_buttons_are_ordered_and_identify_roles(self):
+        with self.client.session_transaction() as session:
+            session["diretoria_auth"] = True
+
+        response = self.client.get("/diretoria")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertNotIn("TODA A OFICINA", html)
+        targets = [
+            "João Otoni",
+            "Wisley",
+            "Guilherme",
+            "Arthur (ADM)",
+            "Priscila (ADM)",
+            "Roosevelt (ADM)",
+            "Iago",
+            "Enzo",
+            "Edson",
+            "Antonio",
+        ]
+        positions = [html.index(f"quickCall('{target}')") for target in targets]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("font-black uppercase text-slate-900", html)
+        self.assertIn('id="directorFinalizedRoutePanel"', html)
+        self.assertIn('id="directorFinalizedRouteBody"', html)
+        self.assertIn("renderDirectorRoutePreview(false);", html)
+        for role in ("Técnico", "ADM"):
+            self.assertIn(f">{role}</span>", html)
 
     def test_02_catalogs_and_search(self):
         """Testa busca de peças Toledo e catálogo de modelos de balanças."""
@@ -533,4 +563,3 @@ class TestA5KanbanComplete(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
-
