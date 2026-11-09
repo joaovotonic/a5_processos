@@ -42,8 +42,9 @@ if "%OPCAO%"=="2" (
         del /F /Q "database\a5_kanban_local_preserve.bak" >nul
     )
 
-    echo [3/3] Verificando novas dependencias...
+    echo [3/3] Verificando novas dependencias e tabelas do banco...
     pip install -r requirements.txt --quiet --no-warn-script-location
+    python -c "from kanban.database import init_db; init_db()" 2>nul
 
     echo.
     echo ==========================================================
@@ -64,8 +65,9 @@ if "%OPCAO%"=="2" (
     git fetch origin main
     git reset --hard origin/main
 
-    echo [3/3] Verificando novas dependencias...
+    echo [3/3] Verificando novas dependencias e tabelas do banco...
     pip install -r requirements.txt --quiet --no-warn-script-location
+    python -c "from kanban.database import init_db; init_db()" 2>nul
 
     echo.
     echo ==========================================================
@@ -75,5 +77,12 @@ if "%OPCAO%"=="2" (
     echo (Copia anterior salva em database\a5_kanban_backup_antes_atualizar.bak)
 )
 
+echo.
+echo Reiniciando o servidor local na porta 5000 para aplicar novas rotas...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
+    taskkill /F /PID %%a >nul 2>nul
+)
+start "A5 Sistema Kanban" cmd /k "python app.py"
+echo Servidor reiniciado com sucesso!
 echo.
 pause

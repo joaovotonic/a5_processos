@@ -2268,6 +2268,8 @@
         async function loadDiretoriaChatMessages(silent = false) {
             try {
                 const res = await fetch("/api/chat/messages?limit=80");
+                const ct = res.headers.get("content-type") || "";
+                if (!res.ok || !ct.includes("application/json")) return;
                 const json = await res.json();
                 if (!json.success) return;
 
@@ -2324,10 +2326,17 @@
                         message: text
                     })
                 });
+                const ct = res.headers.get("content-type") || "";
+                if (!ct.includes("application/json")) {
+                    alert("O servidor foi atualizado! Feche e abra novamente o servidor Python (ou rode o ATUALIZAR_SISTEMA.bat) para ativar a rota do chat.");
+                    return;
+                }
                 const json = await res.json();
                 if (json.success && json.message) {
                     diretoriaLastKnownMsgId = Math.max(diretoriaLastKnownMsgId, Number(json.message.id || 0));
                     await loadDiretoriaChatMessages(true);
+                } else {
+                    alert(json.error || "Não foi possível enviar a mensagem.");
                 }
             } catch (err) {
                 alert("Erro ao enviar mensagem: " + err.message);
@@ -2402,17 +2411,17 @@
             </div>
 
             <!-- Respostas Rápidas -->
-            <div class="px-3 py-1.5 bg-slate-100 dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <div class="px-3 py-1.5 bg-slate-100 dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-800 flex flex-wrap items-center gap-1.5">
                 <button type="button" onclick="sendDiretoriaChatMessage('Priscila, já liberei a rota!')"
-                    class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
+                    class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
                     ✅ Já liberei a rota!
                 </button>
                 <button type="button" onclick="sendDiretoriaChatMessage('Pode enviar os chamados pendentes.')"
-                    class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
-                    📥 Pode enviar os chamados
+                    class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
+                    📥 Pode enviar chamados
                 </button>
                 <button type="button" onclick="sendDiretoriaChatMessage('Alguma urgência agora?')"
-                    class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
+                    class="text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
                     ⚡ Alguma urgência?
                 </button>
             </div>
