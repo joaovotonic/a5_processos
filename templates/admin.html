@@ -3354,11 +3354,18 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             }
         });
 
+        // Data de HOJE no fuso local do computador (toISOString usa UTC e "pula" para amanhã após as 20h)
+        function localTodayISO() {
+            const d = new Date();
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
         async function loadAdminExternosData() {
             updateAdminShiftButtons();
             const dateInput = document.getElementById("adminExtDateFilter");
             if (!dateInput.value) {
-                dateInput.value = new Date().toISOString().split("T")[0];
+                dateInput.value = localTodayISO();
             }
             const dateVal = dateInput.value;
 
@@ -3996,7 +4003,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
         }
 
         function getRouteImageFilename(techName) {
-            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const dateVal = document.getElementById("adminExtDateFilter").value || localTodayISO();
             const cleanDate = dateVal.includes('-') ? dateVal.split('-').reverse().join('-') : dateVal.replace(/\//g, '-');
             const shift = (currentAdminShift || "manha").toUpperCase();
             const techClean = (techName || "CONJUNTA").replace(/[^A-Z0-9]/gi, '_').toUpperCase();
@@ -4057,7 +4064,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             event.preventDefault();
             const orderId = document.getElementById("extOrderId").value;
             const existingRouteDate = document.getElementById("extRouteDate") ? document.getElementById("extRouteDate").value : "";
-            const dateVal = existingRouteDate || document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const dateVal = existingRouteDate || document.getElementById("adminExtDateFilter").value || localTodayISO();
             const shiftVal = document.getElementById("extRouteShift") ? document.getElementById("extRouteShift").value : currentAdminShift;
 
             const payload = {
@@ -4113,7 +4120,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
         }
 
         async function notifyDirectorFromAdmin() {
-            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const dateVal = document.getElementById("adminExtDateFilter").value || localTodayISO();
             const btn = document.getElementById("btnNotifyDirector");
             if (btn) btn.disabled = true;
 
@@ -4149,7 +4156,7 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
         }
 
         async function copyWhatsappText(techName) {
-            const dateVal = document.getElementById("adminExtDateFilter").value || new Date().toISOString().split("T")[0];
+            const dateVal = document.getElementById("adminExtDateFilter").value || localTodayISO();
             try {
                 const res = await fetch(`/api/externos/whatsapp-text?date=${encodeURIComponent(dateVal)}&shift=${encodeURIComponent(currentAdminShift)}&technician=${encodeURIComponent(techName)}`);
                 const json = await res.json();

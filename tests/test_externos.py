@@ -652,6 +652,48 @@ Reduzido Descrição:
             delete_card(c1["id"])
             delete_card(c2["id"])
 
+    def test_14_marking_attended_does_not_send_other_technicians_to_pending(self):
+        """
+        Bug real: ao marcar os atendidos do Enzo, os chamados do Antonio sumiam e viravam pendentes.
+        Rotas de hoje / data visualizada nunca podem ser devolvidas para pendentes por quem só consulta.
+        """
+        from kanban.services.externos import create_external_order, get_grouped_routes, update_external_order
+        today = datetime.now().strftime("%Y-%m-%d")
+        yesterday = (datetime.now() - __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d")
+        tomorrow = (datetime.now() + __import__("datetime").timedelta(days=1)).strftime("%Y-%m-%d")
+
+        def mk(os_num, tech, order):
+            return create_external_order({
+                "os_number": os_num, "client_name": f"CLIENTE {os_num}", "technician": tech,
+                "route_date": today, "route_shift": "manha", "route_order": order,
+                "status": "routed", "attendance_status": "pending"
+            })["id"]
+
+        enzo_ids = [mk("888001", "ENZO", 1), mk("888002", "ENZO", 2)]
+        antonio_ids = [mk("888003", "ANTONIO", 1), mk("888004", "ANTONIO", 2)]
+
+        try:
+            # Priscila marca os do Enzo como atendidos
+            for oid in enzo_ids:
+                update_external_order(oid, {"attendance_status": "attended"})
+
+            # Consulta da data da rota (hoje) em qualquer ordem de visualização
+            for d in (today, tomorrow, yesterday, today):
+                summary = get_grouped_routes(d, "manha")
+                if d == today:
+                    ant = [s["id"] for s in summary["technicians"].get("ANTONIO", [])]
+                    for oid in antonio_ids:
+                        self.assertIn(oid, ant, "Chamados do Antonio devem continuar na rota dele")
+                    enz = [s["id"] for s in summary["technicians"].get("ENZO", [])]
+                    for oid in enzo_ids:
+                        self.assertIn(oid, enz)
+                pend_ids = [o["id"] for o in summary["unassigned"]]
+                for oid in antonio_ids + enzo_ids:
+                    self.assertNotIn(oid, pend_ids, f"Chamado {oid} não pode ir para pendentes só por consulta (data {d})")
+        finally:
+            for oid in enzo_ids + antonio_ids:
+                delete_external_order(oid)
+
     @classmethod
     def tearDownClass(cls):
         restore_db_snapshot(getattr(cls, "_db_snap", None))

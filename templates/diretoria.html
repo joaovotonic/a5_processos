@@ -981,6 +981,13 @@
         let currentRouteSummary = null;
         let sortableInstances = [];
         // Turno inicial automático baseado no relógio do PC (< 11h = Manhã, >= 11h = Tarde)
+        // Data de HOJE no fuso local do computador (toISOString usa UTC e "pula" para amanhã após as 20h)
+        function localTodayISO() {
+            const d = new Date();
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        }
+
         let currentDiretoriaShift = new Date().getHours() < 11 ? "manha" : "tarde";
 
         function setDiretoriaShift(shift) {
@@ -1128,7 +1135,7 @@
             updateDiretoriaShiftButtons();
             const dateInput = document.getElementById("diretoriaRouteDate");
             if (!dateInput.value) {
-                dateInput.value = new Date().toISOString().split("T")[0];
+                dateInput.value = localTodayISO();
             }
             const dateVal = dateInput.value;
 
@@ -1618,7 +1625,7 @@
             const cleanTech = techName.trim().toUpperCase();
             selectedRouteTechs.add(cleanTech);
             persistSelectedRouteTechs();
-            const dateVal = document.getElementById("diretoriaRouteDate").value || new Date().toISOString().split("T")[0];
+            const dateVal = document.getElementById("diretoriaRouteDate").value || localTodayISO();
             try {
                 const res = await fetch(`/api/externos/orders/${orderId}`, {
                     method: "PUT",
@@ -2367,7 +2374,7 @@
             setInterval(() => loadDiretoriaChatMessages(false), 4000);
             const dateInput = document.getElementById("diretoriaRouteDate");
             if (dateInput) {
-                dateInput.value = new Date().toISOString().split("T")[0];
+                dateInput.value = localTodayISO();
             }
         });
     </script>

@@ -682,10 +682,13 @@ def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, 
     """
     shift_val = (shift or get_current_shift()).lower()
     now_iso = datetime.now().isoformat()
+    today_str = datetime.now().strftime("%Y-%m-%d")
 
     with connect() as conn:
-        # Chamados de datas anteriores que não foram concluídos ('attended') voltam automaticamente
-        # para 'chamados externos aguardando rota', mantendo apenas a data de abertura original.
+        # Chamados de DIAS JÁ ENCERRADOS (anteriores ao dia de HOJE no relógio do servidor) que não foram
+        # concluídos ('attended') voltam automaticamente para 'chamados externos aguardando rota', mantendo
+        # a data de abertura. NUNCA mexe em rotas de hoje/futuras e nem na data que está sendo visualizada
+        # (para a Priscila poder marcar os atendidos sem que os demais técnicos sumam).
         conn.execute("""
             UPDATE external_orders
             SET technician = '',
@@ -695,41 +698,42 @@ def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, 
                 updated_at = ?
             WHERE route_date != ''
               AND route_date < ?
+              AND route_date != ?
               AND COALESCE(attendance_status, 'pending') != 'attended'
               AND (
                   (technician IS NOT NULL AND TRIM(technician) != '')
                   OR status NOT IN ('pending_route', 'pending_director')
               )
-        """, (now_iso, date_str))
+        """, (now_iso, today_str, date_str))
 
         route_info = conn.execute(
             "SELECT * FROM external_routes WHERE route_date = ? AND route_shift = ?",
             (date_str, shift_val)
         ).fetchone()
 
-        # 1. Paradas já atribuídas a técnicos especificamente para esta data e turno
+        # 1. Paradas já atribuídas a técnicos para esta data e turno (todos os técnicos da rota)
         routed_rows = conn.execute("""
             SELECT * FROM external_orders
             WHERE route_date = ?
-              AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
               AND technician IS NOT NULL
               AND TRIM(technician) != ''
               AND status NOT IN ('pending_route', 'pending_director')
               AND COALESCE(attendance_status, 'pending') != 'not_attended'
+              AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
             ORDER BY technician ASC, route_order ASC, id ASC
         """, (date_str, shift_val)).fetchall()
 
-        # 2. Chamados pendentes ("Aguardando Rota" / "Aguardando Distribuição") de QUALQUER data ou turno,
-        # incluindo chamados que ficaram sem atendimento em qualquer outro dia.
+        # 2. Chamados pendentes ("Aguardando Rota" / "Aguardando Distribuição") de QUALQUER data ou turno.
+        # Só entra aqui quem realmente está sem técnico / pendente / não atendido — nunca uma parada
+        # que está atribuída a um técnico em outra rota.
         pending_rows = conn.execute("""
             SELECT * FROM external_orders
             WHERE technician IS NULL
                OR TRIM(technician) = ''
                OR status IN ('pending_route', 'pending_director')
                OR COALESCE(attendance_status, 'pending') = 'not_attended'
-               OR (route_date != ? AND COALESCE(attendance_status, 'pending') != 'attended')
             ORDER BY id ASC
-        """, (date_str,)).fetchall()
+        """).fetchall()
 
     tech_groups: Dict[str, List[Dict[str, Any]]] = {}
     routed_ids = set()
