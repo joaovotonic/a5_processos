@@ -170,9 +170,20 @@ set /p A5_SECRET_KEY=<"%A5_SECRET_FILE%"
 set "CLOUDFLARED="
 call :find_cloudflared
 if not defined CLOUDFLARED exit /b 1
+
+set "A5_TUNNEL_TOKEN="
+if exist "%A5_TUNNEL_TOKEN_FILE%" (
+    for /f "usebackq delims=" %%T in ("%A5_TUNNEL_TOKEN_FILE%") do set "A5_TUNNEL_TOKEN=%%T"
+)
+if not defined A5_TUNNEL_TOKEN (
+    set /p A5_TUNNEL_TOKEN=<"%A5_TUNNEL_TOKEN_FILE%"
+)
+set "TUNNEL_TOKEN=%A5_TUNNEL_TOKEN%"
+set "TUNNEL_NO_AUTOUPDATE=true"
+
 :tunnel_loop
 echo [%date% %time%] Conectando ao Tunnel kanban.a5painel.cloud...
-"%CLOUDFLARED%" tunnel run --no-autoupdate --token-file "%A5_TUNNEL_TOKEN_FILE%"
+"%CLOUDFLARED%" --no-autoupdate tunnel run --token "%A5_TUNNEL_TOKEN%"
 echo [%date% %time%] O Tunnel encerrou. Nova tentativa em 5 segundos.
 timeout /t 5 /nobreak >nul
 goto tunnel_loop
