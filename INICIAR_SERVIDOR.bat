@@ -28,31 +28,27 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "%A5_SECRET_FILE%" (
-    set "A5_PYTHON="
-    call :find_python
-    if not defined A5_PYTHON (
-        echo ERRO: Python nao encontrado.
-        pause
-        exit /b 1
-    )
-    "%A5_PYTHON%" -c "import secrets; print(secrets.token_hex(32))" > "%A5_SECRET_FILE%"
-    if errorlevel 1 (
-        echo ERRO: nao foi possivel gerar a chave de sessao.
-        pause
-        exit /b 1
-    )
-    icacls "%A5_SECRET_FILE%" /inheritance:r /grant:r "%USERDOMAIN%\%USERNAME%:R" >nul
-    if errorlevel 1 (
-        del "%A5_SECRET_FILE%" >nul 2>nul
-        echo ERRO: nao foi possivel proteger a chave de sessao.
-        pause
-        exit /b 1
-    )
+:: Localiza o Python
+set "A5_PYTHON="
+call :find_python
+if not defined A5_PYTHON (
+    echo ERRO: Python nao encontrado no computador.
+    pause
+    exit /b 1
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$k=[IO.File]::ReadAllText($env:A5_SECRET_FILE).Trim(); if ($k -notmatch '^[A-Fa-f0-9]{64}$') { exit 1 }"
+:: Garante que o arquivo de chave de sessao exista e tenha 64 caracteres hexadecimais validos
+"%A5_PYTHON%" -c "import os, re, secrets; p = os.environ['A5_SECRET_FILE']; cur = open(p, 'r', encoding='utf-8').read().strip() if os.path.isfile(p) else ''; print(secrets.token_hex(32), file=open(p, 'w', encoding='utf-8')) if not re.match(r'^[A-Fa-f0-9]{64}$', cur) else None"
 if errorlevel 1 (
+    echo ERRO: nao foi possivel gerar a chave de sessao.
+    pause
+    exit /b 1
+)
+icacls "%A5_SECRET_FILE%" /inheritance:r /grant:r "%USERNAME%:R" >nul 2>nul
+
+set "A5_SECRET_KEY="
+set /p A5_SECRET_KEY=<"%A5_SECRET_FILE%"
+if not defined A5_SECRET_KEY (
     echo ERRO: a chave de sessao esta vazia ou invalida.
     pause
     exit /b 1
@@ -70,14 +66,6 @@ if not exist "%A5_TUNNEL_TOKEN_FILE%" (
         pause
         exit /b 1
     )
-)
-
-set "A5_PYTHON="
-call :find_python
-if not defined A5_PYTHON (
-    echo ERRO: Python nao encontrado.
-    pause
-    exit /b 1
 )
 
 "%A5_PYTHON%" -c "import gevent, geventwebsocket" >nul 2>nul
@@ -194,6 +182,9 @@ if exist ".venv\Scripts\python.exe" set "A5_PYTHON=%CD%\.venv\Scripts\python.exe
 if not defined A5_PYTHON if exist "venv\Scripts\python.exe" set "A5_PYTHON=%CD%\venv\Scripts\python.exe"
 if not defined A5_PYTHON (
     for /f "delims=" %%P in ('where.exe python 2^>nul') do if not defined A5_PYTHON set "A5_PYTHON=%%P"
+)
+if not defined A5_PYTHON (
+    for /f "delims=" %%P in ('where.exe py 2^>nul') do if not defined A5_PYTHON set "A5_PYTHON=%%P"
 )
 exit /b 0
 
