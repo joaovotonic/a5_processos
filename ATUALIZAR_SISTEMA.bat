@@ -22,6 +22,12 @@ git config user.name "joaovotonic"
 git config user.email "joaovotoni1@gmail.com"
 git config credential.helper manager
 
+echo.
+echo Encerrando temporariamente o servidor na porta 5000 para liberar os arquivos...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
+    taskkill /F /PID %%a >nul 2>nul
+)
+
 if "%OPCAO%"=="2" (
     echo.
     echo ==========================================================
@@ -31,11 +37,11 @@ if "%OPCAO%"=="2" (
     if exist "database\a5_kanban.db" (
         echo [1/3] Protegendo o banco de dados local da oficina...
         copy /Y "database\a5_kanban.db" "database\a5_kanban_local_preserve.bak" >nul
-        git checkout -- database/a5_kanban.db backups/ 2>nul
     )
 
-    echo [2/3] Baixando atualizacoes de codigo do GitHub...
-    git pull origin main
+    echo [2/3] Baixando atualizacoes de codigo do GitHub (origin/main)...
+    git fetch origin main
+    git reset --hard origin/main
 
     if exist "database\a5_kanban_local_preserve.bak" (
         copy /Y "database\a5_kanban_local_preserve.bak" "database\a5_kanban.db" >nul
@@ -78,11 +84,8 @@ if "%OPCAO%"=="2" (
 )
 
 echo.
-echo Reiniciando o servidor local na porta 5000 para aplicar novas rotas...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
-    taskkill /F /PID %%a >nul 2>nul
-)
+echo Iniciando o servidor atualizado na porta 5000...
 start "A5 Sistema Kanban" cmd /k "python app.py"
-echo Servidor reiniciado com sucesso!
+echo Servidor iniciado com sucesso!
 echo.
 pause

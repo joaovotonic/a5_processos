@@ -1454,7 +1454,15 @@
 
                 const isLargeList = list.cards.length > 80;
                 const showAll = Boolean(window._showAllFinalizadas);
-                let cardsToRender = list.cards;
+                const isEnviadosCol = Boolean(list.title && list.title.toUpperCase().includes("ENVIADO"));
+                let cardsToRender = isEnviadosCol
+                    ? [...list.cards].sort((a, b) => {
+                        const da = a.moved_at || a.updated_at || a.fim_orcamento || a.created_at || "";
+                        const db = b.moved_at || b.updated_at || b.fim_orcamento || b.created_at || "";
+                        if (db !== da) return db.localeCompare(da);
+                        return Number(b.id || 0) - Number(a.id || 0);
+                    })
+                    : list.cards;
                 let loadMoreBtnHTML = "";
 
                 if (isLargeList && !showAll) {

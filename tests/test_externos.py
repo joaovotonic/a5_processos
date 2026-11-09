@@ -617,6 +617,41 @@ Reduzido Descrição:
         with connect() as conn:
             conn.execute("DELETE FROM chat_messages WHERE id = ?", (msg_p["id"],))
 
+    def test_13_orcamentos_enviados_ordered_by_most_recently_sent(self):
+        """
+        Valida que na coluna 'ORÇAMENTOS ENVIADOS' os cards ficam na ordem do que
+        acabou de ser enviado (mais recente no topo / índice 0), facilitando encontrar ao aprovar.
+        """
+        import time
+        from kanban.services.cards import create_card, send_card_quote, delete_card
+        from kanban.services.board import get_full_board
+
+        with connect() as conn:
+            orc_list = conn.execute("SELECT id FROM lists WHERE role = 'orcamento' LIMIT 1").fetchone()
+
+        c1, _ = create_card(
+            {"os_number": "999101", "client_name": "CLIENTE ENVIADO 1", "equipment_type": "Balança", "equipment_model": "PRIX 4", "serial_number": "", "reported_defect": "TESTE"},
+            orc_list["id"], "[]", []
+        )
+        c2, _ = create_card(
+            {"os_number": "999102", "client_name": "CLIENTE ENVIADO 2 (RECENTE)", "equipment_type": "Balança", "equipment_model": "PRIX 5", "serial_number": "", "reported_defect": "TESTE"},
+            orc_list["id"], "[]", []
+        )
+
+        try:
+            send_card_quote(c1["id"])
+            time.sleep(0.02)
+            send_card_quote(c2["id"])
+
+            board = get_full_board()
+            env_col = [l for l in board["lists"] if "ENVIADO" in (l.get("title") or "").upper()][0]
+            top_ids = [c["id"] for c in env_col["cards"][:2]]
+            self.assertEqual(top_ids[0], c2["id"], "O orçamento recém-enviado (c2) deve estar em 1º no topo da coluna ORÇAMENTOS ENVIADOS")
+            self.assertEqual(top_ids[1], c1["id"], "O orçamento enviado imediatamente antes (c1) deve estar em 2º")
+        finally:
+            delete_card(c1["id"])
+            delete_card(c2["id"])
+
     @classmethod
     def tearDownClass(cls):
         restore_db_snapshot(getattr(cls, "_db_snap", None))

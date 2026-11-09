@@ -891,7 +891,8 @@ def deny_reopen_card_quote(card_id, actor=RECEPTION_ACTOR):
 def send_card_quote(card_id, actor=RECEPTION_ACTOR):
     """
     Acionado quando a Priscila envia o orçamento ao cliente (estando em ANALISES FEITAS):
-    Move a O.S. para 'ORÇAMENTOS ENVIADOS' e garante a etiqueta 'FEITO ORÇ.' / 'AGUARDANDO'.
+    Move a O.S. para o TOPO (posição 0) de 'ORÇAMENTOS ENVIADOS' (ordem do que acabou de ser enviado)
+    e garante a etiqueta 'FEITO ORÇ.' / 'AGUARDANDO'.
     """
     with connect() as conn:
         card_row = conn.execute("SELECT * FROM cards WHERE id = ?", (card_id,)).fetchone()
@@ -909,8 +910,11 @@ def send_card_quote(card_id, actor=RECEPTION_ACTOR):
 
         target_list_id = env_list["id"] if env_list else card_row["list_id"]
         target_title = env_list["title"] if env_list else old_title
-        new_pos = _next_position(conn, target_list_id) if target_list_id != card_row["list_id"] else card_row["position"]
         now_iso = _now()
+
+        # Coloca sempre no topo (position = 0) da coluna ORÇAMENTOS ENVIADOS para que o último enviado fique em 1º
+        conn.execute("UPDATE cards SET position = position + 1 WHERE list_id = ?", (target_list_id,))
+        new_pos = 0
 
         labels = json.loads(card_row["labels_json"] or "[]")
         if not any(l.get("name") == "FEITO ORÇ." for l in labels):

@@ -220,7 +220,17 @@ def get_full_board():
             cards_by_list[c["list_id"]].append(c)
 
     for lst in lists:
-        lst["cards"] = cards_by_list.get(lst["id"], [])
+        col_cards = cards_by_list.get(lst["id"], [])
+        if "ENVIADO" in (lst.get("title") or "").upper():
+            # Na coluna ORÇAMENTOS ENVIADOS, ordena sempre pelo que acabou de ser enviado (mais recente no topo)
+            col_cards.sort(
+                key=lambda c: (
+                    c.get("moved_at") or c.get("updated_at") or c.get("fim_orcamento") or c.get("created_at") or "",
+                    int(c.get("id") or 0),
+                ),
+                reverse=True,
+            )
+        lst["cards"] = col_cards
         lst["card_count"] = len(lst["cards"])
 
     return {
