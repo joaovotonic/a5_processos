@@ -525,7 +525,19 @@ def api_finalizar_balanca():
 @bp.route("/cards/<path:os_number>/delete", methods=["POST", "DELETE"])
 @bp.route("/cards/<path:os_number>", methods=["DELETE"])
 def api_delete_card(os_number):
-    """Exclui a O.S. do sistema Kanban da A5 Tecnologia."""
+    """Exclui a O.S. do sistema Kanban da A5 Tecnologia (requer admin / admin)."""
+    data = {}
+    try:
+        data = request_data() or {}
+    except Exception:
+        data = {}
+
+    username = (data.get("username") or data.get("login") or request.args.get("username") or request.args.get("login") or "").strip()
+    password = (data.get("password") or data.get("senha") or request.args.get("password") or request.args.get("senha") or "").strip()
+
+    if username != "admin" or password != "admin":
+        raise ApiError("Acesso negado: Login ou senha incorretos para exclusão de O.S.", status=403)
+
     from ..services.esteira import delete_card_by_os
     return jsonify(delete_card_by_os(os_number))
 
