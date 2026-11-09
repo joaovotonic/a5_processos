@@ -3,8 +3,12 @@ Testes automatizados do módulo de Chamados Externos e Gestão de Rotas de Rua (
 Valida parsing de dados, fluxo de montagem de rotas pela Diretoria,
 formatação de mensagens para WhatsApp e exportação de CSV compatível com Excel.
 """
+import os
+import sys
 import unittest
 from datetime import datetime
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from kanban import create_app
 from kanban.database import connect, init_db
@@ -534,6 +538,84 @@ Reduzido Descrição:
             conn.execute("DELETE FROM card_history WHERE os_number = '998877'")
             conn.execute("DELETE FROM cards WHERE os_number = '998877'")
             conn.execute("DELETE FROM external_orders WHERE os_number = '887766'")
+
+    def test_12_pending_calls_persist_across_any_date_and_chat_widget(self):
+        """
+        Valida as 6 melhorias solicitadas:
+        1) Chamados pendentes permanecem em 'unassigned' independente da data selecionada (passada ou futura).
+        2) Chamados que ficaram sem atendimento em outro dia voltam para 'chamados externos aguardando rota' mantendo open_date.
+        3) Chat entre Priscila e Sr. Jacson (envio, listagem, contador de não lidas e marcação de leitura).
+        4) Templates diretoria.html e admin.html contêm todos os elementos das melhorias.
+        """
+        # 1. Cria chamado em uma data anterior atribuído a um técnico, mas não atendido ('pending')
+        old_order = create_external_order({
+            "os_number": "777001",
+            "client_name": "RECOLHER BALANCA NO PORTO DO ROWDAY SEGUNDA FEIRA NO BARCO TRAPAÇA SEM FALTA",
+            "open_date": "03/11/2026",
+            "open_time": "12:00",
+            "technician": "EDSON",
+            "route_date": "2026-11-03",
+            "route_shift": "manha",
+            "status": "routed",
+            "attendance_status": "pending"
+        })
+        old_id = old_order["id"]
+
+        # 2. Ao consultar uma data posterior (ex: 2026-11-09), o chamado não atendido de 2026-11-03
+        # deve voltar automaticamente para 'unassigned' mantendo sua data de abertura ('03/11/2026')
+        summary_today = get_grouped_routes("2026-11-09", "manha")
+        unassigned_today_ids = [o["id"] for o in summary_today["unassigned"]]
+        self.assertIn(old_id, unassigned_today_ids, "Chamado pendente de outro dia deve voltar para aguardando rota")
+        returned_item = [o for o in summary_today["unassigned"] if o["id"] == old_id][0]
+        self.assertEqual(returned_item["open_date"], "03/11/2026", "Deve manter apenas a data de abertura original")
+        self.assertEqual(returned_item["technician"], "")
+
+        # 3. Mesmo colocando uma data totalmente passada (1999-01-01) ou muito para frente (2035-12-31),
+        # o chamado pendente NÃO pode sair da lista de pendentes
+        summary_past = get_grouped_routes("1999-01-01", "tarde")
+        self.assertIn(old_id, [o["id"] for o in summary_past["unassigned"]])
+
+        summary_future = get_grouped_routes("2035-12-31", "manha")
+        self.assertIn(old_id, [o["id"] for o in summary_future["unassigned"]])
+
+        # 4. Teste da API de Chat entre Priscila e Sr. Jacson
+        r_send_p = self.client.post("/api/chat/messages", json={
+            "sender": "priscila",
+            "sender_name": "Priscila (Recepção)",
+            "message": "Sr. Jacson, chegou chamado urgente do Porto!"
+        })
+        self.assertEqual(r_send_p.status_code, 201)
+        msg_p = r_send_p.get_json()["message"]
+        self.assertEqual(msg_p["sender"], "priscila")
+
+        r_list = self.client.get("/api/chat/messages")
+        self.assertEqual(r_list.status_code, 200)
+        chat_data = r_list.get_json()
+        self.assertGreaterEqual(chat_data["unread_for_jacson"], 1)
+
+        r_read = self.client.post("/api/chat/read", json={"viewer": "jacson"})
+        self.assertEqual(r_read.status_code, 200)
+
+        r_list_after = self.client.get("/api/chat/messages")
+        self.assertEqual(r_list_after.get_json()["unread_for_jacson"], 0)
+
+        # 5. Verifica elementos de UI nos templates
+        with open("templates/diretoria.html", "r", encoding="utf-8") as f:
+            dir_html = f.read()
+        self.assertIn("toggleCollapseTechRoute", dir_html)
+        self.assertIn("toggleTechInRouteScreen", dir_html)
+        self.assertIn("btnFinalizeDirectorRoute", dir_html)
+        self.assertIn("diretoriaChatWidget", dir_html)
+        self.assertNotIn('const defaultTechs = ["EDSON", "ANTONIO"]', dir_html)
+
+        with open("templates/admin.html", "r", encoding="utf-8") as f:
+            adm_html = f.read()
+        self.assertIn("adminChatWidget", adm_html)
+
+        # Limpeza do registro de teste
+        delete_external_order(old_id)
+        with connect() as conn:
+            conn.execute("DELETE FROM chat_messages WHERE id = ?", (msg_p["id"],))
 
     @classmethod
     def tearDownClass(cls):

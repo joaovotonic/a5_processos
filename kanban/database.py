@@ -464,5 +464,18 @@ def _ensure_external_routes_tables(cursor):
     if "route_shift" not in route_cols:
         cursor.execute("ALTER TABLE external_routes ADD COLUMN route_shift TEXT DEFAULT 'manha'")
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            sender TEXT NOT NULL,
+            sender_name TEXT NOT NULL,
+            message TEXT NOT NULL,
+            is_read INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON chat_messages(created_at);")
+
+
 
 

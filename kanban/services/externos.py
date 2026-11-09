@@ -279,18 +279,20 @@ def list_external_orders(
     params = []
 
     if pending_only:
-        query += " AND status IN ('pending_route', 'pending_director')"
-    elif status_filter:
-        query += " AND status = ?"
-        params.append(status_filter)
+        # Chamados pendentes permanecem visíveis independente de data ou turno para nunca serem esquecidos
+        query += " AND (status IN ('pending_route', 'pending_director') OR technician IS NULL OR TRIM(technician) = '' OR COALESCE(attendance_status, 'pending') = 'not_attended')"
+    else:
+        if status_filter:
+            query += " AND status = ?"
+            params.append(status_filter)
 
-    if date_filter:
-        query += " AND (route_date = ? OR open_date = ?)"
-        params.extend([date_filter, date_filter])
+        if date_filter:
+            query += " AND (route_date = ? OR open_date = ?)"
+            params.extend([date_filter, date_filter])
 
-    if shift_filter:
-        query += " AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)"
-        params.append(shift_filter.lower())
+        if shift_filter:
+            query += " AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)"
+            params.append(shift_filter.lower())
 
     if technician:
         query += " AND UPPER(technician) = ?"
@@ -397,7 +399,19 @@ def update_external_order(order_id: int, data: Dict[str, Any]) -> Optional[Dict[
         data["status"] = "pending_route"
         data["route_shift"] = ""
     elif data.get("attendance_status") and str(data.get("attendance_status")).strip().lower() == "attended":
-        data["unattended_reason"] = "" 
+        data["unattended_reason"] = ""
+    elif "technician" in data:
+        tech_val = str(data.get("technician") or "").strip()
+        if not tech_val:
+            data["technician"] = None if data.get("technician") is None else ""
+            data["route_order"] = 0
+            data["status"] = "pending_route"
+            data["route_shift"] = ""
+        else:
+            if "status" not in data:
+                data["status"] = "routed"
+            if "attendance_status" not in data:
+                data["attendance_status"] = "pending"
 
     updates = []
     params = []
@@ -424,6 +438,14 @@ def update_external_order(order_id: int, data: Dict[str, Any]) -> Optional[Dict[
     with connect() as conn:
         conn.execute(f"UPDATE external_orders SET {', '.join(updates)} WHERE id = ?", params)
         row = conn.execute("SELECT * FROM external_orders WHERE id = ?", (order_id,)).fetchone()
+        if row and ("technician" in data or "route_order" in data):
+            r_date = row["route_date"]
+            r_shift = (row["route_shift"] or get_current_shift()).lower()
+            if r_date:
+                conn.execute(
+                    "UPDATE external_routes SET status = 'draft', updated_at = ? WHERE route_date = ? AND route_shift = ? AND status = 'finalized'",
+                    (now_iso, r_date, r_shift)
+                )
         return dict(row) if row else None
 
 
@@ -460,7 +482,7 @@ def delete_external_order(order_id: int) -> bool:
 def notify_director_pending_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, Any]:
     """
     Acionado quando a Priscila (Admin) clica em 'Enviar para Sr. Jacson'.
-    Marca os chamados pendentes daquela data e turno como 'pending_director'
+    Marca todos os chamados pendentes (independente da data) como 'pending_director'
     e emite evento WebSocket com alerta sonoro para a Diretoria.
     """
     now_iso = datetime.now().isoformat()
@@ -470,10 +492,11 @@ def notify_director_pending_routes(date_str: str, shift: Optional[str] = None) -
         conn.execute("""
             UPDATE external_orders
             SET status = 'pending_director', route_shift = ?, updated_at = ?
-            WHERE (route_date = ? OR open_date = ?)
-              AND status IN ('pending_route', 'pending_director')
-              AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
-        """, (shift_val, now_iso, date_str, date_str, shift_val))
+            WHERE status IN ('pending_route', 'pending_director')
+               OR technician IS NULL
+               OR TRIM(technician) = ''
+               OR COALESCE(attendance_status, 'pending') = 'not_attended'
+        """, (shift_val, now_iso))
 
         # Registra ou atualiza na tabela external_routes com chave (route_date, route_shift)
         existing_route = conn.execute(
@@ -491,10 +514,13 @@ def notify_director_pending_routes(date_str: str, shift: Optional[str] = None) -
 
         orders = conn.execute("""
             SELECT * FROM external_orders
-            WHERE (route_date = ? OR open_date = ?)
-              AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
+            WHERE (route_date = ? AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL))
+               OR status IN ('pending_route', 'pending_director')
+               OR technician IS NULL
+               OR TRIM(technician) = ''
+               OR COALESCE(attendance_status, 'pending') = 'not_attended'
             ORDER BY id ASC
-        """, (date_str, date_str, shift_val)).fetchall()
+        """, (date_str, shift_val)).fetchall()
         order_list = [dict(o) for o in orders]
 
     shift_label = "MANHÃ" if shift_val == "manha" else "TARDE"
@@ -531,14 +557,30 @@ def save_route_assignments(
 ) -> Dict[str, Any]:
     """
     Salva a organização das rotas feita pelo Sr. Jacson na Diretoria para o turno informado.
+    Aceita tanto lista plana de paradas quanto lista agrupada por técnico {'technician': ..., 'orders': [...]}.
     """
     now_iso = datetime.now().isoformat()
     new_status = "routed" if finalize else "draft"
     shift_val = (route_shift or get_current_shift()).lower()
 
+    flat_items: List[Dict[str, Any]] = []
+    for item in assignments:
+        if isinstance(item.get("orders"), list):
+            tech_name = (item.get("technician") or "").strip().upper()
+            for sub_idx, sub_order in enumerate(item["orders"], start=1):
+                merged = dict(sub_order)
+                merged["technician"] = tech_name
+                if not merged.get("route_order"):
+                    merged["route_order"] = sub_idx
+                flat_items.append(merged)
+        else:
+            flat_items.append(item)
+
     with connect() as conn:
-        for idx, item in enumerate(assignments):
+        for idx, item in enumerate(flat_items):
             order_id = item.get("id")
+            if not order_id:
+                continue
             tech = (item.get("technician") or "").strip().upper()
             order_pos = int(item.get("route_order") or (idx + 1))
             tasks = (item.get("tasks_notes") or "").strip()
@@ -631,34 +673,86 @@ def save_route_assignments(
 
 
 def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, Any]:
-    """Retorna os chamados agrupados por técnico para a data e turno selecionados."""
+    """
+    Retorna os chamados agrupados por técnico para a data e turno selecionados.
+    REGRA DE OURO: Qualquer chamado pendente (ou que ficou pendente/não atendido em qualquer outro dia)
+    retorna automaticamente e permanece sempre visível em 'unassigned' ('Chamados Externos Aguardando Rota' /
+    'Aguardando Distribuição'), independente da data selecionada (passada, presente ou futura),
+    preservando sua data de abertura (open_date).
+    """
     shift_val = (shift or get_current_shift()).lower()
+    now_iso = datetime.now().isoformat()
 
     with connect() as conn:
+        # Chamados de datas anteriores que não foram concluídos ('attended') voltam automaticamente
+        # para 'chamados externos aguardando rota', mantendo apenas a data de abertura original.
+        conn.execute("""
+            UPDATE external_orders
+            SET technician = '',
+                route_order = 0,
+                status = 'pending_route',
+                route_shift = '',
+                updated_at = ?
+            WHERE route_date != ''
+              AND route_date < ?
+              AND COALESCE(attendance_status, 'pending') != 'attended'
+              AND (
+                  (technician IS NOT NULL AND TRIM(technician) != '')
+                  OR status NOT IN ('pending_route', 'pending_director')
+              )
+        """, (now_iso, date_str))
+
         route_info = conn.execute(
             "SELECT * FROM external_routes WHERE route_date = ? AND route_shift = ?",
             (date_str, shift_val)
         ).fetchone()
 
-        orders = conn.execute("""
+        # 1. Paradas já atribuídas a técnicos especificamente para esta data e turno
+        routed_rows = conn.execute("""
             SELECT * FROM external_orders
-            WHERE (route_date = ? OR open_date = ?)
+            WHERE route_date = ?
               AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
+              AND technician IS NOT NULL
+              AND TRIM(technician) != ''
+              AND status NOT IN ('pending_route', 'pending_director')
+              AND COALESCE(attendance_status, 'pending') != 'not_attended'
             ORDER BY technician ASC, route_order ASC, id ASC
-        """, (date_str, date_str, shift_val)).fetchall()
+        """, (date_str, shift_val)).fetchall()
+
+        # 2. Chamados pendentes ("Aguardando Rota" / "Aguardando Distribuição") de QUALQUER data ou turno,
+        # incluindo chamados que ficaram sem atendimento em qualquer outro dia.
+        pending_rows = conn.execute("""
+            SELECT * FROM external_orders
+            WHERE technician IS NULL
+               OR TRIM(technician) = ''
+               OR status IN ('pending_route', 'pending_director')
+               OR COALESCE(attendance_status, 'pending') = 'not_attended'
+               OR (route_date != ? AND COALESCE(attendance_status, 'pending') != 'attended')
+            ORDER BY id ASC
+        """, (date_str,)).fetchall()
 
     tech_groups: Dict[str, List[Dict[str, Any]]] = {}
-    unassigned: List[Dict[str, Any]] = []
+    routed_ids = set()
 
-    for r in orders:
+    for r in routed_rows:
         item = dict(r)
         tech = (item.get("technician") or "").strip().upper()
         if tech:
             if tech not in tech_groups:
                 tech_groups[tech] = []
             tech_groups[tech].append(item)
-        else:
-            unassigned.append(item)
+            routed_ids.add(item["id"])
+
+    unassigned: List[Dict[str, Any]] = []
+    for r in pending_rows:
+        item = dict(r)
+        if item["id"] in routed_ids:
+            continue
+        # Garante que chamados vindos de outros dias não atendidos apareçam limpos como aguardando rota
+        item["technician"] = ""
+        if item.get("status") not in ("pending_route", "pending_director"):
+            item["status"] = "pending_route"
+        unassigned.append(item)
 
     shift_label = "MANHÃ" if shift_val == "manha" else "TARDE"
 
@@ -671,7 +765,7 @@ def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, 
         "finalized_by": route_info["finalized_by"] if route_info else "",
         "technicians": tech_groups,
         "unassigned": unassigned,
-        "total_calls": len(orders)
+        "total_calls": len(routed_ids) + len(unassigned)
     }
 
 

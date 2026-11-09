@@ -3441,17 +3441,17 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
                         : '';
                     return `
                         <tr class="hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition">
-                            <td class="py-2.5 px-3 font-black text-slate-900 dark:text-white">
+                            <td class="py-2.5 px-3 font-black text-slate-900 dark:text-white break-words whitespace-normal">
                                 <div>${o.client_name} ${notAttendedBadge}</div>
                                 ${reasonHtml}
                             </td>
                             <td class="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-zinc-400">${o.open_date || '-'}</td>
                             <td class="py-2.5 px-3 text-center font-mono text-slate-600 dark:text-zinc-400">${o.open_time || '-'}</td>
                             <td class="py-2.5 px-3 text-center font-mono font-bold text-sky-600 dark:text-sky-400">${osStr}</td>
-                            <td class="py-2.5 px-3 font-semibold text-slate-700 dark:text-zinc-300">${o.sector || '-'}</td>
-                            <td class="py-2.5 px-3 font-semibold text-slate-700 dark:text-zinc-300">${o.equipment_model || '-'}</td>
-                            <td class="py-2.5 px-3 text-slate-600 dark:text-zinc-400 max-w-[200px] truncate" title="${o.reported_defect || ''}">${o.reported_defect || '-'}</td>
-                            <td class="py-2.5 px-3">${taskHighlight}</td>
+                            <td class="py-2.5 px-3 font-semibold text-slate-700 dark:text-zinc-300 break-words whitespace-normal">${o.sector || '-'}</td>
+                            <td class="py-2.5 px-3 font-semibold text-slate-700 dark:text-zinc-300 break-words whitespace-normal">${o.equipment_model || '-'}</td>
+                            <td class="py-2.5 px-3 text-slate-600 dark:text-zinc-400 break-words whitespace-normal">${o.reported_defect || '-'}</td>
+                            <td class="py-2.5 px-3 break-words whitespace-normal">${taskHighlight}</td>
                             <td class="py-2.5 px-3 text-center">
                                 <div class="flex items-center justify-center gap-1">
                                     <button type="button" onclick="openNewExternalModal(${JSON.stringify(o).replace(/"/g, '&quot;')})"
@@ -4580,7 +4580,312 @@ ${esc(card.reported_defect || 'Defeito informado na O.S. física Teorema')}
             });
         }
 
+        // =========================================================================
+        // CHAT EM TEMPO REAL: PRISCILA (ADMIN/RECEPÇÃO) <-> SR. JACSON (DIRETORIA)
+        // Minimizável e expansível com som de notificação e alerta visual
+        // =========================================================================
+        let adminChatOpen = false;
+        let adminLastKnownMsgId = 0;
+        let adminChatInitialized = false;
+
+        function toggleAdminChat(forceState) {
+            const expanded = document.getElementById("adminChatExpandedPanel");
+            const minimized = document.getElementById("adminChatMinimizedBar");
+            if (!expanded || !minimized) return;
+
+            adminChatOpen = typeof forceState === "boolean" ? forceState : !adminChatOpen;
+            if (adminChatOpen) {
+                expanded.classList.remove("hidden");
+                expanded.classList.add("flex");
+                minimized.classList.add("hidden");
+                markAdminChatRead();
+                setTimeout(() => {
+                    const listEl = document.getElementById("adminChatMessagesList");
+                    if (listEl) listEl.scrollTop = listEl.scrollHeight;
+                    const inp = document.getElementById("adminChatInput");
+                    if (inp) inp.focus();
+                }, 60);
+            } else {
+                expanded.classList.add("hidden");
+                expanded.classList.remove("flex");
+                minimized.classList.remove("hidden");
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updateAdminChatUnreadUI(unreadCount) {
+            const badgeMin = document.getElementById("adminChatUnreadBadge");
+            const pulseMin = document.getElementById("adminChatPulse");
+            const minBar = document.getElementById("adminChatMinimizedBar");
+            const count = Number(unreadCount || 0);
+
+            if (badgeMin) {
+                badgeMin.textContent = count;
+                if (count > 0 && !adminChatOpen) {
+                    badgeMin.classList.remove("hidden");
+                } else {
+                    badgeMin.classList.add("hidden");
+                }
+            }
+            if (pulseMin) {
+                if (count > 0 && !adminChatOpen) {
+                    pulseMin.classList.remove("hidden");
+                } else {
+                    pulseMin.classList.add("hidden");
+                }
+            }
+            if (minBar) {
+                if (count > 0 && !adminChatOpen) {
+                    minBar.classList.add("ring-4", "ring-amber-400/60", "animate-bounce");
+                } else {
+                    minBar.classList.remove("ring-4", "ring-amber-400/60", "animate-bounce");
+                }
+            }
+        }
+
+        function escapeAdminChatHtml(str) {
+            return String(str || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function renderAdminChatMessages(messages) {
+            const listEl = document.getElementById("adminChatMessagesList");
+            if (!listEl) return;
+
+            if (!messages || messages.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8 px-4 text-slate-400 dark:text-zinc-500 text-xs space-y-1.5">
+                        <i data-lucide="message-square" class="w-7 h-7 mx-auto text-amber-500/50"></i>
+                        <p class="font-bold text-slate-600 dark:text-zinc-300">Chat Direto com Sr. Jacson (Diretoria)</p>
+                        <p class="text-[11px]">Envie uma mensagem abaixo para conversar em tempo real.</p>
+                    </div>
+                `;
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            listEl.innerHTML = messages.map(m => {
+                const isMe = (m.sender || "").toLowerCase() !== "jacson";
+                const timeStr = (m.created_at || "").length >= 16 ? m.created_at.substring(11, 16) : "";
+                return `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="max-w-[85%] rounded-2xl px-3.5 py-2 text-xs shadow-xs ${
+                            isMe
+                                ? 'bg-sky-600 text-white font-semibold rounded-br-xs'
+                                : 'bg-amber-500/15 dark:bg-amber-500/20 text-slate-900 dark:text-zinc-100 border border-amber-500/40 font-bold rounded-bl-xs'
+                        }">
+                            <div class="flex items-center justify-between gap-2 mb-0.5 text-[10px] ${isMe ? 'text-sky-100' : 'text-amber-600 dark:text-amber-400'} font-black">
+                                <span>${escapeAdminChatHtml(m.sender_name || (isMe ? 'Priscila' : 'Sr. Jacson'))}</span>
+                                <span class="font-mono">${escapeAdminChatHtml(timeStr)}</span>
+                            </div>
+                            <p class="break-words whitespace-pre-wrap leading-relaxed">${escapeAdminChatHtml(m.message)}</p>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+            listEl.scrollTop = listEl.scrollHeight;
+        }
+
+        function showAdminChatToast(msgObj) {
+            const toast = document.createElement("div");
+            toast.className = "fixed top-16 right-5 z-50 bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-3 rounded-2xl font-bold text-xs shadow-2xl flex items-center gap-3 border-2 border-slate-950 cursor-pointer transition max-w-sm animate-bounce";
+            toast.onclick = () => {
+                toggleAdminChat(true);
+                toast.remove();
+            };
+            toast.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-slate-950/15 flex items-center justify-center shrink-0">
+                    <i data-lucide="message-circle" class="w-4 h-4"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="font-black text-[11px] uppercase tracking-wider text-slate-900">💬 Mensagem de ${escapeAdminChatHtml(msgObj.sender_name || 'Sr. Jacson')}</div>
+                    <div class="truncate text-slate-950 font-bold">${escapeAdminChatHtml(msgObj.message || '')}</div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            if (window.lucide) lucide.createIcons();
+            setTimeout(() => { try { toast.remove(); } catch (e) {} }, 7000);
+        }
+
+        async function loadAdminChatMessages(silent = false) {
+            try {
+                const res = await fetch("/api/chat/messages?limit=80");
+                const json = await res.json();
+                if (!json.success) return;
+
+                const msgs = json.messages || [];
+                const newestId = msgs.length > 0 ? Number(msgs[msgs.length - 1].id || 0) : 0;
+
+                if (adminChatInitialized && newestId > adminLastKnownMsgId) {
+                    const newIncoming = msgs.filter(m => Number(m.id) > adminLastKnownMsgId && (m.sender || "").toLowerCase() === "jacson");
+                    if (newIncoming.length > 0 && !silent) {
+                        playDoorbellSound();
+                        showAdminChatToast(newIncoming[newIncoming.length - 1]);
+                    }
+                }
+                if (newestId > adminLastKnownMsgId) {
+                    adminLastKnownMsgId = newestId;
+                }
+                adminChatInitialized = true;
+
+                renderAdminChatMessages(msgs);
+                if (adminChatOpen && Number(json.unread_for_priscila || 0) > 0) {
+                    markAdminChatRead();
+                } else {
+                    updateAdminChatUnreadUI(json.unread_for_priscila || 0);
+                }
+            } catch (err) {
+                console.warn("Erro ao carregar chat da recepção:", err);
+            }
+        }
+
+        async function markAdminChatRead() {
+            updateAdminChatUnreadUI(0);
+            try {
+                await fetch("/api/chat/read", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ viewer: "priscila" })
+                });
+            } catch (e) {}
+        }
+
+        async function sendAdminChatMessage(customText) {
+            const inp = document.getElementById("adminChatInput");
+            const text = (typeof customText === "string" ? customText : (inp ? inp.value : "")).trim();
+            if (!text) return;
+            if (inp && typeof customText !== "string") inp.value = "";
+
+            try {
+                const res = await fetch("/api/chat/messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        sender: "priscila",
+                        sender_name: "Priscila (Recepção)",
+                        message: text
+                    })
+                });
+                const json = await res.json();
+                if (json.success && json.message) {
+                    adminLastKnownMsgId = Math.max(adminLastKnownMsgId, Number(json.message.id || 0));
+                    await loadAdminChatMessages(true);
+                }
+            } catch (err) {
+                alert("Erro ao enviar mensagem: " + err.message);
+            }
+        }
+
+        if (typeof socket !== "undefined" && socket) {
+            socket.on("chat_message_received", (msg) => {
+                if (!msg) return;
+                const msgId = Number(msg.id || 0);
+                const isFromJacson = (msg.sender || "").toLowerCase() === "jacson";
+                if (msgId > adminLastKnownMsgId) {
+                    adminLastKnownMsgId = msgId;
+                    if (isFromJacson) {
+                        playDoorbellSound();
+                        showAdminChatToast(msg);
+                    }
+                }
+                loadAdminChatMessages(true);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadAdminChatMessages(true);
+            setInterval(() => loadAdminChatMessages(false), 4000);
+        });
+
         setInterval(checkCloudBackupSchedule, 15000);
     </script>
+
+    <!-- ========================================================================== -->
+    <!-- WIDGET DE CHAT MINIMIZÁVEL E EXPANSÍVEL: PRISCILA (ADMIN) <-> SR. JACSON   -->
+    <!-- ========================================================================== -->
+    <div id="adminChatWidget" class="fixed bottom-4 right-4 z-50 flex flex-col items-end">
+        <!-- PAINEL EXPANDIDO DO CHAT -->
+        <div id="adminChatExpandedPanel" class="hidden flex-col w-80 sm:w-96 h-[450px] bg-white dark:bg-zinc-900 border-2 border-sky-500/60 dark:border-sky-500/50 rounded-3xl shadow-2xl overflow-hidden mb-2">
+            <!-- Cabeçalho -->
+            <div class="px-4 py-3 bg-slate-900 text-white flex items-center justify-between gap-2 border-b border-slate-800">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="relative">
+                        <div class="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xs">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        </div>
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900 absolute -bottom-0.5 -right-0.5"></span>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-xs font-black uppercase tracking-wide text-white truncate">Chat c/ Sr. Jacson (Diretoria)</h4>
+                        <p class="text-[10px] text-emerald-400 font-semibold">Online • Notificação Ativa</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button type="button" onclick="playDoorbellSound()" title="Testar toque de notificação"
+                        class="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition">
+                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                    </button>
+                    <button type="button" onclick="toggleAdminChat(false)" title="Minimizar chat"
+                        class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold flex items-center gap-1 transition">
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-amber-400"></i>
+                        <span>Minimizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Mensagens -->
+            <div id="adminChatMessagesList" class="flex-1 p-3.5 overflow-y-auto custom-scrollbar space-y-2.5 bg-slate-50 dark:bg-zinc-950/70">
+                <!-- Mensagens renderizadas via JS -->
+            </div>
+
+            <!-- Respostas Rápidas -->
+            <div class="px-3 py-1.5 bg-slate-100 dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <button type="button" onclick="sendAdminChatMessage('Sr. Jacson, entrou chamado externo novo!')"
+                    class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-sky-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
+                    🚚 Novo chamado externo!
+                </button>
+                <button type="button" onclick="sendAdminChatMessage('Já enviei a rota para os técnicos no WhatsApp!')"
+                    class="shrink-0 text-[10px] font-bold px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 hover:bg-sky-500/20 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700 transition">
+                    ✅ Rota enviada no WhatsApp!
+                </button>
+            </div>
+
+            <!-- Campo de Digitação -->
+            <div class="p-2.5 bg-white dark:bg-zinc-900 border-t border-slate-200 dark:border-zinc-800 flex items-center gap-2">
+                <input type="text" id="adminChatInput"
+                    onkeydown="if(event.key==='Enter'){event.preventDefault();sendAdminChatMessage();}"
+                    placeholder="Escreva para o Sr. Jacson..."
+                    class="flex-1 bg-slate-100 dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white font-semibold focus:outline-none focus:border-sky-500">
+                <button type="button" onclick="sendAdminChatMessage()"
+                    class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black text-xs flex items-center gap-1 shadow-md transition">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    <span>Enviar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- BARRA MINIMIZADA -->
+        <button type="button" id="adminChatMinimizedBar" onclick="toggleAdminChat(true)"
+            class="relative bg-slate-900 hover:bg-slate-800 text-white border-2 border-amber-500 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transition group">
+            <span id="adminChatPulse" class="hidden absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-rose-500 animate-ping"></span>
+            <div class="w-8 h-8 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-black shrink-0 shadow-xs">
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+            </div>
+            <div class="text-left">
+                <div class="text-xs font-black uppercase tracking-wide flex items-center gap-1.5">
+                    <span>Chat • Sr. Jacson</span>
+                    <span id="adminChatUnreadBadge" class="hidden px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[10px] font-black">0</span>
+                </div>
+                <div class="text-[10px] text-amber-400 font-semibold flex items-center gap-1">
+                    <span>Clique p/ abrir conversa</span>
+                    <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
+                </div>
+            </div>
+        </button>
+    </div>
 </body>
 </html>
