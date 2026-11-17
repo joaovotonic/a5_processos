@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ArrowRightCircle,
   CheckCircle,
-  Flame,
   Inbox,
   Layers,
   PackageCheck,
@@ -59,8 +58,6 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
   const [shelfLocation, setShelfLocation] = useState('');
   const [clientName, setClientName] = useState('');
   const [reportedDefect, setReportedDefect] = useState('');
-  const [timerMinutes, setTimerMinutes] = useState(30);
-  const [timerLabel, setTimerLabel] = useState('Estufa de Placa');
   const [saveBtnState, setSaveBtnState] = useState<MorphButtonState>('idle');
 
   useEffect(() => {
@@ -190,28 +187,6 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
       setTimeout(() => setSaveBtnState('idle'), 1200);
     } else {
       setSaveBtnState('idle');
-    }
-  };
-
-  const handleStartTimer = async (mins: number) => {
-    const res = await apiJson('/api/timer/start', {
-      method: 'POST',
-      body: JSON.stringify({ os_number: card.os_number, minutes: mins, label: timerLabel || 'Estufa' }),
-    });
-    if (res.ok) {
-      onToast(`⏱️ Timer ${mins}m iniciado para O.S. ${card.os_number}!`);
-      await onRefresh(card.os_number);
-    }
-  };
-
-  const handleCancelTimer = async () => {
-    const res = await apiJson('/api/timer/cancel', {
-      method: 'POST',
-      body: JSON.stringify({ os_number: card.os_number }),
-    });
-    if (res.ok) {
-      onToast(`Timer da O.S. ${card.os_number} cancelado.`);
-      await onRefresh(card.os_number);
     }
   };
 
@@ -525,45 +500,7 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
             </div>
           </div>
 
-          {/* 6. Estufa / Timer */}
-          <div className="p-4 rounded-2xl bento-inner-tile flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-sky-600 dark:text-sky-400">
-              <Flame className="w-4 h-4" />
-              <span>Cronômetro de Estufa / Teste na TV</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {card.timer_end_at ? (
-                <button
-                  type="button"
-                  onClick={handleCancelTimer}
-                  className="px-3.5 py-1.5 rounded-full bg-rose-600 text-white text-xs font-bold cursor-pointer"
-                >
-                  Cancelar Timer Ativo
-                </button>
-              ) : (
-                <>
-                  <input
-                    type="text"
-                    value={timerLabel}
-                    onChange={(e) => setTimerLabel(e.target.value)}
-                    className="w-36 px-2.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs"
-                  />
-                  {[15, 30, 60].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => handleStartTimer(m)}
-                      className="px-3 py-1.5 rounded-full btn-modernize-light text-xs cursor-pointer"
-                    >
-                      {m} min
-                    </button>
-                  ))}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* 7. Dados Editáveis & Defeito */}
+          {/* 6. Dados Editáveis & Defeito */}
           <div className="p-4 rounded-2xl bento-inner-tile space-y-3">
             <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-amber-600 dark:text-amber-400">
               <AlertTriangle className="w-4 h-4" />

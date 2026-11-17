@@ -106,6 +106,7 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
       ref={setNodeRef}
       style={style}
       {...attributes}
+      {...listeners}
       onClick={() => !isOverlay && !isPlaceholder && onOpenDetail(card.os_number)}
       className={`group kanban-card-surface rounded-2xl p-3.5 border transition-colors duration-150 select-none ${
         isPlaceholder
@@ -113,10 +114,10 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
           : isOverlay
           ? 'bg-white dark:bg-[#18181C] border-blue-500 ring-2 ring-blue-500/30 cursor-grabbing'
           : card.reopen_requested === 1
-          ? 'bg-white dark:bg-[#18181C] border-amber-500 ring-2 ring-amber-500/25 cursor-pointer'
+          ? 'bg-white dark:bg-[#18181C] border-amber-500 ring-2 ring-amber-500/25 cursor-grab active:cursor-grabbing'
           : card.sla_expired
-          ? 'bg-white dark:bg-[#18181C] border-sky-500 sla-pulse cursor-pointer'
-          : 'bg-white dark:bg-[#18181C] border-slate-200/90 dark:border-zinc-800 hover:border-blue-500/60 hover:shadow-md hover:shadow-blue-500/10 cursor-pointer'
+          ? 'bg-white dark:bg-[#18181C] border-sky-500 sla-pulse cursor-grab active:cursor-grabbing'
+          : 'bg-white dark:bg-[#18181C] border-slate-200/90 dark:border-zinc-800 hover:border-blue-500/60 hover:shadow-md hover:shadow-blue-500/10 cursor-grab active:cursor-grabbing'
       }`}
     >
       <div className={isPlaceholder ? 'opacity-15 pointer-events-none' : undefined}>
@@ -135,18 +136,15 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
         </div>
       )}
 
-      {/* Top row: OS badge + drag handle + status pills */}
+      {/* Top row: OS badge + drag grip + status pills */}
       <div className="flex items-start justify-between gap-1.5 mb-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <button
-            type="button"
-            {...listeners}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Arrastar cartão"
-            className="p-0.5 -ml-1 rounded text-slate-400 hover:text-blue-500 cursor-grab active:cursor-grabbing shrink-0"
+          <span
+            aria-hidden="true"
+            className="p-0.5 -ml-1 rounded text-slate-400 group-hover:text-blue-500 shrink-0 transition-colors"
           >
             <GripVertical className="w-3.5 h-3.5" />
-          </button>
+          </span>
           <span className="font-mono tabular-nums text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 border border-slate-200/80 dark:border-zinc-700/70">
             OS {card.os_number}
           </span>
@@ -218,6 +216,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
       {/* INMETRO seal with CopyMorph */}
       {card.inmetro_seal && (
         <div
+          data-no-drag="true"
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-2.5 py-1.5"
         >
@@ -248,6 +248,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
           )}
           <button
             type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               window.open(`/etiqueta/${encodeURIComponent(card.os_number)}`, '_blank', 'width=450,height=380');
@@ -259,6 +261,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
           </button>
           <button
             type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDeleteRequest(card);
@@ -276,6 +280,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
         <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
           <button
             type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onAdvanceAdmin(card.os_number, 'enviar_cliente');
@@ -292,6 +298,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
         <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80 grid grid-cols-2 gap-1.5">
           <button
             type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onAdvanceAdmin(card.os_number, 'aprovar');
@@ -303,6 +311,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
           </button>
           <button
             type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onAdvanceAdmin(card.os_number, 'nao_autorizado');
@@ -319,6 +329,8 @@ const KanbanCardItemBase: React.FC<KanbanCardItemProps> = ({
         <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
           <button
             type="button"
+            data-no-drag="true"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onAdvanceAdmin(card.os_number, 'fechar_balanca');

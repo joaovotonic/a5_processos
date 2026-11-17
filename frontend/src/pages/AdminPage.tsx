@@ -2,10 +2,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Bell,
+  Camera,
   CloudUpload,
   KeyRound,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Moon,
   Plus,
   Search,
@@ -13,10 +15,12 @@ import {
   Sun,
   Truck,
   Unlock,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react';
-import type { AuthUser, BoardData, KanbanCard, KanbanList } from '../types';
-import { apiJson, getSocket, playDoorbellSound, playNotificationBeep } from '../lib/api';
+import type { AuthUser, BoardData, KanbanCard, KanbanList, PendingEntry } from '../types';
+import { apiJson, getBootConfig, getSocket, playDoorbellSound, playNotificationBeep } from '../lib/api';
 import { A5Logo } from '../components/A5Logo';
 import { useTheme } from '../components/ThemeProvider';
 import { PillTabs } from '../components/fluid/pill-tabs/PillTabs';
@@ -26,7 +30,7 @@ import { PasswordModal } from '../components/PasswordModal';
 import { KanbanBoard } from '../components/admin/KanbanBoard';
 import { NewOsModal } from '../components/admin/NewOsModal';
 import { CardDetailModal } from '../components/admin/CardDetailModal';
-import { DeleteAuthModal } from '../components/admin/AdminModals';
+import { CallTechModal, DeleteAuthModal, PendingPhotosModal } from '../components/admin/AdminModals';
 import { AdminExternosView } from '../components/admin/AdminExternosView';
 import { MOTION_EASE } from '../components/motion/motionTokens';
 
@@ -39,6 +43,7 @@ interface AdminPageProps {
 
 export const AdminPage: React.FC<AdminPageProps> = ({ user, onNavigate, onLogout, onReady }) => {
   const { theme, toggleTheme } = useTheme();
+  const boot = getBootConfig();
 
   const [view, setView] = useState<'kanban' | 'externos'>('kanban');
   const [board, setBoard] = useState<BoardData | null>(null);
@@ -54,6 +59,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onNavigate, onLogout
 
   // Modals
   const [newOsOpen, setNewOsOpen] = useState(false);
+  const [selectedPendingEntry, setSelectedPendingEntry] = useState<PendingEntry | null>(null);
+  const [pendingPhotosOpen, setPendingPhotosOpen] = useState(false);
+  const [callTechOpen, setCallTechOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [detailCard, setDetailCard] = useState<KanbanCard | null>(null);
   const [deleteCardTarget, setDeleteCardTarget] = useState<KanbanCard | null>(null);
@@ -274,7 +282,30 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onNavigate, onLogout
 
   const lists = board?.lists || [];
   const labels = board?.labels || [];
+  const pendingEntries = board?.pending_entries || [];
+  const tvMuted = board?.settings?.tv_muted === '1';
   const reopenCards = lists.flatMap((l) => l.cards).filter((c) => c.reopen_requested === 1);
+
+  const handleToggleTvSilence = async () => {
+    const nextMuted = !tvMuted;
+    const res = await apiJson<{ success: boolean }>('/api/admin/panic-silence', {
+      method: 'POST',
+      body: JSON.stringify({ muted: nextMuted }),
+    });
+    if (res.ok && res.data.success) {
+      showToast(nextMuted ? '🔇 TV da oficina silenciada.' : '🔊 Som da TV reativado.');
+      fetchBoard();
+    }
+  };
+
+  const handleDeletePendingEntry = async (entryId: number) => {
+    if (!confirm('Excluir esta pré-entrada de fotos?')) return;
+    const res = await apiJson<{ success: boolean }>(`/api/pending-entries/${entryId}`, { method: 'DELETE' });
+    if (res.ok && res.data.success) {
+      showToast('Pré-entrada removida.');
+      fetchBoard();
+    }
+  };
 
   return (
     <div className="min-h-screen h-screen flex flex-col overflow-hidden">
@@ -324,11 +355,52 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onNavigate, onLogout
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setNewOsOpen(true)}
+            onClick={() => {
+              setSelectedPendingEntry(null);
+              setNewOsOpen(true);
+            }}
             className="px-3.5 py-2 rounded-full btn-modernize-primary text-xs inline-flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Nova O.S.</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setPendingPhotosOpen(true)}
+            className="relative px-3 py-2 rounded-full bento-inner-tile hover:border-blue-500 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            title="Fotos da Recepção (Pré-Entrada)"
+          >
+            <Camera className="w-3.5 h-3.5 text-sky-500" />
+            <span className="hidden lg:inline">Pré-Entrada</span>
+            {pendingEntries.length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-sky-500 text-white text-[10px] font-black tabular-nums leading-none">
+                {pendingEntries.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCallTechOpen(true)}
+            className="px-3 py-2 rounded-full bento-inner-tile hover:border-amber-500 text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            title="Chamar Técnico / ADM na TV"
+          >
+            <Megaphone className="w-3.5 h-3.5 text-amber-500" />
+            <span className="hidden xl:inline">Chamar TV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleTvSilence}
+            className={`p-2 rounded-full border cursor-pointer transition ${
+              tvMuted
+                ? 'bg-rose-500/15 border-rose-500/40 text-rose-500'
+                : 'bento-inner-tile text-slate-500 hover:border-blue-500'
+            }`}
+            title={tvMuted ? 'TV Silenciada (clique para ativar som)' : 'Silenciar avisos na TV'}
+          >
+            {tvMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-sky-500" />}
           </button>
 
           {user.role === 'master' && (
@@ -518,11 +590,35 @@ export const AdminPage: React.FC<AdminPageProps> = ({ user, onNavigate, onLogout
         open={newOsOpen}
         lists={lists}
         labels={labels}
-        onClose={() => setNewOsOpen(false)}
+        initialEntry={selectedPendingEntry}
+        onClose={() => {
+          setNewOsOpen(false);
+          setSelectedPendingEntry(null);
+        }}
         onCreated={(osNum) => {
           showToast(`✅ O.S. ${osNum} cadastrada na esteira!`);
+          setSelectedPendingEntry(null);
           fetchBoard();
         }}
+      />
+
+      <PendingPhotosModal
+        open={pendingPhotosOpen}
+        intakeUrl={boot.intakeUrl}
+        pendingEntries={pendingEntries}
+        onClose={() => setPendingPhotosOpen(false)}
+        onUseEntry={(entry) => {
+          setPendingPhotosOpen(false);
+          setSelectedPendingEntry(entry);
+          setNewOsOpen(true);
+        }}
+        onDeleteEntry={handleDeletePendingEntry}
+      />
+
+      <CallTechModal
+        open={callTechOpen}
+        onClose={() => setCallTechOpen(false)}
+        onSent={(msg) => showToast(msg)}
       />
 
       <CardDetailModal

@@ -164,12 +164,52 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2.5 pt-1">
                     {% for tech in card.technicians %}
-                        <button type="button" onclick="claimOrcamento('{{ tech }}')"
+                        <button type="button" onclick="claimOrcamento('{{ tech }}', this)"
                             class="tech-btn p-3.5 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer">
                             <i data-lucide="user" class="w-4 h-4 text-blue-500"></i>
                             <span>{{ tech }}</span>
                         </button>
                     {% endfor %}
+                </div>
+
+                <!-- Opção de Estufa / Teste logo ao iniciar o orçamento -->
+                <div class="pt-2 border-t border-slate-200/70 dark:border-white/8 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-extrabold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                            <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                            <span>Iniciar já com Estufa ou Teste? (Opcional)</span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5" id="preTimerModeGroup">
+                        <button type="button" onclick="setPreTimerMode('none')" data-pre-mode="none"
+                            class="pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition">
+                            Não precisa
+                        </button>
+                        <button type="button" onclick="setPreTimerMode('Estufa de Placa')" data-pre-mode="Estufa de Placa"
+                            class="pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition">
+                            🔥 Estufa
+                        </button>
+                        <button type="button" onclick="setPreTimerMode('Teste em Bancada')" data-pre-mode="Teste em Bancada"
+                            class="pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition">
+                            🧪 Teste
+                        </button>
+                    </div>
+                    <div id="preTimerMinutesRow" class="hidden space-y-2 pt-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-bold uppercase text-slate-500 dark:text-zinc-400">Tempo na TV:</span>
+                            <div class="flex flex-1 gap-1.5">
+                                <button type="button" onclick="setPreTimerMinutes(15)" data-pre-min="15"
+                                    class="pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold bento-tile cursor-pointer">15 min</button>
+                                <button type="button" onclick="setPreTimerMinutes(30)" data-pre-min="30"
+                                    class="pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer">30 min</button>
+                                <button type="button" onclick="setPreTimerMinutes(60)" data-pre-min="60"
+                                    class="pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold bento-tile cursor-pointer">60 min</button>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold text-center">
+                            Ao tocar no seu nome acima, o cronômetro será iniciado automaticamente na TV.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -187,6 +227,74 @@
                     <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                     <span>ORÇAMENTO OK</span>
                 </button>
+            </div>
+
+            <!-- Cronômetro opcional de Estufa / Teste durante o Orçamento -->
+            <div class="bento-card p-4 space-y-3 border-sky-500/30" id="techTimerCard">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                        <span>Estufa / Teste na TV</span>
+                    </span>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/12 text-sky-600 dark:text-sky-300 border border-sky-500/25">
+                        Opcional
+                    </span>
+                </div>
+
+                {% if card.timer_end_at %}
+                    <div id="activeTimerPanel" data-end-at="{{ card.timer_end_at }}" class="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/30 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <div class="text-[10px] font-bold uppercase text-sky-600 dark:text-sky-300">Em andamento na TV</div>
+                                <div class="text-xs font-black">{{ card.timer_label or 'Estufa de Placa' }}</div>
+                            </div>
+                            <div id="techTimerCountdown" class="font-mono text-2xl font-black tabular-nums text-sky-600 dark:text-sky-300">--:--</div>
+                        </div>
+                        <button type="button" onclick="cancelTechTimer(this)"
+                            class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            <span>Cancelar Cronômetro</span>
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="space-y-2.5">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="selectTechTimerLabel('Estufa de Placa')" data-timer-type="Estufa de Placa"
+                                class="tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition">
+                                🔥 Estufa de Placa
+                            </button>
+                            <button type="button" onclick="selectTechTimerLabel('Teste em Bancada')" data-timer-type="Teste em Bancada"
+                                class="tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition">
+                                🧪 Teste em Bancada
+                            </button>
+                        </div>
+                        <input type="text" id="techTimerLabelInput" value="Estufa de Placa"
+                            placeholder="Descrição (ex: Estufa de Placa, Teste de Fonte...)"
+                            class="w-full px-3 py-2 rounded-xl bento-tile text-xs font-semibold focus:outline-none focus:border-sky-500">
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="startTechTimer(15, this)"
+                                class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 text-xs font-black cursor-pointer transition">
+                                15 min
+                            </button>
+                            <button type="button" onclick="startTechTimer(30, this)"
+                                class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 text-xs font-black cursor-pointer transition">
+                                30 min
+                            </button>
+                            <button type="button" onclick="startTechTimer(60, this)"
+                                class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 text-xs font-black cursor-pointer transition">
+                                60 min
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2 pt-0.5">
+                            <input type="number" id="techTimerCustomMinutes" min="1" max="480" value="45"
+                                class="w-24 px-3 py-2 rounded-xl bento-tile text-xs font-mono font-bold text-center focus:outline-none focus:border-sky-500">
+                            <button type="button" onclick="startCustomTechTimer(this)"
+                                class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-blue-600 text-white text-xs font-black cursor-pointer shadow-sm">
+                                Iniciar Tempo Personalizado (min)
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
 
         {% elif card.state in ('ORCAMENTOS_FEITOS', 'ORCAMENTOS_ENVIADOS') %}
@@ -382,11 +490,108 @@
             }
         }
 
-        function claimOrcamento(techName) {
-            var btn = window.event && window.event.currentTarget ? window.event.currentTarget : null;
+        let selectedPreTimerMode = "none";
+        let selectedPreTimerMinutes = 30;
+
+        function setPreTimerMode(mode) {
+            selectedPreTimerMode = mode;
+            document.querySelectorAll(".pre-mode-btn").forEach((btn) => {
+                const active = btn.dataset.preMode === mode;
+                btn.className = active
+                    ? "pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition"
+                    : "pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition";
+            });
+            const row = document.getElementById("preTimerMinutesRow");
+            if (row) row.classList.toggle("hidden", mode === "none");
+        }
+
+        function setPreTimerMinutes(mins) {
+            selectedPreTimerMinutes = mins;
+            document.querySelectorAll(".pre-min-btn").forEach((btn) => {
+                const active = Number(btn.dataset.preMin) === mins;
+                btn.className = active
+                    ? "pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer"
+                    : "pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold bento-tile cursor-pointer";
+            });
+        }
+
+        function selectTechTimerLabel(label) {
+            const input = document.getElementById("techTimerLabelInput");
+            if (input) input.value = label;
+            document.querySelectorAll(".tech-timer-type-btn").forEach((btn) => {
+                const active = btn.dataset.timerType === label;
+                btn.className = active
+                    ? "tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition"
+                    : "tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition";
+            });
+        }
+
+        function startTechTimer(mins, btnEl) {
+            const input = document.getElementById("techTimerLabelInput");
+            const label = (input && input.value.trim()) || "Estufa de Placa";
+            return runOsAction(btnEl || null, "/api/timer/start", {
+                os_number: osNumber,
+                minutes: mins,
+                label: label
+            }, {
+                loadingText: "Iniciando...",
+                fallbackError: "Não foi possível iniciar o cronômetro."
+            });
+        }
+
+        function startCustomTechTimer(btnEl) {
+            const customInput = document.getElementById("techTimerCustomMinutes");
+            const mins = parseInt((customInput && customInput.value) || "30", 10);
+            if (!mins || mins < 1 || mins > 480) {
+                alert("Informe um tempo entre 1 e 480 minutos.");
+                return;
+            }
+            return startTechTimer(mins, btnEl);
+        }
+
+        function cancelTechTimer(btnEl) {
+            return runOsAction(btnEl || null, "/api/timer/cancel", { os_number: osNumber }, {
+                loadingText: "Cancelando...",
+                fallbackError: "Não foi possível cancelar o cronômetro."
+            });
+        }
+
+        (function initTechTimerCountdown() {
+            const panel = document.getElementById("activeTimerPanel");
+            const cdEl = document.getElementById("techTimerCountdown");
+            if (!panel || !cdEl) return;
+            const endMs = new Date(panel.dataset.endAt).getTime();
+            const update = () => {
+                const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
+                const secs = String(diffSec % 60).padStart(2, "0");
+                cdEl.textContent = mins + ":" + secs;
+            };
+            update();
+            setInterval(update, 1000);
+        })();
+
+        function claimOrcamento(techName, btnEl) {
+            var btn = btnEl || (window.event && window.event.currentTarget ? window.event.currentTarget : null);
             return runOsAction(btn, "/api/esteira/claim-orcamento", { os_number: osNumber, tecnico: techName }, {
                 loadingText: "Iniciando...",
-                fallbackError: "Não foi possível assumir o orçamento."
+                fallbackError: "Não foi possível assumir o orçamento.",
+                onSuccess: async function () {
+                    if (selectedPreTimerMode && selectedPreTimerMode !== "none") {
+                        try {
+                            await fetch("/api/timer/start", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    os_number: osNumber,
+                                    minutes: selectedPreTimerMinutes || 30,
+                                    label: selectedPreTimerMode
+                                })
+                            });
+                        } catch (e) {}
+                    }
+                    location.reload();
+                }
             });
         }
 

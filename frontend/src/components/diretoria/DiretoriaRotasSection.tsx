@@ -285,7 +285,7 @@ const DraggableStopCard = memo<{
               >
                 {stop.client_name}
               </strong>
-              <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 shrink-0">
+              <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 shrink-0">
                 {stop.os_number ? `OS ${stop.os_number}` : 'S/N'}
               </span>
               {stop.sector && (
@@ -1048,7 +1048,7 @@ export const DiretoriaRotasSection: React.FC<DiretoriaRotasSectionProps> = ({
                 {active ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
                 <span>{tName}</span>
                 {count > 0 && (
-                  <span className="px-1.5 py-0.2 rounded-full bg-white/25 text-[10px] font-mono">
+                  <span className="px-1.5 py-0.5 rounded-full bg-white/25 text-[10px] font-mono">
                     {count}
                   </span>
                 )}

@@ -526,7 +526,7 @@ export const AdminExternosView: React.FC<AdminExternosViewProps> = ({ onToast, o
                               <strong className="font-black uppercase text-zinc-900 dark:text-white">
                                 {s.client_name}
                               </strong>
-                              <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 border border-blue-200 dark:border-blue-800 shrink-0">
+                              <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-sky-300 border border-blue-200 dark:border-blue-800 shrink-0">
                                 {s.os_number ? `OS ${s.os_number}` : 'S/N'}
                               </span>
                               {s.sector && (

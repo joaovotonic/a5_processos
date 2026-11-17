@@ -203,6 +203,87 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
                 conn.execute("DELETE FROM card_history WHERE os_number = '026991'")
                 conn.execute("DELETE FROM cards WHERE os_number = '026991'")
 
+    def test_07_tech_budget_timer_and_tv_light_blue_and_admin_drag(self):
+        """Técnico pode acionar Estufa/Teste ao iniciar orçamento; Admin sem timer no card e drag no card inteiro; TV em azul claro."""
+        test_os = "995502"
+        with connect() as conn:
+            conn.execute("DELETE FROM card_history WHERE os_number = ?", (test_os,))
+            conn.execute("DELETE FROM cards WHERE os_number = ?", (test_os,))
+        create_manual_os({"os_number": test_os, "client_name": "CLIENTE ESTUFA TESTE", "equipment_model": "Prix 4 Uno"})
+
+        anon = self.app.test_client()
+        try:
+            # 1. Na tela de escolher técnico para orçamento já existe opção opcional de Estufa/Teste
+            r_wait = anon.get(f"/os/{test_os}")
+            self.assertEqual(r_wait.status_code, 200)
+            wait_html = r_wait.get_data(as_text=True)
+            self.assertIn("Iniciar já com Estufa ou Teste?", wait_html)
+            self.assertIn("setPreTimerMode", wait_html)
+
+            # 2. Técnico assume orçamento e inicia cronômetro sem precisar de login
+            r_claim = anon.post("/api/esteira/claim-orcamento", json={"os_number": test_os, "tecnico": "Enzo"})
+            self.assertEqual(r_claim.status_code, 200)
+            self.assertTrue(r_claim.get_json()["success"])
+
+            r_orc_html = anon.get(f"/os/{test_os}")
+            self.assertEqual(r_orc_html.status_code, 200)
+            orc_html = r_orc_html.get_data(as_text=True)
+            self.assertIn("Estufa / Teste na TV", orc_html)
+            self.assertIn("Estufa de Placa", orc_html)
+            self.assertIn("Teste em Bancada", orc_html)
+
+            r_start = anon.post("/api/timer/start", json={"os_number": "995502", "minutes": 30, "label": "Teste em Bancada"})
+            self.assertEqual(r_start.status_code, 200)
+            self.assertTrue(r_start.get_json()["success"])
+
+            r_active_html = anon.get(f"/os/{test_os}")
+            self.assertIn("Cancelar Cronômetro", r_active_html.get_data(as_text=True))
+
+            r_cancel = anon.post("/api/timer/cancel", json={"os_number": test_os})
+            self.assertEqual(r_cancel.status_code, 200)
+
+            # 3. TV repaginada com azul claro nos dois modos, layout compacto 1080p, Motion techs/YouTube e popout azul claro
+            tv_html = anon.get("/tv").get_data(as_text=True)
+            self.assertIn("#38BDF8", tv_html)
+            self.assertIn("sky-400", tv_html)
+            self.assertIn("Som da Oficina", tv_html)
+            self.assertIn("enterTechRow", tv_html)
+            self.assertIn("exitTechRow", tv_html)
+            self.assertIn("openYtWidgetMotion", tv_html)
+            self.assertIn("closeYtWidgetMotion", tv_html)
+            self.assertIn("w-[248px]", tv_html)
+
+            # 4. CardDetailModal sem controles de Estufa/Teste e KanbanCardItem arrastável pelo card inteiro
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            with open(os.path.join(base_dir, "frontend", "src", "components", "admin", "CardDetailModal.tsx"), "r", encoding="utf-8") as f:
+                detail_src = f.read()
+            self.assertNotIn("Cronômetro de Estufa", detail_src)
+            self.assertNotIn("/api/timer/start", detail_src)
+
+            with open(os.path.join(base_dir, "frontend", "src", "components", "admin", "KanbanCardItem.tsx"), "r", encoding="utf-8") as f:
+                card_src = f.read()
+            self.assertIn("{...attributes}\n      {...listeners}", card_src)
+
+            with open(os.path.join(base_dir, "frontend", "src", "components", "admin", "KanbanBoard.tsx"), "r", encoding="utf-8") as f:
+                board_src = f.read()
+            self.assertIn("SmartPointerSensor", board_src)
+
+            # 5. AdminPage conecta Pré-Entrada, Chamar TV e Silenciar TV + NewOsModal aceita initialEntry
+            with open(os.path.join(base_dir, "frontend", "src", "pages", "AdminPage.tsx"), "r", encoding="utf-8") as f:
+                admin_src = f.read()
+            self.assertIn("PendingPhotosModal", admin_src)
+            self.assertIn("CallTechModal", admin_src)
+            self.assertIn("/api/admin/panic-silence", admin_src)
+
+            with open(os.path.join(base_dir, "frontend", "src", "components", "admin", "NewOsModal.tsx"), "r", encoding="utf-8") as f:
+                newos_src = f.read()
+            self.assertIn("pending_entry_id", newos_src)
+            self.assertIn("initialEntry", newos_src)
+        finally:
+            with connect() as conn:
+                conn.execute("DELETE FROM card_history WHERE os_number = ?", (test_os,))
+                conn.execute("DELETE FROM cards WHERE os_number = ?", (test_os,))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

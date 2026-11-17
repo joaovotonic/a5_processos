@@ -292,10 +292,9 @@ def update_card(card_id):
     return jsonify({"success": True, "card": card, "board": realtime.broadcast_board()})
 
 
-@bp.route("/cards/<int:card_id>", methods=["DELETE", "POST"])
-@require_api_roles("admin_recepcao", "master")
-def delete_card(card_id):
-    """Remove uma O.S. cadastrada por engano (requer autorização de admin: admin / admin)."""
+def _verify_delete_credentials():
+    """Extrai login/senha e valida se pertence a um usuário Master (inclusive admin padrão)."""
+    from ..auth import authenticate_user
     data = {}
     try:
         data = request_data() or {}
@@ -305,9 +304,16 @@ def delete_card(card_id):
     username = (data.get("username") or data.get("login") or request.args.get("username") or request.args.get("login") or "").strip()
     password = (data.get("password") or data.get("senha") or request.args.get("password") or request.args.get("senha") or "").strip()
 
-    if username != "admin" or password != "admin":
+    auth_user = authenticate_user(username, password)
+    if not auth_user or auth_user.get("role") != "master":
         raise ApiError("Acesso negado: Login ou senha incorretos para exclusão de O.S.", status=403)
 
+
+@bp.route("/cards/<int:card_id>", methods=["DELETE", "POST"])
+@require_api_roles("admin_recepcao", "master")
+def delete_card(card_id):
+    """Remove uma O.S. cadastrada por engano (requer autorização de Master)."""
+    _verify_delete_credentials()
     cards_service.delete_card(card_id)
     return jsonify({"success": True, "board": realtime.broadcast_board()})
 
@@ -412,25 +418,24 @@ def finish_os_mobile():
 
 
 @bp.route("/timer/start", methods=["POST"])
-@require_api_roles("admin_recepcao", "master")
 def start_timer():
-    """Inicia um cronômetro de estufa/teste para uma O.S."""
+    """Inicia um cronômetro de estufa/teste para uma O.S. (acionado pelo técnico no orçamento ou pela bancada)."""
     data = json_body()
     os_number = get_text(data, "os_number")
     minutes = to_float(data.get("minutes", 30))
-    if minutes is None:
-        raise ApiError("Tempo do cronômetro inválido.")
+    if minutes is None or minutes <= 0 or minutes > 480:
+        raise ApiError("Tempo do cronômetro inválido (1 a 480 minutos).")
     label = get_text(data, "label", "Estufa de Placa")
 
     card_row, end_time = cards_service.start_timer(os_number, minutes, label)
+    canonical_os = card_row["os_number"]
 
     realtime.broadcast_board()
-    realtime.notify_timer_started(os_number, card_row["client_name"], minutes, end_time, label)
-    return jsonify({"success": True, "end_time": end_time})
+    realtime.notify_timer_started(canonical_os, card_row["client_name"], minutes, end_time, label)
+    return jsonify({"success": True, "end_time": end_time, "os_number": canonical_os, "label": label})
 
 
 @bp.route("/timer/cancel", methods=["POST"])
-@require_api_roles("admin_recepcao", "master")
 def cancel_timer():
     """Cancela o cronômetro ativo de uma O.S."""
     data = json_body()
@@ -546,19 +551,8 @@ def api_finalizar_balanca():
 @bp.route("/cards/<path:os_number>", methods=["DELETE"])
 @require_api_roles("admin_recepcao", "master")
 def api_delete_card(os_number):
-    """Exclui a O.S. do sistema Kanban da A5 Tecnologia (requer admin / admin)."""
-    data = {}
-    try:
-        data = request_data() or {}
-    except Exception:
-        data = {}
-
-    username = (data.get("username") or data.get("login") or request.args.get("username") or request.args.get("login") or "").strip()
-    password = (data.get("password") or data.get("senha") or request.args.get("password") or request.args.get("senha") or "").strip()
-
-    if username != "admin" or password != "admin":
-        raise ApiError("Acesso negado: Login ou senha incorretos para exclusão de O.S.", status=403)
-
+    """Exclui a O.S. do sistema Kanban da A5 Tecnologia (requer autorização de Master)."""
+    _verify_delete_credentials()
     from ..services.esteira import delete_card_by_os
     return jsonify(delete_card_by_os(os_number))
 

@@ -40,6 +40,32 @@ const KANBAN_DROP_ANIMATION: DropAnimation = {
   easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
 };
 
+function isInteractiveDragTarget(target: EventTarget | null): boolean {
+  let cur = target as HTMLElement | null;
+  while (cur) {
+    if (
+      cur.dataset?.noDrag !== undefined ||
+      ['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL'].includes(cur.tagName)
+    ) {
+      return true;
+    }
+    cur = cur.parentElement;
+  }
+  return false;
+}
+
+class SmartPointerSensor extends PointerSensor {
+  static activators = [
+    {
+      eventName: 'onPointerDown' as const,
+      handler: ({ nativeEvent }: React.PointerEvent) => {
+        if (!nativeEvent.isPrimary || nativeEvent.button !== 0) return false;
+        return !isInteractiveDragTarget(nativeEvent.target);
+      },
+    },
+  ];
+}
+
 const DroppableColumnBody = memo<{
   list: KanbanList;
   visibleCards: KanbanCard[];
@@ -247,10 +273,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [isPanning, setIsPanning] = useState(false);
   const panState = useRef({ active: false, startX: 0, scrollLeft: 0 });
   const lastMovedCardToColRef = useRef<string>('');
+  const suppressClickUntilRef = useRef(0);
 
   const displayLists = localLists ?? lists;
   const displayListsRef = useRef<KanbanList[]>(displayLists);
   displayListsRef.current = displayLists;
+
+  const handleSafeOpenDetail = useCallback(
+    (osNumber: string) => {
+      if (Date.now() < suppressClickUntilRef.current) return;
+      onOpenDetail(osNumber);
+    },
+    [onOpenDetail],
+  );
 
   const toggleExpandCol = useCallback((listId: number) => {
     setExpandedCols((prev) => {
@@ -262,8 +297,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   }, []);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 4 },
+    useSensor(SmartPointerSensor, {
+      activationConstraint: { distance: 6 },
     }),
   );
 
@@ -302,6 +337,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     const card = event.active.data.current?.card as KanbanCard | undefined;
     lastMovedCardToColRef.current = '';
+    suppressClickUntilRef.current = Number.MAX_SAFE_INTEGER;
     if (card) {
       setActiveCard(card);
       // Reaproveita referências exatas das listas para preservar React.memo das colunas intocadas!
@@ -354,6 +390,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const { active, over } = event;
     const currentLists = localLists ?? lists;
     lastMovedCardToColRef.current = '';
+    suppressClickUntilRef.current = Date.now() + 200;
     setActiveCard(null);
 
     if (!over) {
@@ -431,6 +468,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragEnd={handleDragEnd}
       onDragCancel={() => {
         lastMovedCardToColRef.current = '';
+        suppressClickUntilRef.current = Date.now() + 200;
         setActiveCard(null);
         setLocalLists(null);
       }}
@@ -453,7 +491,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             activeFilter={activeFilter}
             isExpanded={expandedCols.has(list.id)}
             onToggleExpand={toggleExpandCol}
-            onOpenDetail={onOpenDetail}
+            onOpenDetail={handleSafeOpenDetail}
             onAdvanceAdmin={onAdvanceAdmin}
             onDeleteRequest={onDeleteRequest}
             onRenameList={onRenameList}
