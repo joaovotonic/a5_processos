@@ -11,9 +11,10 @@ Organização do pacote:
     services/       regras de negócio e SQL (cartões, listas, quadro, relatórios)
     routes/         rotas HTTP (páginas e API), sem SQL
 """
+import gzip
 import os
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import config
@@ -46,6 +47,19 @@ def create_app():
             )
         return send_from_directory(config.STATIC_DIR, normalized_filename)
 
+    @app.get("/assets/<path:filename>")
+    def serve_frontend_assets(filename):
+        assets_dir = os.path.join(config.FRONTEND_DIST_DIR, "assets")
+        return send_from_directory(assets_dir, filename.replace("\\", "/"), max_age=31536000)
+
+    @app.get("/favicon.svg")
+    @app.get("/favicon.ico")
+    def serve_frontend_favicon():
+        svg_path = os.path.join(config.FRONTEND_DIST_DIR, "favicon.svg")
+        if os.path.isfile(svg_path):
+            return send_from_directory(config.FRONTEND_DIST_DIR, "favicon.svg")
+        return send_from_directory(os.path.join(config.STATIC_DIR, "img"), "logo_a5.svg")
+
     @app.get("/healthz")
     def health_check():
         return jsonify({"service": "a5-kanban", "status": "ok"})
@@ -57,6 +71,31 @@ def create_app():
     @app.errorhandler(ApiError)
     def handle_api_error(err):
         return jsonify({"error": err.message}), err.status
+
+    @app.after_request
+    def compress_large_responses(response):
+        # Comprime respostas JSON/texto grandes (ex: /api/board no Cloudflare Tunnel) de ~3.7MB para ~90KB
+        if (
+            response.status_code < 200
+            or response.status_code >= 300
+            or response.direct_passthrough
+            or "Content-Encoding" in response.headers
+            or "gzip" not in (request.headers.get("Accept-Encoding") or "").lower()
+        ):
+            return response
+        mimetype = (response.mimetype or "").lower()
+        if not (mimetype.startswith("application/json") or mimetype.startswith("text/html") or mimetype.startswith("application/javascript") or mimetype.startswith("text/css")):
+            return response
+        data = response.get_data()
+        if not data or len(data) < 1024:
+            return response
+        compressed = gzip.compress(data, compresslevel=5)
+        response.set_data(compressed)
+        response.headers["Content-Encoding"] = "gzip"
+        response.headers["Content-Length"] = str(len(compressed))
+        vary = response.headers.get("Vary")
+        response.headers["Vary"] = f"{vary}, Accept-Encoding" if vary else "Accept-Encoding"
+        return response
 
     from . import sockets  # noqa: F401  (registra os eventos WebSocket)
     socketio.init_app(

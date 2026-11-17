@@ -1,0 +1,273 @@
+@import "tailwindcss";
+@import "./fluid-theme.css";
+
+@custom-variant dark (&:where(.dark, .dark *, .dark-mode, .dark-mode *));
+
+:root {
+  --a5-bg: #F5F5F7;
+  --a5-surface: rgba(255, 255, 255, 0.96);
+  --a5-surface-subtle: #EEF1F6;
+  --a5-border: rgba(226, 232, 240, 0.92);
+  --a5-text: #18181B;
+  --a5-muted: #64748B;
+  --a5-primary: #3B82F6;
+  --a5-primary-strong: #2563EB;
+}
+
+html.dark {
+  --a5-bg: #09090B;
+  --a5-surface: rgba(24, 24, 28, 0.92);
+  --a5-surface-subtle: #121216;
+  --a5-border: rgba(255, 255, 255, 0.08);
+  --a5-text: #F4F4F5;
+  --a5-muted: #A1A1AA;
+  --a5-primary: #38BDF8;
+  --a5-primary-strong: #3B82F6;
+}
+
+@layer base {
+  body {
+    background-color: var(--a5-bg);
+    color: var(--a5-text);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+}
+
+/* Bento Glass Cards (Claro & Escuro) */
+.modernize-card {
+  background: var(--a5-surface);
+  backdrop-filter: blur(14px);
+  border-radius: 22px;
+  border: 1px solid var(--a5-border);
+  box-shadow:
+    0 1px 2px rgba(24, 24, 27, 0.04),
+    0 10px 30px -10px rgba(24, 24, 27, 0.06);
+  transition: box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, background-color 0.25s ease;
+}
+
+html.dark .modernize-card {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.35),
+    0 14px 36px -14px rgba(0, 0, 0, 0.65);
+}
+
+.modernize-card:hover {
+  box-shadow:
+    0 2px 4px rgba(24, 24, 27, 0.04),
+    0 16px 36px -12px rgba(37, 99, 235, 0.14);
+}
+
+html.dark .modernize-card:hover {
+  border-color: rgba(56, 189, 248, 0.26);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 18px 40px -14px rgba(56, 189, 248, 0.16);
+}
+
+/* Blue Featured Hero Card */
+.ember-blue-card {
+  background: linear-gradient(145deg, #5d87ff 0%, #3b82f6 52%, #1d4ed8 100%);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 14px 34px -10px rgba(37, 99, 235, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+.bento-inner-tile {
+  background: var(--a5-surface-subtle);
+  border: 1px solid var(--a5-border);
+  border-radius: 16px;
+}
+
+/* Diagonal hatch texture for progress tracks and drag slots */
+.ember-hatch {
+  background-color: rgba(148, 163, 184, 0.14);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(24, 24, 27, 0.055),
+    rgba(24, 24, 27, 0.055) 4px,
+    transparent 4px,
+    transparent 9px
+  );
+}
+
+html.dark .ember-hatch {
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.06) 4px,
+    transparent 4px,
+    transparent 9px
+  );
+}
+
+.ember-hatch-blue {
+  background-color: rgba(59, 130, 246, 0.08);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(59, 130, 246, 0.16),
+    rgba(59, 130, 246, 0.16) 5px,
+    transparent 5px,
+    transparent 11px
+  );
+}
+
+/* Pill Buttons */
+.btn-modernize-primary {
+  background: linear-gradient(135deg, #5d87ff 0%, #2563eb 100%);
+  color: #ffffff;
+  border-radius: 9999px;
+  font-weight: 700;
+  touch-action: manipulation;
+  transition: box-shadow 0.18s ease, transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease;
+  box-shadow: 0 6px 16px -4px rgba(37, 99, 235, 0.38);
+}
+
+.btn-modernize-primary:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.48);
+  transform: translateY(-1px);
+}
+
+.btn-modernize-primary:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn-modernize-light {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border-radius: 9999px;
+  font-weight: 700;
+  touch-action: manipulation;
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.15s ease;
+}
+
+html.dark .btn-modernize-light {
+  background-color: rgba(56, 189, 248, 0.14);
+  color: #38bdf8;
+}
+
+.btn-modernize-light:hover {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.btn-modernize-light:active {
+  transform: scale(0.98);
+}
+
+.btn-ember-dark {
+  background-color: #18181b;
+  color: #ffffff;
+  border-radius: 9999px;
+  font-weight: 700;
+  touch-action: manipulation;
+  transition: background-color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+  box-shadow: 0 6px 16px -4px rgba(24, 24, 27, 0.28);
+}
+
+html.dark .btn-ember-dark {
+  background-color: #27272a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-ember-dark:hover {
+  background-color: #27272a;
+  transform: translateY(-1px);
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.22s ease;
+}
+
+.btn-modernize-primary:active,
+.btn-modernize-light:active,
+.btn-ember-dark:active {
+  transform: scale(0.97);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kanban Drag & Scroll Helpers */
+.kanban-canvas {
+  cursor: grab;
+}
+
+.kanban-canvas.is-grabbing,
+.kanban-canvas.is-grabbing * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+.kanban-card-surface {
+  contain: layout style;
+}
+
+/* Custom Minimal Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.28);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.55);
+}
+
+@keyframes pulseRing {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.sla-pulse {
+  animation: pulseRing 2.2s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

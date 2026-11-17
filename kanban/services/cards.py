@@ -59,9 +59,18 @@ def format_parts_summary(parts_items):
 # CONSULTAS
 # ==============================================================================
 def get_card_row_by_os(os_number):
-    clean_os = str(os_number or "").strip().lstrip("0") or "0"
+    from ..utils import format_os_number
+    raw = str(os_number or "").strip()
+    std = format_os_number(raw)
+    clean_digits = re.sub(r"\D", "", raw).lstrip("0") or "0"
     with connect() as conn:
-        return conn.execute("SELECT * FROM cards WHERE os_number = ? OR os_number = ?", (clean_os, os_number)).fetchone()
+        return conn.execute(
+            """
+            SELECT * FROM cards
+            WHERE os_number = ? OR os_number = ? OR os_number = ? OR os_number = ? OR os_number = ? OR id = ?
+            """,
+            (std, clean_digits, clean_digits.zfill(6), clean_digits.zfill(10), raw, clean_digits),
+        ).fetchone()
 
 
 def get_card_details(os_number):
@@ -1385,16 +1394,18 @@ def finish_card_mobile(form, photo_files, label_after_files=None):
 # ==============================================================================
 def start_timer(os_number, minutes, label):
     """Inicia o cronômetro. Retorna (linha do cartão, horário de término ISO)."""
+    if minutes is None or minutes <= 0 or minutes > 480:
+        raise ApiError("Informe um tempo válido entre 1 e 480 minutos.")
+    card_row = get_card_row_by_os(os_number)
+    if not card_row:
+        raise NotFound("O.S. não encontrada.")
+    canonical_os = card_row["os_number"]
+    clean_label = (label or "Estufa de Placa").strip() or "Estufa de Placa"
     end_time = (datetime.now() + timedelta(minutes=minutes)).isoformat()
     with connect() as conn:
-        card_row = conn.execute(
-            "SELECT client_name, tech_name FROM cards WHERE os_number = ?", (os_number,)
-        ).fetchone()
-        if not card_row:
-            raise NotFound("O.S. não encontrada.")
         conn.execute(
-            "UPDATE cards SET timer_end_at = ?, timer_label = ? WHERE os_number = ?",
-            (end_time, label, os_number)
+            "UPDATE cards SET timer_end_at = ?, timer_label = ? WHERE id = ?",
+            (end_time, clean_label, card_row["id"])
         )
     return card_row, end_time
 
@@ -1404,13 +1415,16 @@ def finish_timer(os_number):
     Encerra o cronômetro da O.S. Retorna a linha do cartão se havia um cronômetro ativo,
     ou None se ele já tinha sido encerrado (ex.: outra TV aberta já avisou).
     """
+    card_row = get_card_row_by_os(os_number)
+    if not card_row:
+        return None
     with connect() as conn:
         cursor = conn.execute(
-            "UPDATE cards SET timer_end_at = NULL WHERE os_number = ? AND timer_end_at IS NOT NULL",
-            (os_number,)
+            "UPDATE cards SET timer_end_at = NULL WHERE id = ? AND timer_end_at IS NOT NULL",
+            (card_row["id"],)
         )
         if cursor.rowcount == 0:
             return None
         return conn.execute(
-            "SELECT client_name, timer_label FROM cards WHERE os_number = ?", (os_number,)
+            "SELECT os_number, client_name, timer_label FROM cards WHERE id = ?", (card_row["id"],)
         ).fetchone()

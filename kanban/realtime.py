@@ -149,13 +149,15 @@ def announce_bench_support(tech_name, os_number):
 
 
 def announce_timer_done(os_number, client_name, label):
+    clean_label = (label or "Estufa").strip()
+    ending = "Retirar equipamento da estufa." if "estufa" in clean_label.lower() else "Conferir equipamento na bancada."
     _announce({
         "type": "timer_done",
         "os_number": os_number,
         "client_name": client_name,
-        "label": label,
+        "label": clean_label,
         "is_urgent": True,
-        "tts_text": f"Atenção oficina! Tempo de {label} concluído para a O.S. {os_number}, cliente {client_name}. Retirar equipamento da estufa."
+        "tts_text": f"Atenção oficina! Tempo de {clean_label} concluído para a O.S. {os_number}, cliente {client_name}. {ending}"
     })
 
 

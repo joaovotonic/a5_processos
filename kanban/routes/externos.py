@@ -6,6 +6,7 @@ e armazenamento automático de imagens na pasta ./rotas_imagens/.
 from datetime import datetime
 from flask import Blueprint, request, jsonify, Response, send_from_directory
 
+from ..auth import require_api_roles
 from ..config import ROTAS_IMAGENS_DIR
 from ..services.externos import (
     list_external_orders,
@@ -31,6 +32,7 @@ bp = Blueprint("externos", __name__, url_prefix="/api/externos")
 
 
 @bp.route("/orders", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def get_orders():
     """Lista chamados externos com filtros opcionais de data, turno (Manhã/Tarde), status, técnico ou busca."""
     try:
@@ -57,6 +59,7 @@ def get_orders():
 
 
 @bp.route("/orders", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def add_order():
     """Criação manual de chamado externo ou tarefa de rua pela Priscila/Admin."""
     data = request.get_json() or {}
@@ -64,7 +67,7 @@ def add_order():
         return jsonify({"success": False, "error": "Informe ao menos o Cliente ou a Descrição da Tarefa."}), 400
 
     if not data.get("route_shift"):
-        data["route_shift"] = get_current_shift()
+        data["route_shift"] = "geral"
 
     order = create_external_order(data)
     _emit_safe("external_order_created", {
@@ -75,6 +78,7 @@ def add_order():
 
 
 @bp.route("/orders/<int:order_id>", methods=["PUT"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def update_order(order_id):
     """Atualiza dados do chamado externo (técnico, turno, sequência, setor, notas, etc)."""
     data = request.get_json() or {}
@@ -87,6 +91,7 @@ def update_order(order_id):
 
 
 @bp.route("/orders/<int:order_id>", methods=["DELETE"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def remove_order(order_id):
     """Exclui um chamado externo."""
     ok = delete_external_order(order_id)
@@ -98,6 +103,7 @@ def remove_order(order_id):
 
 
 @bp.route("/orders/reschedule", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def reschedule_orders():
     """
     Transfere um ou mais chamados (ex: não atendidos) para outra data ou outro turno (tarde/amanhã).
@@ -105,7 +111,7 @@ def reschedule_orders():
     data = request.get_json() or {}
     order_ids = data.get("order_ids") or []
     new_date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
-    new_shift = data.get("shift") or "tarde"
+    new_shift = data.get("shift") or "geral"
 
     if not order_ids:
         return jsonify({"success": False, "error": "Nenhum chamado selecionado para remarcar."}), 400
@@ -126,6 +132,7 @@ def reschedule_orders():
 
 
 @bp.route("/routes/summary", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def route_summary():
     """Retorna o quadro de rota da data e turno selecionados (agrupado por técnico e chamados sem técnico)."""
     try:
@@ -134,7 +141,7 @@ def route_summary():
     except Exception:
         pass
     date_str = request.args.get("date") or datetime.now().strftime("%Y-%m-%d")
-    shift = request.args.get("shift") or get_current_shift()
+    shift = request.args.get("shift") or "geral"
     summary = get_grouped_routes(date_str, shift=shift)
     return jsonify({
         "success": True,
@@ -145,21 +152,23 @@ def route_summary():
 
 
 @bp.route("/routes/notify-director", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def notify_director():
-    """Priscila envia os chamados para o Sr. Jacson na Diretoria para o turno informado."""
+    """Priscila envia os chamados para o Sr. Jacson na Diretoria."""
     data = request.get_json() or {}
     date_str = data.get("date") or datetime.now().strftime("%Y-%m-%d")
-    shift = data.get("shift") or get_current_shift()
+    shift = data.get("shift") or "geral"
     res = notify_director_pending_routes(date_str, shift=shift)
     return jsonify(res)
 
 
 @bp.route("/routes/save", methods=["POST"])
+@require_api_roles("diretoria", "master")
 def save_routes():
-    """Salva organização ou finaliza a rota pelo Sr. Jacson para o turno informado."""
+    """Salva organização ou finaliza a rota pelo Sr. Jacson."""
     data = request.get_json() or {}
     route_date = data.get("date") or datetime.now().strftime("%Y-%m-%d")
-    route_shift = data.get("shift") or get_current_shift()
+    route_shift = data.get("shift") or "geral"
     assignments = data.get("assignments") or []
     finalize = bool(data.get("finalize", False))
     director_name = data.get("director_name") or "Sr. Jacson"
@@ -175,10 +184,11 @@ def save_routes():
 
 
 @bp.route("/whatsapp-text", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def whatsapp_text():
     """Gera texto pronto para colar no WhatsApp de cada técnico ou conjunta."""
     date_str = request.args.get("date") or datetime.now().strftime("%Y-%m-%d")
-    shift = request.args.get("shift") or get_current_shift()
+    shift = request.args.get("shift") or "geral"
     technician = request.args.get("technician")
     summary = get_grouped_routes(date_str, shift=shift)
 
@@ -204,6 +214,7 @@ def whatsapp_text():
 
 
 @bp.route("/save-image", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def save_image():
     """
     Recebe base64 de imagem renderizada no front-end e salva na pasta ./rotas_imagens/.
@@ -218,7 +229,7 @@ def save_image():
     filename = data.get("filename")
     if not filename:
         date_str = data.get("date") or datetime.now().strftime("%d-%m-%Y")
-        shift = data.get("shift") or get_current_shift()
+        shift = data.get("shift") or "geral"
         tech = data.get("tech") or "CONJUNTA"
         filename = build_route_image_filename(date_str, shift, tech)
 
@@ -227,12 +238,14 @@ def save_image():
 
 
 @bp.route("/images/<path:filename>")
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def serve_image(filename):
     """Serve uma imagem da pasta rotas_imagens/."""
     return send_from_directory(ROTAS_IMAGENS_DIR, filename)
 
 
 @bp.route("/saved-images", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def saved_images():
     """Lista as imagens de rotas salvas no servidor."""
     images = list_saved_route_images()
@@ -240,6 +253,7 @@ def saved_images():
 
 
 @bp.route("/export/csv", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def export_csv():
     """Exporta histórico e rotas em formato CSV com compatibilidade total para Excel no Brasil."""
     date_filter = request.args.get("date")
@@ -263,7 +277,7 @@ def export_csv():
     )
 
     filename_suffix = date_filter or (f"{date_from}_a_{date_to}" if date_from else "completo")
-    if shift_filter:
+    if shift_filter and shift_filter.strip().lower() not in ("geral", "all", ""):
         filename_suffix += f"_{shift_filter}"
     filename = f"rotas_externos_{filename_suffix}.csv"
 
@@ -278,6 +292,7 @@ def export_csv():
 
 
 @bp.route("/history", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def route_history():
     """Retorna listagem de datas com rotas já cadastradas para histórico."""
     from ..database import connect

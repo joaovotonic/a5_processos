@@ -1,4 +1,4 @@
 """Blueprints HTTP (cada arquivo agrupa as rotas de um assunto)."""
-from . import cards, lists, pages, reports, youtube, externos, chat
+from . import auth, cards, lists, pages, reports, youtube, externos, chat
 
-ALL_BLUEPRINTS = [pages.bp, lists.bp, cards.bp, reports.bp, youtube.bp, externos.bp, chat.bp]
+ALL_BLUEPRINTS = [auth.bp, pages.bp, lists.bp, cards.bp, reports.bp, youtube.bp, externos.bp, chat.bp]

@@ -20,8 +20,11 @@ class TestLabelsAndBalancasPendentes(unittest.TestCase):
 
     def setUp(self):
         self.app = create_app()
+        self.app.config["TESTING"] = True
         self.client = self.app.test_client()
         init_db()
+        res_login = self.client.post("/api/auth/login", json={"username": "priscila", "password": "priscila123"})
+        self.assertEqual(res_login.status_code, 200)
 
     def test_labels_rules_and_tv_notifications(self):
         with connect() as conn:

@@ -1,0 +1,63 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fluid-accent);
+  color: var(--fluid-on-accent);
+  font: 500 15px/1 var(--fluid-font);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.button:focus-visible {
+  outline: 2px solid var(--fluid-focus);
+  outline-offset: 3px;
+}
+.inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px 0 16px;
+}
+.button[data-state="loading"] .inner {
+  padding: 0;
+  gap: 0;
+}
+.iconBox {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.label {
+  transition: opacity 160ms ease;
+}
+.button[data-state="loading"] .label {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  overflow: hidden;
+}
+.measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  font: 500 15px/1 var(--fluid-font);
+  white-space: nowrap;
+}
+.measure > span {
+  position: absolute;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

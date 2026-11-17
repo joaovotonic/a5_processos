@@ -3,578 +3,572 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Oficina TV - A5 Tecnologia</title>
+    <title>Painel TV da Oficina • A5 Tecnologia</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: 'class' };
-    </script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <style>
+        :root {
+            --tv-bg: #EFF7FF;
+            --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.34), transparent 44%),
+                              radial-gradient(circle at 90% 100%, rgba(56, 189, 248, 0.22), transparent 48%),
+                              linear-gradient(180deg, #F4FAFF 0%, #EAF4FF 100%);
+            --tv-surface: rgba(255, 255, 255, 0.90);
+            --tv-card: rgba(255, 255, 255, 0.98);
+            --tv-subtle: rgba(224, 242, 254, 0.72);
+            --tv-subtle-strong: #E0F2FE;
+            --tv-border: rgba(56, 189, 248, 0.28);
+            --tv-border-strong: rgba(14, 165, 233, 0.48);
+            --tv-text: #0F172A;
+            --tv-muted: #475569;
+            --tv-sky: #38BDF8;
+            --tv-sky-strong: #0EA5E9;
+            --tv-sky-text: #0284C7;
+            --tv-shadow: 0 12px 30px -12px rgba(14, 165, 233, 0.16);
+            --tv-card-shadow: 0 3px 10px -4px rgba(14, 165, 233, 0.12);
+        }
+
+        html.dark {
+            --tv-bg: #070E1A;
+            --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.16), transparent 44%),
+                              radial-gradient(circle at 88% 100%, rgba(125, 211, 252, 0.10), transparent 46%),
+                              linear-gradient(180deg, #070E1A 0%, #0A1426 100%);
+            --tv-surface: rgba(13, 24, 42, 0.86);
+            --tv-card: rgba(17, 31, 54, 0.95);
+            --tv-subtle: rgba(56, 189, 248, 0.10);
+            --tv-subtle-strong: rgba(56, 189, 248, 0.18);
+            --tv-border: rgba(56, 189, 248, 0.22);
+            --tv-border-strong: rgba(125, 211, 252, 0.50);
+            --tv-text: #F0F9FF;
+            --tv-muted: #94A3B8;
+            --tv-sky: #38BDF8;
+            --tv-sky-strong: #0EA5E9;
+            --tv-sky-text: #7DD3FC;
+            --tv-shadow: 0 18px 42px -16px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(56, 189, 248, 0.08);
+            --tv-card-shadow: 0 6px 18px -6px rgba(2, 6, 23, 0.65);
+        }
+
         body {
-            background: #09090b;
-            color: #f4f4f5;
+            background-color: var(--tv-bg);
+            background-image: var(--tv-bg-gradient);
+            color: var(--tv-text);
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             overflow: hidden;
             user-select: none;
+            transition: background-color 0.28s ease, color 0.25s ease;
         }
-        .font-mono {
-            font-family: 'JetBrains Mono', monospace;
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+
+        .tv-header {
+            background: var(--tv-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--tv-border);
+            box-shadow: var(--tv-shadow);
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
-        .glass-col, .tv-col {
-            background: rgba(18, 18, 23, 0.92);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+        .tv-bento-col {
+            background: var(--tv-surface);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--tv-border);
+            border-radius: 18px;
+            box-shadow: var(--tv-shadow);
+            transition: background-color 0.25s ease, border-color 0.25s ease, width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
         }
+
+        .tv-bento-card {
+            background: var(--tv-card);
+            border: 1px solid var(--tv-border);
+            border-radius: 14px;
+            box-shadow: var(--tv-card-shadow);
+            will-change: transform, opacity;
+            transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .tv-bento-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--tv-border-strong);
+        }
+
         .tv-tech-row {
-            background: rgba(18, 18, 23, 0.92);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.2s ease;
+            background: var(--tv-surface);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--tv-border);
+            border-radius: 18px;
+            box-shadow: var(--tv-shadow);
+            will-change: transform, opacity;
+            transition: border-color 0.25s ease, box-shadow 0.35s ease;
         }
-        .glass-card {
-            background: rgba(24, 24, 27, 0.96);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        .tv-tech-row.tech-spotlight {
+            border-color: rgba(56, 189, 248, 0.85);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), 0 18px 42px -12px rgba(56, 189, 248, 0.38);
         }
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+
+        .tv-pill-tile {
+            background: var(--tv-subtle);
+            border: 1px solid var(--tv-border);
+            border-radius: 12px;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.15);
-            border-radius: 9999px;
+
+        .sky-grad-btn {
+            background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
+            color: #FFFFFF;
+            box-shadow: 0 8px 20px -6px rgba(14, 165, 233, 0.55);
+            transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease, box-shadow 0.18s ease;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(14, 165, 233, 0.3);
-            border-radius: 9999px;
+        .sky-grad-btn:hover {
+            filter: brightness(1.06);
+            box-shadow: 0 12px 26px -6px rgba(56, 189, 248, 0.65);
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: rgba(14, 165, 233, 0.6);
+        .sky-grad-btn:active {
+            transform: scale(0.97);
         }
-        /* Tema Clean (Zinc & Light) para TV Oficina */
-        body.theme-clean {
-            background: #f8fafc;
-            color: #0f172a;
+
+        /* Hatching animado estilo Ember/VitrineBox em Azul Claro para barras da estufa/teste */
+        .ember-hatch {
+            background-color: rgba(56, 189, 248, 0.14);
+            background-image: repeating-linear-gradient(
+                -45deg,
+                rgba(56, 189, 248, 0.22),
+                rgba(56, 189, 248, 0.22) 5px,
+                transparent 5px,
+                transparent 10px
+            );
         }
-        body.theme-clean header {
-            background: #ffffff !important;
-            border-bottom-color: #e2e8f0 !important;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+        html.dark .ember-hatch {
+            background-color: rgba(56, 189, 248, 0.12);
+            background-image: repeating-linear-gradient(
+                -45deg,
+                rgba(125, 211, 252, 0.22),
+                rgba(125, 211, 252, 0.22) 5px,
+                transparent 5px,
+                transparent 10px
+            );
         }
-        body.theme-clean header h1 {
-            color: #254a93 !important;
-        }
-        body.theme-clean header p {
-            color: #2aa6c8 !important;
-        }
-        body.theme-clean #tvClock {
-            color: #0f172a !important;
-        }
-        body.theme-clean #tvDate {
-            color: #475569 !important;
-        }
-        body.theme-clean #tvThemeBtn {
-            background-color: #f1f5f9 !important;
-            border-color: #cbd5e1 !important;
-            color: #0f172a !important;
-        }
-        body.theme-clean header .bg-zinc-900\/80 {
-            background-color: #f1f5f9 !important;
-            border-color: #cbd5e1 !important;
-        }
-        body.theme-clean header .bg-zinc-900\/80 .text-zinc-400 {
-            color: #64748b !important;
-        }
-        body.theme-clean header .bg-zinc-900\/80 #tvScoreToday {
-            color: #0f172a !important;
-        }
-        body.theme-clean .glass-col,
-        body.theme-clean .tv-col {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
-        }
-        body.theme-clean .glass-col > div:first-child,
-        body.theme-clean .tv-col > div:first-child {
-            background: #f8fafc !important;
-            border-bottom-color: #cbd5e1 !important;
-        }
-        body.theme-clean .glass-col > div:first-child span,
-        body.theme-clean .tv-col > div:first-child span {
-            color: #0f172a !important;
-        }
-        body.theme-clean .tv-col .text-sky-300 {
-            color: #0284c7 !important;
-        }
-        body.theme-clean .tv-col .text-emerald-400 {
-            color: #059669 !important;
-        }
-        body.theme-clean .tv-tech-row {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-        }
-        body.theme-clean .tv-tech-row > div:first-child {
-            background: #f8fafc !important;
-            border-bottom-color: #cbd5e1 !important;
-        }
-        body.theme-clean .tv-tech-row > div:first-child span,
-        body.theme-clean .tv-tech-row > div:first-child div {
-            color: #0f172a !important;
-        }
-        body.theme-clean .tv-tech-summary {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            color: #0f172a !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-        }
-        body.theme-clean .tv-tech-summary span {
-            color: #0f172a !important;
-        }
-        body.theme-clean .glass-card {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
-        }
-        body.theme-clean .glass-card .text-white,
-        body.theme-clean .glass-card .text-zinc-100,
-        body.theme-clean .glass-card .card-client-name,
-        body.theme-clean .glass-card .font-extrabold {
-            color: #0f172a !important;
-        }
-        body.theme-clean .glass-card .text-slate-400,
-        body.theme-clean .glass-card .text-zinc-400,
-        body.theme-clean .glass-card .card-equip-desc {
-            color: #475569 !important;
-        }
-        body.theme-clean .text-zinc-100 { color: #0f172a !important; }
-        body.theme-clean .text-zinc-200 { color: #1e293b !important; }
-        body.theme-clean .text-zinc-300 { color: #334155 !important; }
-        body.theme-clean .text-zinc-400 { color: #475569 !important; }
-        body.theme-clean .text-white { color: #0f172a !important; }
-        body.theme-clean #ytFloatingWidget {
-            background: #ffffff !important;
-            border-color: #f43f5e !important;
-            color: #0f172a !important;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15) !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-header-bar {
-            background: #fff1f2 !important;
-            border-bottom-color: #fecdd3 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytAccountHeaderBtn {
-            background: #fef3c7 !important;
-            border-color: #f59e0b !important;
-            color: #b45309 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytStatusBadge {
-            background: #f1f5f9 !important;
-            border: 1px solid #cbd5e1 !important;
-            color: #334155 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytAccountPanel {
-            background: #fffbeb !important;
-            border-bottom-color: #fde68a !important;
-            color: #0f172a !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytAccountPanel p {
-            color: #334155 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytAccountPanel .text-amber-300 {
-            color: #b45309 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytAccountActiveBadge {
-            background: #d1fae5 !important;
-            border-color: #34d399 !important;
-            color: #065f46 !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-ducking-bar {
-            background: #fff1f2 !important;
-            border-bottom-color: #fecdd3 !important;
-            color: #be123c !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-ducking-bar .text-emerald-400 {
-            color: #047857 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytPlayerContainerWrap {
-            background: #f1f5f9 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytNowPlayingBox {
-            background: #f8fafc !important;
-            border-color: #e2e8f0 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytNowPlayingChannel,
-        body.theme-clean #ytFloatingWidget .yt-label {
-            color: #475569 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytPlayPauseBtn,
-        body.theme-clean #ytFloatingWidget #ytSearchBtn {
-            color: #ffffff !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytVolumeSlider {
-            background: #cbd5e1 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytVolVal {
-            color: #334155 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytSearchInput {
-            background: #ffffff !important;
-            border: 1.5px solid #cbd5e1 !important;
-            color: #0f172a !important;
-            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytSearchInput::placeholder {
-            color: #64748b !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytSearchInput:focus {
-            border-color: #f43f5e !important;
-            background: #ffffff !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytSearchResultsWrap {
-            background: #f8fafc !important;
-            border-color: #e2e8f0 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytSearchResultsWrap > div:first-child {
-            border-bottom-color: #e2e8f0 !important;
-        }
-        body.theme-clean #ytFloatingWidget #ytSearchResultsWrap .text-rose-300 {
-            color: #be123c !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-preset-btn,
-        body.theme-clean #ytFloatingWidget .yt-search-item {
-            background: #ffffff !important;
-            color: #0f172a !important;
-            border-color: #cbd5e1 !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-preset-btn:hover,
-        body.theme-clean #ytFloatingWidget .yt-search-item:hover {
-            background: #fff1f2 !important;
-            border-color: #fb7185 !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-search-item .text-slate-400 {
-            color: #475569 !important;
-        }
-        body.theme-clean #ytFloatingWidget .yt-search-item span.bg-rose-600\/80 {
-            color: #ffffff !important;
-        }
+
         .urgent-glow {
-            border: 2px solid #f59e0b !important;
-            box-shadow: 0 0 24px rgba(245, 158, 11, 0.35);
+            border: 1.5px solid #F59E0B !important;
+            box-shadow: 0 0 18px rgba(245, 158, 11, 0.24) !important;
         }
         .sla-alert {
-            border-left: 5px solid #0284c7 !important;
+            border-left: 4px solid #38BDF8 !important;
         }
+
+        @keyframes modalSpringIn {
+            from { opacity: 0; transform: scale(0.92) translateY(14px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .ann-spring { animation: modalSpringIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both; }
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-14px); }
         }
         .screensaver-float { animation: floatSlow 6s ease-in-out infinite; }
+
+        @keyframes eqBar {
+            0%, 100% { transform: scaleY(0.35); }
+            50% { transform: scaleY(1); }
+        }
+        .eq-bar {
+            transform-origin: bottom;
+            animation: eqBar 0.85s ease-in-out infinite;
+        }
+        .eq-bar-paused {
+            animation-play-state: paused;
+            transform: scaleY(0.35);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 9999px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.6); }
+
+        /* Popout YouTube Bento Glass - Identidade Azul Claro nos modos Clean & Dark */
+        #ytFloatingWidget {
+            background: var(--tv-surface);
+            border: 1.5px solid var(--tv-border-strong);
+            color: var(--tv-text);
+            box-shadow: 0 24px 60px -15px rgba(14, 165, 233, 0.28), var(--tv-shadow);
+            backdrop-filter: blur(24px);
+            transform-origin: bottom right;
+            will-change: transform, opacity;
+        }
+        #ytFloatingWidget .yt-header-bar {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16) 0%, rgba(14, 165, 233, 0.08) 100%);
+            border-bottom: 1px solid var(--tv-border);
+        }
+        #ytFloatingWidget .yt-ducking-bar {
+            background: var(--tv-subtle);
+            border-bottom: 1px solid var(--tv-border);
+            color: var(--tv-sky-text);
+        }
+        #ytFloatingWidget #ytNowPlayingBox,
+        #ytFloatingWidget #ytSearchResultsWrap,
+        #ytFloatingWidget #ytAccountPanel {
+            background: var(--tv-subtle);
+            border: 1px solid var(--tv-border);
+        }
+        #ytFloatingWidget .yt-input,
+        #ytFloatingWidget .yt-preset-btn,
+        #ytFloatingWidget .yt-search-item,
+        #ytFloatingWidget .yt-soft-btn {
+            background: var(--tv-card);
+            border: 1px solid var(--tv-border);
+            color: var(--tv-text);
+        }
+        #ytFloatingWidget .yt-preset-btn:hover,
+        #ytFloatingWidget .yt-search-item:hover {
+            border-color: var(--tv-sky-strong);
+            background: var(--tv-subtle-strong);
+        }
+        #ytFloatingWidget .yt-muted {
+            color: var(--tv-muted);
+        }
+        #ytMiniPill {
+            background: var(--tv-surface);
+            border: 1.5px solid var(--tv-border-strong);
+            color: var(--tv-text);
+            box-shadow: 0 16px 40px -10px rgba(14, 165, 233, 0.35);
+            backdrop-filter: blur(20px);
+            transform-origin: bottom right;
+            will-change: transform, opacity;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col antialiased">
 
-    <!-- OVERLAY DE DESBLOQUEIO DE ÁUDIO DO NAVEGADOR -->
+    <!-- BANNER DE DESBLOQUEIO DE ÁUDIO -->
     <div id="audioUnlockBanner" onclick="unlockAudioEngine()"
-         class="bg-sky-500 text-slate-950 text-center py-2 text-xs font-bold tracking-wider cursor-pointer z-50 flex items-center justify-center gap-2 shadow-lg">
-        <i data-lucide="volume-2" class="w-4 h-4"></i>
-        <span>CLIQUE EM QUALQUER LUGAR DA TELA PARA ATIVAR O MOTOR DE VOZ (TTS) E ALARMES SONOROS DA TV</span>
+         class="bg-gradient-to-r from-[#38BDF8] via-[#0EA5E9] to-[#0284C7] text-white text-center py-1.5 text-[11px] font-extrabold tracking-wide cursor-pointer z-50 flex items-center justify-center gap-2 shadow-md overflow-hidden">
+        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+        <span>CLIQUE EM QUALQUER LUGAR PARA ATIVAR A LOCUÇÃO (EDGE-TTS) E ALARMES SONOROS DA TV</span>
     </div>
 
-    <!-- TOP BAR DA OFICINA -->
-    <header class="px-6 py-3.5 bg-zinc-950/90 border-b border-zinc-800/80 flex flex-wrap items-center justify-between gap-4 backdrop-blur-xl">
-        <div class="flex items-center gap-2.5">
-            <svg viewBox="0 0 48 32" class="w-[38px] h-[26px] shrink-0 select-none drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="32" rx="7" fill="#254a93"/>
-                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
-                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="17" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-0.5">A5</text>
+    <!-- TOP BAR BENTO COMPACTA (OTIMIZADA PARA 1920x1080) -->
+    <header class="tv-header mx-3 mt-2 px-3.5 py-1.5 rounded-[18px] flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2.5 shrink-0">
+            <!-- Monograma A5 Vetorial Azul Claro -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-8 w-auto shrink-0 drop-shadow-sm" fill="none">
+                <defs>
+                    <linearGradient id="tvA5Grad" x1="1" y1="3" x2="89" y2="59" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#7DD3FC"/>
+                        <stop offset="50%" stop-color="#38BDF8"/>
+                        <stop offset="100%" stop-color="#0284C7"/>
+                    </linearGradient>
+                </defs>
+                <rect x="1" y="3" width="88" height="56" rx="14" fill="url(#tvA5Grad)"/>
+                <rect x="1.5" y="3.5" width="87" height="55" rx="13.5" stroke="#ffffff" stroke-opacity="0.35"/>
+                <path d="M 27.1 8.2 L 29.8 8.2 L 46.7 48.3 C 47.6 50.4 49.1 51.3 52.6 51.6 L 52.6 53.7 L 30.5 53.7 L 30.5 51.6 C 34.6 51.3 36.2 50.5 35.4 48.2 L 32.0 38.2 L 18.7 38.2 L 15.5 48.2 C 14.8 50.5 16.4 51.3 20.8 51.6 L 20.8 53.7 L 4.2 53.7 L 4.2 51.6 C 7.6 51.3 9.3 50.4 10.3 48.0 Z M 25.3 20.8 L 20.1 34.5 L 30.6 34.5 Z M 60.1 9.6 L 74.8 9.6 C 76.8 9.6 78.3 9.1 79.5 8.3 L 80.3 8.3 L 77.7 17.2 L 62.6 17.2 L 61.8 26.2 C 64.2 25.1 66.9 24.6 69.8 24.6 C 77.4 24.6 82.4 29.8 82.4 38.0 C 82.4 47.8 75.3 54.8 65.1 54.8 C 58.4 54.8 54.1 52.1 54.1 49.0 C 54.1 46.7 55.8 45.3 58.0 45.3 C 60.1 45.3 61.4 46.5 62.7 48.6 C 63.9 50.6 65.3 51.5 67.2 51.5 C 72.3 51.5 75.6 47.6 75.6 41.7 C 75.6 35.9 72.0 32.8 66.2 32.8 C 63.5 32.8 61.1 33.6 59.5 35.3 L 58.5 34.6 Z" fill="#ffffff" fill-rule="evenodd"/>
             </svg>
             <div>
-                <h1 class="text-sm font-bold text-[#254a93] dark:text-white flex items-center gap-1.5 leading-none">
-                    <i data-lucide="tv" class="w-4 h-4 text-sky-400"></i>
-                    <span>Painel TV da Oficina</span>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-mono font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/25 px-2 py-0.5 rounded-full ml-1">
-                        <i data-lucide="shield-check" class="w-3 h-3"></i>
+                <div class="flex items-center gap-1.5">
+                    <h1 class="text-sm font-extrabold tracking-tight leading-none">Painel TV</h1>
+                    <span class="inline-flex items-center gap-1 text-[9.5px] font-mono font-extrabold bg-sky-400/15 text-sky-600 dark:text-sky-300 border border-sky-400/35 px-2 py-0.5 rounded-full">
+                        <i data-lucide="shield-check" class="w-2.5 h-2.5"></i>
                         TOLEDO PRIX
                     </span>
-                </h1>
-                <p class="text-[10px] font-semibold text-[#2aa6c8] dark:text-sky-400 tracking-wide mt-0.5 leading-tight">A5 Tecnologia • Balanças e Sistemas</p>
+                    <span id="tvLiveBadge" class="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold bg-sky-400/12 text-sky-600 dark:text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full">
+                        <span id="tvLiveDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>AO VIVO</span>
+                    </span>
+                </div>
+                <p class="text-[10px] font-semibold text-sky-600 dark:text-sky-300/85 mt-0.5 leading-none">
+                    A5 Tecnologia • Esteira em Tempo Real
+                </p>
             </div>
         </div>
 
-        <!-- CRONÔMETROS DE ESTUFA ATIVOS -->
-        <div id="activeTimersBar" class="flex flex-wrap items-center justify-center gap-2.5 max-w-2xl"></div>
+        <!-- CRONÔMETROS DE ESTUFA / TESTE ATIVOS -->
+        <div id="activeTimersBar" class="flex flex-wrap items-center justify-center gap-2 flex-1 min-w-0"></div>
 
-        <!-- PLACAR DE PRODUTIVIDADE E RELÓGIO -->
-        <div class="flex items-center gap-4">
-            <div id="duckingIndicator" class="hidden bg-rose-500/15 border border-rose-500/30 text-rose-300 px-3 py-1 rounded-xl text-xs font-bold animate-pulse flex items-center gap-1.5">
+        <!-- PLACAR DE PRODUTIVIDADE + RELÓGIO + YOUTUBE + TEMA -->
+        <div class="flex items-center gap-2 shrink-0">
+            <div id="duckingIndicator" class="hidden bg-amber-500/15 border border-amber-400/40 text-amber-600 dark:text-amber-300 px-2.5 py-1 rounded-full text-[11px] font-black animate-pulse flex items-center gap-1.5">
                 <i data-lucide="volume-x" class="w-3.5 h-3.5"></i>
-                <span>ÁUDIO SILENCIADO P/ ALERTA</span>
+                <span>SOM PAUSADO P/ ALERTA</span>
             </div>
 
-            <div class="bg-zinc-900/80 border border-zinc-800 px-3.5 py-1.5 rounded-xl flex items-center gap-3 shadow-sm">
-                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
-                    <i data-lucide="trophy" class="w-4 h-4"></i>
+            <div class="tv-pill-tile px-3 py-1 flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/25">
+                    <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
                 </div>
                 <div>
-                    <div class="text-[10px] uppercase font-bold text-slate-500 dark:text-zinc-400 tracking-wider">Finalizadas Hoje</div>
-                    <div id="tvScoreToday" class="text-xl font-black font-mono text-slate-900 dark:text-zinc-100 leading-none">0</div>
+                    <div class="text-[8.5px] uppercase font-extrabold text-sky-700/80 dark:text-sky-300/80 tracking-wider leading-none">Finalizadas</div>
+                    <div id="tvScoreToday" class="text-lg font-black font-mono tabular-nums leading-none mt-0.5 inline-block origin-center">0</div>
                 </div>
             </div>
 
-            <div class="text-right">
-                <div id="tvClock" class="text-2xl font-black font-mono tracking-tight text-slate-900 dark:text-white">00:00:00</div>
-                <div id="tvDate" class="text-[11px] font-mono text-slate-600 dark:text-zinc-400 uppercase font-semibold">--/--/----</div>
+            <div class="tv-pill-tile px-3 py-1 text-right">
+                <div id="tvClock" class="text-lg font-black font-mono tabular-nums tracking-tight leading-none text-sky-700 dark:text-sky-200">00:00:00</div>
+                <div id="tvDate" class="text-[9.5px] font-mono text-slate-500 dark:text-sky-300/70 uppercase font-bold mt-0.5 leading-none">--/--/----</div>
             </div>
 
-            <!-- BOTÃO DO YOUTUBE / SOM DA OFICINA -->
             <button onclick="toggleYtPlayerModal()" id="ytToggleBtn"
-                    class="bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-2 shadow-sm"
+                    class="bg-sky-400/15 hover:bg-sky-400/25 border border-sky-400/40 text-sky-700 dark:text-sky-200 font-extrabold text-[11px] px-3 py-2 rounded-full transition flex items-center gap-1.5 cursor-pointer shadow-xs"
                     title="Música da Oficina (YouTube com Silenciamento Automático nos Alertas)">
-                <i data-lucide="radio" class="w-4 h-4 text-rose-400"></i>
-                <span class="hidden xl:inline font-bold">Som Oficina</span>
-                <span id="ytBadgeDot" class="w-2 h-2 rounded-full bg-zinc-600 transition-colors" title="Status: Desconectado"></span>
+                <i data-lucide="radio" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-300"></i>
+                <span>Som Oficina</span>
+                <span id="ytBadgeDot" class="w-2 h-2 rounded-full bg-slate-400 dark:bg-sky-800 transition-colors"></span>
             </button>
 
             <button onclick="toggleTvTheme()" id="tvThemeBtn"
-                    class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5"
-                    title="Alternar Tema Clean / Dark na TV">
-                <i data-lucide="sun" class="w-3.5 h-3.5"></i>
-                <span>Tema</span>
+                    class="tv-pill-tile px-3 py-2 text-[11px] font-extrabold transition flex items-center gap-1.5 cursor-pointer hover:border-sky-400"
+                    title="Alternar Modo Claro / Escuro na TV">
+                <i data-lucide="sun" class="w-3.5 h-3.5 text-sky-400"></i>
+                <span>Claro</span>
             </button>
         </div>
     </header>
 
-    <!-- QUADRO KANBAN DA OFICINA -->
-    <main id="tvBoard" class="flex-1 flex items-stretch gap-4 p-4 overflow-hidden"></main>
+    <!-- QUADRO KANBAN COMPACTO DA OFICINA (1920x1080) -->
+    <main id="tvBoard" class="flex-1 flex items-stretch gap-2.5 p-2.5 overflow-hidden"></main>
 
-    <!-- NOTIFICAÇÃO DISCRETA (MINI ALERT SUPERIOR NA TV: URGÊNCIA / EM GARANTIA NA FILA DE ORÇAMENTOS) -->
-    <div id="tvMiniAlert" class="fixed top-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-500 transform -translate-y-36 opacity-0 pointer-events-none max-w-xl w-[90%]">
-        <div id="tvMiniAlertInner" class="flex items-center gap-3.5 px-6 py-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-white/20 text-white font-bold text-sm">
-            <div id="tvMiniAlertIconBox" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-white/20 text-2xl shadow-sm animate-pulse">
-                ⚠️
-            </div>
+    <!-- MINI ALERTA DISCRETO NO TOPO (URGÊNCIA / GARANTIA) -->
+    <div id="tvMiniAlert" class="fixed top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-500 transform -translate-y-36 opacity-0 pointer-events-none max-w-xl w-[90%]">
+        <div id="tvMiniAlertInner" class="flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-white/25 text-white font-bold text-sm">
+            <div id="tvMiniAlertIconBox" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/20 text-xl shadow-sm animate-pulse">⚠️</div>
             <div class="flex-1 min-w-0">
                 <div id="tvMiniAlertCategory" class="text-[10px] uppercase font-mono font-bold tracking-widest opacity-90 flex items-center gap-1.5">
                     <span>Atenção Oficina • Fila de Orçamentos</span>
                 </div>
-                <div id="tvMiniAlertMessage" class="text-sm md:text-base font-black truncate text-white drop-shadow-sm">
+                <div id="tvMiniAlertMessage" class="text-sm font-black truncate text-white drop-shadow-sm">
                     O.S. marcada como URGÊNCIA!
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- POP-UP GIGANTE DE ANÚNCIO / VOZ (ORÇAMENTO, APROVADA, FINALIZADA, ESTUFA) -->
-    <div id="tvAnnouncementModal" class="fixed inset-0 bg-black/85 backdrop-blur-xl hidden items-center justify-center z-50 p-6 md:p-12">
-        <div id="tvAnnouncementBox" class="max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 shadow-2xl transform transition-all duration-300 scale-100 overflow-hidden relative">
+    <!-- POP-UP GIGANTE DE ANÚNCIO / VOZ -->
+    <div id="tvAnnouncementModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-xl hidden items-center justify-center z-50 p-6 md:p-12">
+        <div id="tvAnnouncementBox" class="ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 shadow-2xl overflow-hidden relative bg-[#0B1628]/95">
             <div id="annIcon" class="mb-4 flex items-center justify-center">
                 <i data-lucide="bell" class="w-16 h-16 text-sky-400"></i>
             </div>
             <div class="mb-4">
-                <span id="annBadge" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-sky-500 text-slate-950 shadow-md">
+                <span id="annBadge" class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-sky-400 text-slate-950 shadow-md">
                     ATUALIZAÇÃO DE FILA
                 </span>
             </div>
             <h2 id="annTitle" class="text-5xl md:text-6xl font-black font-mono tracking-tight mb-3 text-white break-words drop-shadow-md">O.S. 0000</h2>
-            <p id="annSubtitle" class="text-2xl md:text-3xl font-extrabold text-sky-400 uppercase mb-4 break-words">CLIENTE EXEMPLO</p>
-            <div id="annExtra" class="text-lg md:text-xl text-zinc-300 break-words flex flex-wrap items-center justify-center gap-2"></div>
-            <div class="mt-6 flex items-center justify-center gap-1.5 text-xs text-zinc-400">
+            <p id="annSubtitle" class="text-2xl md:text-3xl font-extrabold text-sky-300 uppercase mb-4 break-words">CLIENTE EXEMPLO</p>
+            <div id="annExtra" class="text-lg md:text-xl text-sky-100/80 break-words flex flex-wrap items-center justify-center gap-2"></div>
+            <div class="mt-6 flex items-center justify-center gap-1.5 text-xs text-sky-200/70">
                 <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
-                <span class="font-mono uppercase tracking-wider text-[11px] font-semibold">Locução de Voz Ativa no Painel</span>
+                <span class="font-mono uppercase tracking-wider text-[11px] font-semibold">Locução Neural Edge-TTS Ativa</span>
             </div>
         </div>
     </div>
 
-    <!-- PROTEÇÃO DE TELA (SCREENSAVER APÓS 20 MINUTOS DE INATIVIDADE) -->
-    <div id="screensaverOverlay" class="fixed inset-0 bg-[#05070B] hidden flex-col items-center justify-center z-40">
+    <!-- PROTEÇÃO DE TELA (20 MINUTOS DE INATIVIDADE) -->
+    <div id="screensaverOverlay" class="fixed inset-0 bg-[#060D1A] hidden flex-col items-center justify-center z-40">
         <div class="screensaver-float text-center space-y-6">
             <div class="flex items-center justify-center gap-6">
-                <span class="bg-sky-500 text-slate-950 font-black px-6 py-3 rounded-2xl text-5xl shadow-2xl shadow-sky-500/30">A5 TECNOLOGIA</span>
-                <span class="text-4xl font-light text-slate-500">×</span>
-                <span class="border-2 border-sky-400/50 text-sky-300 font-black px-6 py-3 rounded-2xl text-4xl">TOLEDO PRIX</span>
+                <span class="bg-gradient-to-br from-[#7DD3FC] via-[#38BDF8] to-[#0284C7] text-white font-black px-7 py-3.5 rounded-3xl text-5xl shadow-2xl shadow-sky-500/35">A5 TECNOLOGIA</span>
+                <span class="text-4xl font-light text-sky-400/50">×</span>
+                <span class="border-2 border-sky-400/50 text-sky-300 font-black px-6 py-3.5 rounded-3xl text-4xl bg-sky-400/5">TOLEDO PRIX</span>
             </div>
-            <div id="ssClock" class="text-9xl font-black tracking-tighter text-white drop-shadow-lg">00:00</div>
-            <p class="text-xl text-slate-400 uppercase tracking-widest">Assistência Técnica Autorizada • Monitoramento em Tempo Real</p>
+            <div id="ssClock" class="text-9xl font-black tracking-tighter text-sky-50 tabular-nums drop-shadow-lg">00:00</div>
+            <p class="text-xl text-sky-200/70 uppercase tracking-widest">Assistência Técnica Autorizada • Monitoramento em Tempo Real</p>
         </div>
     </div>
 
-    <!-- [L-17] WIDGET FLUTUANTE DO YOUTUBE DA OFICINA COM PLAYER NATIVO SEM ANÚNCIOS, PESQUISA E AUDIO DUCKING REAL -->
-    <div id="ytFloatingWidget" class="fixed bottom-4 right-4 z-40 hidden flex-col w-[390px] max-w-[95vw] max-h-[92vh] rounded-2xl border-2 border-rose-500/40 bg-[#081221]/95 backdrop-blur-xl shadow-2xl overflow-hidden transition-all duration-300">
-        <!-- Barra de Título do Widget -->
-        <div class="yt-header-bar px-4 py-2.5 bg-rose-950/60 border-b border-rose-500/30 flex items-center justify-between gap-2 shrink-0">
-            <div class="flex items-center gap-2 truncate">
-                <span class="text-lg">📻</span>
-                <span class="font-black text-xs uppercase tracking-wide text-white truncate">Som da Oficina (YouTube)</span>
+    <!-- POPOUT FLUTUANTE DO YOUTUBE DA OFICINA (AZUL CLARO BENTO GLASS - MOTION RISE) -->
+    <div id="ytFloatingWidget" class="fixed bottom-3.5 right-3.5 z-40 hidden flex-col w-[395px] max-w-[95vw] max-h-[88vh] rounded-[24px] overflow-hidden">
+        <!-- Cabeçalho -->
+        <div class="yt-header-bar px-3.5 py-2.5 flex items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/30 shrink-0">
+                    <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="font-extrabold text-xs uppercase tracking-wider block truncate">Som da Oficina</span>
+                    <span class="yt-muted text-[9.5px] font-semibold block leading-none mt-0.5">YouTube Direto • Sem Anúncios</span>
+                </div>
             </div>
-            <div class="flex items-center gap-1.5 shrink-0">
+            <div class="flex items-center gap-1 shrink-0">
                 <button type="button" onclick="toggleYtAccountPanel()" id="ytAccountHeaderBtn"
-                        class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/40 text-amber-300 hover:bg-amber-500/30 transition flex items-center gap-1"
-                        title="Configurar Conta YouTube Premium / Sem Anúncios">
-                    <span>👑</span> <span>Premium</span>
+                        class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-sky-400/15 border border-sky-400/35 text-sky-600 dark:text-sky-300 hover:bg-sky-400/25 transition flex items-center gap-1 cursor-pointer"
+                        title="Configurar Conta YouTube Premium">
+                    <i data-lucide="crown" class="w-3 h-3"></i>
+                    <span>Conta</span>
                 </button>
-                <span id="ytStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">Pronto</span>
-                <button onclick="minimizeYtWidget()" class="text-slate-400 hover:text-white px-1.5 py-0.5 rounded text-xs" title="Minimizar para o cantinho">🗕</button>
-                <button onclick="toggleYtPlayerModal()" class="text-slate-400 hover:text-white px-1.5 py-0.5 rounded text-xs font-bold" title="Fechar painel">✕</button>
+                <span id="ytStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/30">Pronto</span>
+                <button onclick="minimizeYtWidget()" class="p-1 rounded-full hover:bg-sky-400/15 yt-muted hover:text-sky-500 transition cursor-pointer" title="Minimizar">
+                    <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="toggleYtPlayerModal()" class="p-1 rounded-full hover:bg-sky-400/15 yt-muted hover:text-sky-500 transition cursor-pointer" title="Fechar">
+                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                </button>
             </div>
         </div>
 
-        <!-- Painel de Login / Conta YouTube Premium (Oculto por padrão, abre ao clicar em 👑 Premium) -->
-        <div id="ytAccountPanel" class="hidden bg-slate-900/95 border-b border-amber-500/30 p-3 space-y-2.5 text-xs shrink-0">
+        <!-- Painel opcional de conta -->
+        <div id="ytAccountPanel" class="hidden m-2.5 mb-0 rounded-2xl p-2.5 space-y-2 text-xs shrink-0">
             <div class="flex items-center justify-between">
-                <span class="font-black text-amber-300 uppercase flex items-center gap-1.5">
-                    <span>👑</span> <span>Integração YouTube Premium</span>
+                <span class="font-extrabold text-sky-600 dark:text-sky-300 uppercase flex items-center gap-1.5 text-[11px]">
+                    <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+                    <span>Integração YouTube</span>
                 </span>
-                <span id="ytAccountActiveBadge" class="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    ✓ Sem Anúncios Ativo
-                </span>
+                <span id="ytAccountActiveBadge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">✓ Stream Direto</span>
             </div>
-            <p class="text-[11px] text-slate-300 leading-relaxed">
-                O motor nativo da oficina já reproduz todas as músicas <strong>direto da fonte sem anúncios e sem bloqueio de vídeo</strong>. Se quiser sincronizar sua conta do YouTube Premium logada no navegador:
+            <p class="yt-muted text-[10.5px] leading-relaxed">
+                O player reproduz direto da fonte sem anúncios. Vincule uma conta se quiser playlists privadas:
             </p>
             <div class="grid grid-cols-2 gap-1.5">
-                <button type="button" onclick="openYouTubeLoginPopup()"
-                        class="col-span-2 bg-rose-600 hover:bg-rose-500 text-white font-black py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-center gap-1.5 shadow">
-                    <span>🔑</span> <span>1. Abrir Login do YouTube (Google)</span>
+                <button type="button" onclick="openYouTubeLoginPopup()" class="col-span-2 sky-grad-btn font-extrabold py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                    <span>1. Abrir Login do YouTube</span>
                 </button>
-                <button type="button" onclick="syncYouTubeBrowserAccount('firefox')"
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1">
-                    <span>🦊</span> <span>Vincular Firefox</span>
-                </button>
-                <button type="button" onclick="syncYouTubeBrowserAccount('chrome')"
-                        class="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold py-1.5 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1">
-                    <span>🌐</span> <span>Vincular Chrome/Edge</span>
-                </button>
+                <button type="button" onclick="syncYouTubeBrowserAccount('firefox')" class="yt-soft-btn hover:border-sky-400 font-bold py-1.5 px-2 rounded-xl text-[10.5px] cursor-pointer transition">🦊 Firefox</button>
+                <button type="button" onclick="syncYouTubeBrowserAccount('chrome')" class="yt-soft-btn hover:border-sky-400 font-bold py-1.5 px-2 rounded-xl text-[10.5px] cursor-pointer transition">🌐 Chrome / Edge</button>
             </div>
-            <div id="ytAccountStatusMsg" class="text-[10px] text-emerald-400 font-bold text-center hidden"></div>
+            <div id="ytAccountStatusMsg" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold text-center hidden"></div>
         </div>
 
-        <!-- Aviso do Ducking Automático -->
-        <div class="yt-ducking-bar bg-rose-500/10 border-b border-rose-500/20 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-rose-300 font-bold shrink-0">
+        <!-- Faixa Silenciamento Automático -->
+        <div class="yt-ducking-bar px-3.5 py-1 flex items-center justify-between text-[10.5px] font-bold shrink-0">
             <span class="flex items-center gap-1.5">
-                <span>🔇</span>
+                <i data-lucide="volume-2" class="w-3 h-3"></i>
                 <span>Silenciamento Automático:</span>
             </span>
-            <span class="text-emerald-400 font-black">ATIVO NOS ALERTAS</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-black tracking-wide">ATIVO NOS ALERTAS</span>
         </div>
 
-        <!-- Container do Player Nativo de Vídeo/Áudio -->
-        <div id="ytPlayerContainerWrap" class="px-3 pt-2.5 bg-black/40 shrink-0">
-            <div id="ytVideoBox" class="w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 relative">
-                <video id="ytNativeVideo" class="w-full h-full object-contain bg-black" playsinline preload="auto"></video>
-
-                <!-- Overlay de Carregamento -->
-                <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-950/90 backdrop-blur-sm text-white z-10">
-                    <div class="w-8 h-8 border-3 border-rose-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <span id="ytLoadingTitle" class="text-xs font-black text-rose-300 line-clamp-2 px-2">Carregando música...</span>
-                    <span class="text-[10px] text-slate-400 mt-0.5">Stream direto • Sem anúncios</span>
+        <!-- Viewport do Vídeo -->
+        <div id="ytPlayerContainerWrap" class="px-3 pt-2.5 shrink-0 yt-stagger">
+            <div id="ytVideoBox" class="w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-sky-400/25 relative shadow-inner">
+                <video id="ytNativeVideo" class="w-full h-full object-contain bg-slate-950" playsinline preload="auto"></video>
+                <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[#071122]/90 backdrop-blur-md text-white z-10">
+                    <div class="w-8 h-8 border-3 border-sky-400 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <span id="ytLoadingTitle" class="text-xs font-extrabold text-sky-300 line-clamp-2 px-3">Carregando música...</span>
+                    <span class="text-[10px] text-sky-200/65 mt-1">Stream direto • Sem anúncios</span>
                 </div>
-
-                <!-- Overlay Inicial (Placeholder) -->
-                <div id="ytPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-slate-950 text-slate-400">
-                    <span class="text-3xl mb-1">📻</span>
-                    <span class="text-xs font-bold uppercase text-slate-300">Pronto para tocar</span>
-                    <span class="text-[10px] text-slate-500 mt-0.5">Escolha uma música rápida ou pesquise abaixo</span>
+                <div id="ytPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-3 bg-gradient-to-br from-[#0A182E] via-[#0D213F] to-[#081326] text-sky-100">
+                    <div class="w-12 h-12 rounded-2xl bg-sky-400/15 border border-sky-400/35 flex items-center justify-center text-sky-300 mb-2 shadow-lg shadow-sky-500/15">
+                        <i data-lucide="disc-3" class="w-6 h-6"></i>
+                    </div>
+                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-200">Pronto para tocar</span>
+                    <span class="text-[10px] text-sky-300/70 mt-0.5">Toque em Tocar, escolha uma rádio ou busque abaixo</span>
                 </div>
             </div>
         </div>
 
-        <!-- Barra da Música Atual -->
-        <div id="ytNowPlayingBox" class="mx-3 mt-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2 shrink-0">
-            <div class="min-w-0 flex-1">
-                <div id="ytNowPlayingTitle" class="text-[11px] font-black text-white truncate">🎤 Kamisa 10 (Ao Vivo)</div>
-                <div id="ytNowPlayingChannel" class="text-[10px] text-slate-400 truncate">Toque em Tocar ou pesquise uma música</div>
+        <!-- Tocando Agora -->
+        <div id="ytNowPlayingBox" class="mx-3 mt-2 px-3 py-2 rounded-2xl flex items-center justify-between gap-2 shrink-0 yt-stagger">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+                <div id="ytEqBars" class="flex items-end gap-0.5 h-3.5 shrink-0 px-0.5">
+                    <span class="eq-bar eq-bar-paused w-1 h-2 rounded-full bg-sky-400" style="animation-delay:0ms"></span>
+                    <span class="eq-bar eq-bar-paused w-1 h-3.5 rounded-full bg-sky-500" style="animation-delay:180ms"></span>
+                    <span class="eq-bar eq-bar-paused w-1 h-2.5 rounded-full bg-sky-300" style="animation-delay:340ms"></span>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div id="ytNowPlayingTitle" class="text-[11.5px] font-extrabold truncate">🎤 Kamisa 10 (Ao Vivo)</div>
+                    <div id="ytNowPlayingChannel" class="yt-muted text-[10px] truncate font-medium">Toque em Tocar ou pesquise uma música</div>
+                </div>
             </div>
-            <button type="button" onclick="playNextYtTrack()" title="Próxima música da fila"
-                    class="px-2 py-1 rounded-lg bg-white/10 hover:bg-rose-500/30 text-white text-[11px] font-bold shrink-0 transition">
-                ⏭️ Próx.
+            <button type="button" onclick="playNextYtTrack()" title="Próxima música"
+                    class="px-2.5 py-1 rounded-full bg-sky-400/18 hover:bg-sky-400/30 border border-sky-400/35 text-sky-700 dark:text-sky-200 text-[10.5px] font-extrabold shrink-0 transition inline-flex items-center gap-1 cursor-pointer">
+                <i data-lucide="skip-forward" class="w-3 h-3"></i>
+                <span>Próx.</span>
             </button>
         </div>
 
-        <!-- Controles de Mídia, Pesquisa e Presets -->
-        <div class="p-3 space-y-2.5 overflow-y-auto custom-scrollbar">
+        <!-- Corpo Scrollável do Popout -->
+        <div class="p-3 space-y-2.5 overflow-y-auto custom-scrollbar yt-stagger">
+            <!-- Tocar / Pausar + Volume -->
             <div class="flex items-center justify-between gap-2">
                 <button id="ytPlayPauseBtn" onclick="toggleYtPlayPause()"
-                        class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-black py-2 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md">
+                        class="flex-1 sky-grad-btn font-black py-2 px-3.5 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer">
                     <span>▶️ Tocar</span>
                 </button>
-                <div class="flex items-center gap-2 flex-1 px-3 py-1.5 bg-white/5 rounded-xl border border-white/10">
-                    <span class="text-xs">🔊</span>
+                <div class="yt-soft-btn flex items-center gap-2 flex-1 px-2.5 py-1.5 rounded-full">
+                    <i data-lucide="volume-2" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-300 shrink-0"></i>
                     <input type="range" id="ytVolumeSlider" min="0" max="100" value="80" oninput="changeYtVolume(this.value)"
-                           class="w-full h-1.5 accent-rose-500 bg-slate-700 rounded-lg cursor-pointer">
-                    <span id="ytVolVal" class="text-[11px] font-mono font-bold text-slate-300 w-7 text-right">80%</span>
+                           class="w-full h-1.5 accent-sky-400 bg-sky-200 dark:bg-sky-950 rounded-lg cursor-pointer">
+                    <span id="ytVolVal" class="text-[10.5px] font-mono font-extrabold text-sky-600 dark:text-sky-300 w-8 text-right tabular-nums">80%</span>
                 </div>
             </div>
 
-            <!-- BARRA DE PESQUISA DE MÚSICAS NO YOUTUBE -->
+            <!-- Pesquisar -->
             <div>
-                <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1 yt-label">🔍 Pesquisar Música ou Artista no YouTube:</span>
                 <div class="flex gap-1.5">
-                    <input type="text" id="ytSearchInput"
-                           placeholder="Ex: Kamisa 10, Menos é Mais, Jorge e Mateus..."
-                           onkeydown="if(event.key==='Enter'){event.preventDefault();searchYouTubeMusic();}"
-                           class="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">
+                    <div class="relative flex-1 min-w-0">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-sky-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                        <input type="text" id="ytSearchInput"
+                               placeholder="Pesquisar no YouTube ou colar link..."
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();searchYouTubeMusic();}"
+                               class="yt-input w-full rounded-full pl-8 pr-3 py-1.5 text-xs font-medium focus:outline-none focus:border-sky-400 transition">
+                    </div>
                     <button type="button" id="ytSearchBtn" onclick="searchYouTubeMusic()"
-                            class="bg-rose-600 hover:bg-rose-500 text-white font-black px-3.5 py-2 rounded-xl text-xs transition shrink-0 shadow">
+                            class="sky-grad-btn font-black px-3.5 py-1.5 rounded-full text-xs shrink-0 cursor-pointer">
                         Buscar
                     </button>
                 </div>
 
-                <!-- Lista de Resultados da Pesquisa -->
-                <div id="ytSearchResultsWrap" class="hidden mt-2 space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1 border border-rose-500/20 rounded-xl p-1.5 bg-black/30">
-                    <div class="flex items-center justify-between px-1 pb-1 border-b border-white/10">
-                        <span class="text-[10px] font-black uppercase text-rose-300">Resultados do YouTube (clique p/ tocar):</span>
-                        <button type="button" onclick="closeYtSearchResults()" class="text-[10px] text-slate-400 hover:text-white font-bold">✕ Fechar</button>
+                <div id="ytSearchResultsWrap" class="hidden mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1 rounded-2xl p-1.5">
+                    <div class="flex items-center justify-between px-1 pb-1 border-b border-sky-400/20">
+                        <span class="text-[9.5px] font-black uppercase text-sky-600 dark:text-sky-300">Resultados (clique p/ tocar)</span>
+                        <button type="button" onclick="closeYtSearchResults()" class="yt-muted text-[9.5px] hover:text-sky-500 font-bold cursor-pointer">✕ Fechar</button>
                     </div>
                     <div id="ytSearchResultsList" class="space-y-1"></div>
                 </div>
             </div>
 
-            <!-- Presets Rápidos de 1 Clique -->
-            <div>
-                <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1.5 yt-label">Músicas Rápidas da Oficina:</span>
-                <div class="grid grid-cols-2 gap-1.5">
-                    <button type="button" onclick="playYtPreset('kamisa10')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
-                        <span>🎤</span> <span class="truncate">Kamisa 10 (Ao Vivo)</span>
-                    </button>
-                    <button type="button" onclick="playYtPreset('rock')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
-                        <span>🎸</span> <span class="truncate">Rock Clássico</span>
-                    </button>
-                    <button type="button" onclick="playYtPreset('lofi')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
-                        <span>☕</span> <span class="truncate">Lo-Fi Oficina</span>
-                    </button>
-                    <button type="button" onclick="playYtPreset('flashback')" class="yt-preset-btn px-2.5 py-2 rounded-xl border border-rose-500/30 bg-slate-900/80 text-[11px] font-bold text-white text-left truncate transition flex items-center gap-1.5 shadow-sm hover:border-rose-500 hover:bg-rose-500/20">
-                        <span>📻</span> <span class="truncate">Flashback 80/90</span>
-                    </button>
-                </div>
+            <!-- Presets Rápidos -->
+            <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="playYtPreset('kamisa10')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
+                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">🎤</span>
+                    <span class="truncate">Kamisa 10</span>
+                </button>
+                <button type="button" onclick="playYtPreset('rock')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
+                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">🎸</span>
+                    <span class="truncate">Rock Clássico</span>
+                </button>
+                <button type="button" onclick="playYtPreset('lofi')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
+                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">☕</span>
+                    <span class="truncate">Lo-Fi Oficina</span>
+                </button>
+                <button type="button" onclick="playYtPreset('flashback')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
+                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">📻</span>
+                    <span class="truncate">Flashback 80/90</span>
+                </button>
             </div>
 
-            <!-- Alternar Visibilidade do Vídeo (Economizar Espaço) -->
-            <div class="pt-1 flex items-center justify-between text-[11px] text-slate-400 border-t border-white/5">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="ytHideVideoChk" onchange="toggleYtVideoVisibility(this.checked)" class="accent-rose-500 rounded">
+            <!-- Rodapé -->
+            <div class="pt-1.5 flex items-center justify-between text-[10.5px] yt-muted border-t border-sky-400/20">
+                <label class="flex items-center gap-1.5 cursor-pointer font-semibold">
+                    <input type="checkbox" id="ytHideVideoChk" onchange="toggleYtVideoVisibility(this.checked)" class="accent-sky-500 rounded cursor-pointer">
                     <span>Ocultar vídeo (Apenas som)</span>
                 </label>
-                <button onclick="minimizeYtWidget()" class="text-sky-400 hover:underline text-[11px] font-bold">
-                    Minimizar
-                </button>
+                <button onclick="minimizeYtWidget()" class="text-sky-600 dark:text-sky-300 hover:underline text-[10.5px] font-extrabold cursor-pointer">Minimizar</button>
             </div>
         </div>
     </div>
 
-    <!-- PÍLULA FLUTUANTE QUANDO O YOUTUBE ESTÁ MINIMIZADO -->
+    <!-- PÍLULA MINIMIZADA DO YOUTUBE (AZUL CLARO CLEAN & DARK) -->
     <div id="ytMiniPill" onclick="restoreYtWidget()"
-         class="fixed bottom-4 right-4 z-40 hidden cursor-pointer items-center gap-2.5 px-4 py-2 rounded-full bg-slate-900/95 border border-rose-500/50 text-white text-xs font-bold shadow-2xl hover:scale-105 transition">
-        <span class="text-sm">📻</span>
+         class="fixed bottom-3.5 right-3.5 z-40 hidden cursor-pointer items-center gap-2 px-3.5 py-2 rounded-full text-xs font-extrabold hover:scale-105 transition">
+        <span class="w-6 h-6 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shrink-0">
+            <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
+        </span>
         <span id="ytMiniStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="ytMiniTitle" class="truncate max-w-[140px]">Som da Oficina</span>
-        <span class="text-slate-400">|</span>
-        <span id="ytMiniVol" class="text-rose-300 font-mono">80%</span>
+        <span id="ytMiniTitle" class="truncate max-w-[150px]">Som da Oficina</span>
+        <span class="opacity-40">|</span>
+        <span id="ytMiniVol" class="text-sky-600 dark:text-sky-300 font-mono tabular-nums">80%</span>
     </div>
 
     <script>
@@ -583,9 +577,152 @@
         let tvMuted = false;
         let audioCtx = null;
         let lastActivityTime = Date.now();
-        const SCREENSAVER_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutos
+        let lastDisplayedScore = 0;
+        const timerInitialMaxSec = {};
+        const SCREENSAVER_TIMEOUT_MS = 20 * 60 * 1000;
+        const MOTION_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+        const MOTION_SPRING = "cubic-bezier(0.16, 1, 0.3, 1)";
+        const prefersReducedMotion = () => window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-        // [S-01] Escape seguro contra quebra de HTML / XSS
+        // Motor de animações Motion (Web Animations API com física de mola e entrada/saída garantidas)
+        const A5Motion = {
+            animate(el, keyframes, options) {
+                if (!el || prefersReducedMotion() || typeof el.animate !== "function") return null;
+                try {
+                    return el.animate(keyframes, { fill: "both", ...options });
+                } catch {
+                    return null;
+                }
+            },
+            enterCard(el, delay = 0) {
+                return this.animate(
+                    el,
+                    [
+                        { opacity: 0, transform: "translateY(14px) scale(0.95)" },
+                        { opacity: 1, transform: "translateY(-1px) scale(1.01)", offset: 0.72 },
+                        { opacity: 1, transform: "translateY(0) scale(1)" }
+                    ],
+                    { duration: 360, delay, easing: MOTION_EASE }
+                );
+            },
+            pulseCard(el) {
+                return this.animate(
+                    el,
+                    [
+                        { transform: "scale(1)" },
+                        { transform: "scale(1.022)" },
+                        { transform: "scale(1)" }
+                    ],
+                    { duration: 320, easing: MOTION_SPRING }
+                );
+            },
+            exitCard(el, onDone) {
+                if (!el) return onDone?.();
+                if (el._exitAnim) { try { el._exitAnim.cancel(); } catch {} }
+                const anim = this.animate(
+                    el,
+                    [
+                        { opacity: 1, transform: "translateY(0) scale(1)" },
+                        { opacity: 0, transform: "translateY(-8px) scale(0.9)" }
+                    ],
+                    { duration: 220, easing: MOTION_EASE }
+                );
+                if (!anim) { onDone?.(); return; }
+                el._exitAnim = anim;
+                anim.onfinish = () => { el._exitAnim = null; onDone?.(); };
+            },
+            enterTechRow(el, isPullIn = true) {
+                if (!el) return;
+                if (el._exitAnim) { try { el._exitAnim.cancel(); } catch {} el._exitAnim = null; }
+                el.dataset.exiting = "0";
+                el.style.maxHeight = "";
+                el.style.marginBottom = "";
+                el.style.overflow = "hidden";
+                const startX = isPullIn ? "44px" : "20px";
+                if (isPullIn) {
+                    el.classList.add("tech-spotlight");
+                    setTimeout(() => el.classList.remove("tech-spotlight"), 1100);
+                }
+                const anim = this.animate(
+                    el,
+                    [
+                        { opacity: 0, transform: `translateX(${startX}) scale(0.95)` },
+                        { opacity: 1, transform: "translateX(-3px) scale(1.008)", offset: 0.74 },
+                        { opacity: 1, transform: "translateX(0) scale(1)" }
+                    ],
+                    { duration: 420, easing: MOTION_EASE }
+                );
+                if (anim) {
+                    anim.onfinish = () => {
+                        el.style.opacity = "";
+                        el.style.transform = "";
+                    };
+                }
+            },
+            exitTechRow(el, onDone) {
+                if (!el || el.dataset.exiting === "1") return;
+                el.dataset.exiting = "1";
+                const h = el.offsetHeight || 160;
+                el.style.overflow = "hidden";
+                const anim = this.animate(
+                    el,
+                    [
+                        { opacity: 1, transform: "translateX(0) scale(1)", maxHeight: `${h}px`, marginBottom: "10px" },
+                        { opacity: 0.25, transform: "translateX(36px) scale(0.95)", maxHeight: `${Math.round(h * 0.5)}px`, marginBottom: "6px", offset: 0.55 },
+                        { opacity: 0, transform: "translateX(54px) scale(0.92)", maxHeight: "0px", marginBottom: "0px" }
+                    ],
+                    { duration: 360, easing: MOTION_EASE }
+                );
+                if (!anim) { onDone?.(); return; }
+                el._exitAnim = anim;
+                anim.onfinish = () => { el._exitAnim = null; onDone?.(); };
+            },
+            riseUp(el, distance = 36) {
+                if (!el) return null;
+                if (el._ytAnim) { try { el._ytAnim.cancel(); } catch {} }
+                const anim = this.animate(
+                    el,
+                    [
+                        { opacity: 0, transform: `translateY(${distance}px) scale(0.92)` },
+                        { opacity: 1, transform: "translateY(-4px) scale(1.012)", offset: 0.74 },
+                        { opacity: 1, transform: "translateY(0) scale(1)" }
+                    ],
+                    { duration: 400, easing: MOTION_EASE }
+                );
+                el._ytAnim = anim;
+                if (anim) {
+                    anim.onfinish = () => { el._ytAnim = null; };
+                }
+                return anim;
+            },
+            sinkDown(el, distance = 26, onDone) {
+                if (!el) return onDone?.();
+                if (el._ytAnim) { try { el._ytAnim.cancel(); } catch {} }
+                const anim = this.animate(
+                    el,
+                    [
+                        { opacity: 1, transform: "translateY(0) scale(1)" },
+                        { opacity: 0, transform: `translateY(${distance}px) scale(0.93)` }
+                    ],
+                    { duration: 220, easing: MOTION_EASE }
+                );
+                if (!anim) { onDone?.(); return; }
+                el._ytAnim = anim;
+                anim.onfinish = () => { el._ytAnim = null; onDone?.(); };
+            },
+            popBadge(el) {
+                return this.animate(
+                    el,
+                    [
+                        { transform: "scale(1)" },
+                        { transform: "scale(1.22)", offset: 0.45 },
+                        { transform: "scale(1)" }
+                    ],
+                    { duration: 340, easing: MOTION_SPRING }
+                );
+            }
+        };
+
         function esc(str) {
             return String(str ?? "")
                 .replace(/&/g, "&amp;")
@@ -595,33 +732,52 @@
                 .replace(/'/g, "&#39;");
         }
 
+        function getInitials(title) {
+            const clean = String(title || "").replace(/^(TEC\.|SR\.)\s*/i, "").trim();
+            const parts = clean.split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return "A5";
+            if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+            return (parts[0][0] + parts[1][0]).toUpperCase();
+        }
+
         let isAudioUnlocked = false;
         function unlockAudioEngine() {
             if (isAudioUnlocked) return;
             isAudioUnlocked = true;
-
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === "suspended") {
-                audioCtx.resume().catch(() => {});
-            }
-
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
             const banner = document.getElementById("audioUnlockBanner");
-            if (banner) banner.classList.add("hidden");
-
-            // Destrava e sincroniza sintetizador de voz do navegador sem travar a fila
+            if (banner && !banner.classList.contains("hidden")) {
+                const anim = A5Motion.animate(
+                    banner,
+                    [
+                        { opacity: 1, maxHeight: "40px", paddingTop: "6px", paddingBottom: "6px" },
+                        { opacity: 0, maxHeight: "0px", paddingTop: "0px", paddingBottom: "0px" }
+                    ],
+                    { duration: 240, easing: MOTION_EASE }
+                );
+                if (anim) anim.onfinish = () => banner.classList.add("hidden");
+                else banner.classList.add("hidden");
+            }
             if ("speechSynthesis" in window) {
                 try {
                     window.speechSynthesis.cancel();
                     window.speechSynthesis.resume();
-                    initVoices();
                 } catch (e) {}
             }
         }
 
         window.addEventListener("pointerdown", () => unlockAudioEngine());
         window.addEventListener("keydown", () => unlockAudioEngine());
+
+        socket.on("connect", () => {
+            const dot = document.getElementById("tvLiveDot");
+            if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+        });
+        socket.on("disconnect", () => {
+            const dot = document.getElementById("tvLiveDot");
+            if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
+        });
 
         setInterval(() => {
             const now = new Date();
@@ -636,7 +792,6 @@
             } else {
                 ssEl.classList.replace("flex", "hidden");
             }
-
             updateActiveTimersUI();
         }, 1000);
 
@@ -645,7 +800,29 @@
             document.getElementById("screensaverOverlay").classList.replace("flex", "hidden");
         }
 
-        // [L-16] Alternância de Tema Clean (Azul & Branco) e Dark (Azul & Preto) na TV
+        function animateTvScore(target) {
+            const el = document.getElementById("tvScoreToday");
+            if (!el) return;
+            const to = parseInt(target || 0, 10) || 0;
+            const from = lastDisplayedScore;
+            if (from === to) {
+                el.textContent = String(to);
+                return;
+            }
+            if (to > from) A5Motion.popBadge(el);
+            const start = performance.now();
+            const dur = 550;
+            const tick = (now) => {
+                const p = Math.min(1, (now - start) / dur);
+                const eased = 1 - Math.pow(1 - p, 3);
+                el.textContent = String(Math.round(from + (to - from) * eased));
+                if (p < 1) requestAnimationFrame(tick);
+                else lastDisplayedScore = to;
+            };
+            requestAnimationFrame(tick);
+        }
+
+        // Alternância Claro <-> Escuro preservando identidade Azul Claro nos dois modos
         function applyTvTheme(theme) {
             const isClean = theme === "clean";
             document.documentElement.classList.toggle("dark", !isClean);
@@ -653,7 +830,9 @@
             document.body.classList.toggle("theme-clean", isClean);
             const btn = document.getElementById("tvThemeBtn");
             if (btn) {
-                btn.innerHTML = isClean ? `<i data-lucide="moon" class="w-3.5 h-3.5"></i><span>Dark</span>` : `<i data-lucide="sun" class="w-3.5 h-3.5"></i><span>Clean</span>`;
+                btn.innerHTML = isClean
+                    ? `<i data-lucide="moon" class="w-3.5 h-3.5 text-sky-600"></i><span class="text-sky-700">Escuro</span>`
+                    : `<i data-lucide="sun" class="w-3.5 h-3.5 text-sky-300"></i><span class="text-sky-100">Claro</span>`;
             }
             localStorage.setItem("a5_tv_theme", theme);
             refreshLucide();
@@ -662,7 +841,7 @@
             const cur = localStorage.getItem("a5_tv_theme") || "dark";
             applyTvTheme(cur === "clean" ? "dark" : "clean");
         }
-        applyTvTheme(localStorage.getItem("a5_tv_theme") || "dark");
+        applyTvTheme(localStorage.getItem("a5_tv_theme") || localStorage.getItem("a5_theme") || "dark");
 
         async function loadBoard() {
             const res = await fetch("/api/board");
@@ -689,7 +868,6 @@
             triggerTvAnnouncement(payload);
         });
 
-        // MINI ALERTA DISCRETO NA TV (URGENTE / EM GARANTIA EM ORÇAMENTOS)
         let tvMiniAlertTimer = null;
         socket.on("tv_mini_alert", (payload) => {
             registerActivity();
@@ -705,35 +883,23 @@
 
             if (isUrg) {
                 innerEl.style.background = "linear-gradient(135deg, rgba(220, 38, 38, 0.96), rgba(153, 27, 27, 0.96))";
-                innerEl.style.borderColor = "rgba(248, 113, 113, 0.6)";
-                innerEl.style.boxShadow = "0 10px 40px rgba(239, 68, 68, 0.4)";
                 iconBox.textContent = "🚨";
-                catEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/30 text-rose-200">URGÊNCIA EM ORÇAMENTOS</span>`;
+                catEl.innerHTML = `<span class="px-2 py-0.5 rounded-full bg-black/30 text-rose-200">URGÊNCIA EM ORÇAMENTOS</span>`;
             } else if (isWarranty) {
                 innerEl.style.background = "linear-gradient(135deg, rgba(124, 58, 237, 0.96), rgba(91, 33, 182, 0.96))";
-                innerEl.style.borderColor = "rgba(167, 139, 250, 0.6)";
-                innerEl.style.boxShadow = "0 10px 40px rgba(139, 92, 246, 0.4)";
                 iconBox.textContent = "🛡️";
-                catEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/30 text-purple-200">EM GARANTIA • ORÇAMENTOS</span>`;
+                catEl.innerHTML = `<span class="px-2 py-0.5 rounded-full bg-black/30 text-purple-200">EM GARANTIA • ORÇAMENTOS</span>`;
             } else {
-                innerEl.style.background = "linear-gradient(135deg, rgba(14, 165, 233, 0.96), rgba(2, 132, 199, 0.96))";
-                innerEl.style.borderColor = "rgba(56, 189, 248, 0.6)";
-                innerEl.style.boxShadow = "0 10px 40px rgba(14, 165, 233, 0.4)";
+                innerEl.style.background = "linear-gradient(135deg, #38BDF8, #0284C7)";
                 iconBox.textContent = "📋";
-                catEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-black/30 text-sky-200">ORÇAMENTOS</span>`;
+                catEl.innerHTML = `<span class="px-2 py-0.5 rounded-full bg-black/25 text-sky-100">ORÇAMENTOS</span>`;
             }
 
             msgEl.textContent = `O.S. ${payload.os_number} (${payload.client_name}) marcada como ${payload.label_name}!`;
+            if (!tvMuted) { try { playSynthesizedSound("bell", false); } catch(e) {} }
 
-            // Toca um chime discreto se não estiver mutada
-            if (!tvMuted && typeof playSynthesizedSound === "function") {
-                try { playSynthesizedSound("bell", false); } catch(e) {}
-            }
-
-            // Exibe deslizando do topo suavemente
             alertEl.classList.remove("-translate-y-36", "opacity-0");
             alertEl.classList.add("translate-y-0", "opacity-100");
-
             if (tvMiniAlertTimer) clearTimeout(tvMiniAlertTimer);
             tvMiniAlertTimer = setTimeout(() => {
                 alertEl.classList.remove("translate-y-0", "opacity-100");
@@ -742,15 +908,31 @@
         });
 
         function refreshLucide() {
-            if (window.lucide) {
-                try { lucide.createIcons(); } catch (e) {}
-            }
+            if (window.lucide) { try { lucide.createIcons(); } catch (e) {} }
         }
 
-        function renderTvCardHTML(c, isHorizontal = false) {
-            const widthClass = isHorizontal ? "w-[310px] shrink-0" : "w-full";
+        function cardSignature(c, isHorizontal) {
+            return JSON.stringify([
+                c.id,
+                c.os_number,
+                c.client_name,
+                c.equipment_type,
+                c.equipment_model,
+                c.pipeline_phase,
+                c.list_title,
+                c.is_urgent,
+                c.is_warranty,
+                c.sla_expired,
+                c.timer_end_at,
+                c.timer_label,
+                isHorizontal ? 1 : 0,
+                (c.labels || []).map(l => `${l.name}:${l.color}`)
+            ]);
+        }
+
+        function renderTvCardInnerHTML(c, isHorizontal = false) {
             const labelsHTML = (c.labels || []).map(l => `
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wide" style="background:${esc(l.color)}; color:${esc(l.text_color)}">
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide shadow-2xs" style="background:${esc(l.color)}; color:${esc(l.text_color || '#fff')}">
                     ${esc(l.name)}
                 </span>
             `).join("");
@@ -759,17 +941,25 @@
             if (c.timer_end_at) {
                 const endMs = new Date(c.timer_end_at).getTime();
                 const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                if (!timerInitialMaxSec[c.os_number] || diffSec > timerInitialMaxSec[c.os_number]) {
+                    timerInitialMaxSec[c.os_number] = Math.max(diffSec, 60);
+                }
+                const pct = Math.max(5, Math.min(100, Math.round((diffSec / timerInitialMaxSec[c.os_number]) * 100)));
                 const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
                 const secs = String(diffSec % 60).padStart(2, "0");
                 timerHTML = `
-                    <div class="mt-2 px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-400/30 text-sky-300 font-mono text-[11px] font-bold flex items-center justify-between animate-pulse">
-                        <span class="flex items-center gap-1.5"><i data-lucide="timer" class="w-3.5 h-3.5"></i> <span>${esc(c.timer_label || 'Estufa')}:</span></span>
-                        <span class="text-xs font-black text-white font-mono">${mins}:${secs}</span>
+                    <div class="mt-1.5 p-1.5 rounded-lg bg-sky-400/12 border border-sky-400/35 space-y-1">
+                        <div class="text-sky-700 dark:text-sky-200 font-mono text-[10px] font-bold flex items-center justify-between gap-1.5">
+                            <span class="flex items-center gap-1 truncate"><i data-lucide="timer" class="w-3 h-3 text-sky-500 shrink-0"></i> <span class="truncate">${esc(c.timer_label || 'Estufa')}</span></span>
+                            <span class="text-[11px] font-black tabular-nums px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-700 dark:text-sky-200">${mins}:${secs}</span>
+                        </div>
+                        <div class="w-full h-1.5 ember-hatch rounded-full overflow-hidden">
+                            <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#0EA5E9] transition-all duration-500" style="width:${pct}%"></div>
+                        </div>
                     </div>
                 `;
             }
 
-            // Indicador de Fase na Bancada do Técnico (Orçamentando vs Finalizando vs Não Autorizado)
             let phaseBannerHTML = "";
             const isFinishing = c.pipeline_phase === "EM_MANUTENCAO";
             const isNaoAut = c.pipeline_phase === "NAO_AUTORIZADO" || (c.list_title && (c.list_title.toUpperCase().includes("NÃO AUTORIZAD") || c.list_title.toUpperCase().includes("NAO AUTORIZAD")));
@@ -777,259 +967,428 @@
 
             if (isNaoAut) {
                 phaseBannerHTML = `
-                    <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-300 font-black text-xs flex items-center justify-between shadow-md">
-                        <span class="flex items-center gap-2">
-                            <span class="relative flex h-2.5 w-2.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-                            </span>
-                            <span class="tracking-wide">🚫 NÃO AUTORIZADO</span>
-                        </span>
-                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-rose-500/30 text-rose-100">Fechar Balança</span>
-                    </div>
-                `;
+                    <div class="mb-1.5 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/35 text-rose-600 dark:text-rose-300 font-black text-[10.5px] flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>🚫 NÃO AUTORIZADO</span>
+                        <span class="text-[8.5px] uppercase px-1.5 py-0.5 rounded-full bg-rose-500/20">Fechar</span>
+                    </div>`;
             } else if (isFinishing) {
                 phaseBannerHTML = `
-                    <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-between shadow-md">
-                        <span class="flex items-center gap-2">
-                            <span class="relative flex h-2.5 w-2.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                            </span>
-                            <span class="tracking-wide">🔧 FINALIZANDO BALANÇA</span>
-                        </span>
-                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/30 text-emerald-100">Manutenção</span>
-                    </div>
-                `;
+                    <div class="mb-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 font-black text-[10.5px] flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>🔧 FINALIZANDO</span>
+                        <span class="text-[8.5px] uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/20">Manutenção</span>
+                    </div>`;
             } else if (isQuoting) {
                 phaseBannerHTML = `
-                    <div class="mb-2.5 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center justify-between shadow-md">
-                        <span class="flex items-center gap-2">
-                            <span class="relative flex h-2.5 w-2.5">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                            </span>
-                            <span class="tracking-wide">🔬 ORÇAMENTANDO</span>
-                        </span>
-                        <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md bg-amber-500/30 text-amber-100">Diagnóstico</span>
-                    </div>
-                `;
+                    <div class="mb-1.5 px-2.5 py-1 rounded-lg bg-sky-400/15 border border-sky-400/35 text-sky-700 dark:text-sky-200 font-black text-[10.5px] flex items-center justify-between">
+                        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>🔬 ORÇAMENTANDO</span>
+                        <span class="text-[8.5px] uppercase px-1.5 py-0.5 rounded-full bg-sky-400/20">Diagnóstico</span>
+                    </div>`;
             }
 
             return `
-                <div class="glass-card rounded-2xl p-3.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''} transition hover:scale-[1.01]">
-                    ${labelsHTML ? `<div class="flex flex-wrap gap-1 mb-1.5">${labelsHTML}</div>` : ''}
+                ${labelsHTML ? `<div class="flex flex-wrap gap-1 mb-1.5">${labelsHTML}</div>` : ''}
+                ${phaseBannerHTML}
+                <div class="flex items-center justify-between gap-1 mb-1">
+                    <span class="bg-sky-400/18 text-sky-700 dark:text-sky-200 border border-sky-400/35 font-mono font-extrabold text-[11px] px-2 py-0.5 rounded-full">
+                        O.S. ${esc(c.os_number)}
+                    </span>
+                    ${c.sla_expired ? `<span class="text-[9px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 font-mono"><i data-lucide="clock" class="w-2.5 h-2.5"></i> +24H</span>` : ''}
+                </div>
+                <div class="font-extrabold text-[13px] uppercase leading-tight mb-0.5 break-words tracking-tight">
+                    ${esc(c.client_name)}
+                </div>
+                <div class="text-[11px] text-slate-600 dark:text-sky-200/75 truncate font-semibold flex items-center gap-1">
+                    <i data-lucide="scale" class="w-3 h-3 text-sky-500 shrink-0"></i>
+                    <span class="truncate">${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}</span>
+                </div>
+                ${timerHTML}
+            `;
+        }
 
-                    ${phaseBannerHTML}
+        function createCardElement(c, isHorizontal) {
+            const el = document.createElement("div");
+            const widthClass = isHorizontal ? "w-[248px] shrink-0" : "w-full";
+            el.dataset.cardKey = String(c.id || c.os_number);
+            el.dataset.cardSig = cardSignature(c, isHorizontal);
+            el.className = `tv-bento-card p-2.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''}`;
+            el.innerHTML = renderTvCardInnerHTML(c, isHorizontal);
+            return el;
+        }
 
-                    <div class="flex items-center justify-between gap-1 mb-1.5">
-                        <span class="bg-sky-500/15 text-sky-300 border border-sky-400/30 font-mono font-bold text-xs px-2.5 py-0.5 rounded-lg shadow-sm">
-                            O.S. ${esc(c.os_number)}
-                        </span>
-                        ${c.sla_expired ? `<span class="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 font-mono"><i data-lucide="clock" class="w-3 h-3"></i> +24H</span>` : ''}
+        function syncCardList(container, cards, isHorizontal, emptyHTML, animateChanges) {
+            if (!container) return;
+
+            if (!cards || cards.length === 0) {
+                Array.from(container.children).forEach((child) => {
+                    if (child.dataset.emptyState === "1") return;
+                    if (child.dataset.exiting === "1") return;
+                    child.dataset.exiting = "1";
+                    if (animateChanges) {
+                        A5Motion.exitCard(child, () => child.remove());
+                    } else {
+                        child.remove();
+                    }
+                });
+                if (emptyHTML && !container.querySelector('[data-empty-state="1"]')) {
+                    const emp = document.createElement("div");
+                    emp.dataset.emptyState = "1";
+                    emp.innerHTML = emptyHTML;
+                    container.appendChild(emp);
+                    if (animateChanges) A5Motion.enterCard(emp, 60);
+                }
+                return;
+            }
+
+            const existingEmpty = container.querySelector('[data-empty-state="1"]');
+            if (existingEmpty) existingEmpty.remove();
+
+            const incomingIds = new Set(cards.map((c) => String(c.id || c.os_number)));
+
+            // Anima saída dos cards removidos
+            Array.from(container.children).forEach((child) => {
+                const k = child.dataset.cardKey;
+                if (!k) return;
+                if (!incomingIds.has(k) && child.dataset.exiting !== "1") {
+                    child.dataset.exiting = "1";
+                    if (animateChanges) {
+                        A5Motion.exitCard(child, () => child.remove());
+                    } else {
+                        child.remove();
+                    }
+                }
+            });
+
+            // Reaproveita/atualiza existentes e entra novos com Motion
+            const widthClass = isHorizontal ? "w-[248px] shrink-0" : "w-full";
+            cards.forEach((c, idx) => {
+                const key = String(c.id || c.os_number);
+                const sig = cardSignature(c, isHorizontal);
+                let el = container.querySelector(`[data-card-key="${CSS.escape(key)}"]`);
+
+                if (el) {
+                    if (el.dataset.exiting === "1") {
+                        if (el._exitAnim) { try { el._exitAnim.cancel(); } catch {} el._exitAnim = null; }
+                        el.dataset.exiting = "0";
+                        el.style.opacity = "";
+                        el.style.transform = "";
+                        if (animateChanges) A5Motion.enterCard(el, 0);
+                    }
+                    if (el.dataset.cardSig !== sig) {
+                        el.dataset.cardSig = sig;
+                        el.className = `tv-bento-card p-2.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''}`;
+                        el.innerHTML = renderTvCardInnerHTML(c, isHorizontal);
+                        if (animateChanges) A5Motion.pulseCard(el);
+                    }
+                    container.appendChild(el);
+                } else {
+                    el = createCardElement(c, isHorizontal);
+                    container.appendChild(el);
+                    if (animateChanges) {
+                        A5Motion.enterCard(el, Math.min(idx * 25, 160));
+                    }
+                }
+            });
+        }
+
+        function updateCounterBadge(el, count, animateChanges) {
+            if (!el) return;
+            const nextStr = String(count);
+            if (el.textContent !== nextStr) {
+                el.textContent = nextStr;
+                if (animateChanges) A5Motion.popBadge(el);
+            }
+        }
+
+        let tvBoardInitialized = false;
+
+        function ensureBoardSkeleton() {
+            const container = document.getElementById("tvBoard");
+            if (container.dataset.skeletonReady === "1") return;
+            container.dataset.skeletonReady = "1";
+            container.innerHTML = `
+                <div id="tvOrcCol" class="tv-bento-col flex flex-col h-full overflow-hidden">
+                    <div class="h-1 w-full bg-gradient-to-r from-sky-300 via-sky-400 to-cyan-400 shrink-0"></div>
+                    <div class="px-3.5 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="w-6 h-6 rounded-lg bg-sky-400/18 text-sky-600 dark:text-sky-300 border border-sky-400/30 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i></span>
+                            <span class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-sky-700 dark:text-sky-200 truncate">ORÇAMENTOS</span>
+                        </div>
+                        <span id="tvOrcCount" class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-sm">0</span>
                     </div>
-                    <div class="font-extrabold text-sm uppercase leading-snug card-client-name text-slate-900 dark:text-zinc-100 mb-1 break-words">
-                        ${esc(c.client_name)}
+                    <div id="tvOrcList" class="p-2 space-y-2 overflow-y-auto flex-1 custom-scrollbar"></div>
+                </div>
+
+                <div id="tvAprCol" class="tv-bento-col flex flex-col h-full overflow-hidden">
+                    <div class="h-1 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 shrink-0"></div>
+                    <div class="px-3.5 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center justify-center"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
+                            <span id="tvAprTitle" class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-emerald-700 dark:text-emerald-300 truncate">APROVADOS</span>
+                        </div>
+                        <span id="tvAprCount" class="bg-emerald-500 text-slate-950 font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-sm">0</span>
                     </div>
-                    <div class="text-xs card-equip-desc text-slate-600 dark:text-zinc-400 truncate">
-                        ${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}
+                    <div id="tvAprList" class="p-2 space-y-2 overflow-y-auto flex-1 custom-scrollbar"></div>
+                </div>
+
+                <div id="tvNaoAutCol" class="tv-bento-col hidden flex-col h-full overflow-hidden border-2 border-rose-500/50">
+                    <div class="h-1 w-full bg-rose-500 shrink-0"></div>
+                    <div class="px-3.5 py-2 bg-rose-500/10 border-b border-rose-500/30 flex items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="text-sm">🚫</span>
+                            <span class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-rose-600 dark:text-rose-300 truncate">NÃO AUTORIZADOS</span>
+                        </div>
+                        <span id="tvNaoAutCount" class="bg-rose-600 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 animate-pulse">0</span>
                     </div>
-                    ${timerHTML}
+                    <div id="tvNaoAutList" class="p-2 space-y-2 overflow-y-auto flex-1 custom-scrollbar"></div>
+                </div>
+
+                <div id="tvTechSection" class="flex-1 min-w-0 hidden flex-col h-full overflow-hidden">
+                    <div class="tv-bento-col mb-2 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm"><i data-lucide="cpu" class="w-3.5 h-3.5"></i></span>
+                            <span class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-sky-700 dark:text-sky-200">BANCADAS EM ATENDIMENTO</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px] font-bold">
+                            <span id="tvTechCardsSummary" class="px-2.5 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/35 font-black">
+                                📊 0 balança(s)
+                            </span>
+                            <span id="tvTechCountSummary" class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-bold">
+                                👨‍🔧 0 técnicos
+                            </span>
+                        </div>
+                    </div>
+                    <div id="tvTechRowsList" class="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar"></div>
                 </div>
             `;
         }
 
-        function renderTvBoard() {
-            document.getElementById("tvScoreToday").textContent = boardData.stats?.finished_today || 0;
-            const container = document.getElementById("tvBoard");
-            container.innerHTML = "";
+        function getTechHeaderBadgeHTML(cards) {
+            const manCount = cards.filter(c => c.pipeline_phase === 'EM_MANUTENCAO').length;
+            const orcCount = cards.length - manCount;
+            if (manCount > 0 && orcCount === 0) {
+                return `<span class="bg-emerald-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>🔧 FINALIZANDO (${cards.length})</span>`;
+            }
+            if (orcCount > 0 && manCount === 0) {
+                return `<span class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>🔬 ORÇAMENTANDO (${cards.length})</span>`;
+            }
+            return `<span class="bg-gradient-to-r from-sky-400 to-sky-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0 shadow-xs">🔬 ${orcCount} Orç. • 🔧 ${manCount} Fin.</span>`;
+        }
 
+        function renderTvBoard() {
+            animateTvScore(boardData.stats?.finished_today || 0);
             if (!boardData.lists || !boardData.lists.length) return;
 
-            // 1. Localiza as colunas exclusivas da TV: ORÇAMENTOS, APROVADOS e NÃO AUTORIZADOS
-            const orcList = boardData.lists.find(l => 
-                (l.role && l.role.toLowerCase() === "orcamento") || 
+            ensureBoardSkeleton();
+            const animateChanges = tvBoardInitialized;
+            const container = document.getElementById("tvBoard");
+
+            const orcList = boardData.lists.find(l =>
+                (l.role && l.role.toLowerCase() === "orcamento") ||
                 (l.title && (l.title.trim().toUpperCase() === "ORÇAMENTOS" || l.title.trim().toUpperCase() === "ORCAMENTOS"))
             ) || { title: "ORÇAMENTOS", cards: [] };
 
-            const aprList = boardData.lists.find(l => 
-                (l.role && l.role.toLowerCase().includes("aprovad")) || 
+            const aprList = boardData.lists.find(l =>
+                (l.role && l.role.toLowerCase().includes("aprovad")) ||
                 (l.title && (l.title.trim().toUpperCase() === "APROVADOS" || l.title.trim().toUpperCase() === "APROVADAS"))
             ) || { title: "APROVADOS", cards: [] };
 
-            const naoAutList = boardData.lists.find(l => 
-                (l.role && l.role.toLowerCase().includes("nao_autorizado")) || 
+            const naoAutList = boardData.lists.find(l =>
+                (l.role && l.role.toLowerCase().includes("nao_autorizado")) ||
                 (l.title && (l.title.toUpperCase().includes("NÃO AUTORIZAD") || l.title.toUpperCase().includes("NAO AUTORIZAD")))
             ) || { title: "NÃO AUTORIZADOS", cards: [] };
 
-            // 2. Localiza as bancadas dos técnicos (role === 'tech' ou is_tech === 1)
-            const techLists = boardData.lists.filter(l => l.is_tech === 1 || l.role === "tech" || l.title.toUpperCase().startsWith("TEC.") || l.title.toUpperCase().startsWith("SR."));
-
-            // FILTRA SOMENTE OS TÉCNICOS QUE REALMENTE SELECIONARAM BALANÇAS PARA FAZER:
+            const techLists = boardData.lists.filter(l =>
+                l.is_tech === 1 || l.role === "tech" || l.title.toUpperCase().startsWith("TEC.") || l.title.toUpperCase().startsWith("SR.")
+            );
             const activeTechLists = techLists.filter(l => l.cards && l.cards.length > 0);
             const hasActiveTechs = activeTechLists.length > 0;
 
-            const sortCards = (cards) => {
-                return [...(cards || [])].sort((a, b) => {
-                    const prioA = (a.is_urgent ? 2 : 0) + (a.is_warranty ? 1 : 0);
-                    const prioB = (b.is_urgent ? 2 : 0) + (b.is_warranty ? 1 : 0);
-                    return prioB - prioA;
-                });
-            };
+            const sortCards = (cards) => [...(cards || [])].sort((a, b) => {
+                const prioA = (a.is_urgent ? 2 : 0) + (a.is_warranty ? 1 : 0);
+                const prioB = (b.is_urgent ? 2 : 0) + (b.is_warranty ? 1 : 0);
+                return prioB - prioA;
+            });
 
             const orcCards = sortCards(orcList.cards);
             const aprCards = sortCards(aprList.cards);
             const naoAutCards = sortCards(naoAutList.cards || []);
             const hasNaoAut = naoAutCards.length > 0;
 
-            // Ajusta o layout dinamicamente:
-            // - Se houver bancadas ativas ou balanças não autorizadas, colunas ficam compactas
-            // - Sem técnicos atendendo e sem não-autorizados, ocupa a tela centralizada
             const hasSidePanels = hasActiveTechs || hasNaoAut;
-            const colWidthClass = hasSidePanels ? "w-[310px] shrink-0" : "flex-1 max-w-3xl";
-            container.className = `flex-1 flex items-stretch gap-4 p-4 overflow-hidden ${hasSidePanels ? '' : 'justify-center max-w-7xl mx-auto w-full'}`;
+            const colWidthClass = hasSidePanels ? "w-[258px] xl:w-[270px] shrink-0" : "flex-1 max-w-2xl";
+            container.className = `flex-1 flex items-stretch gap-2.5 p-2.5 overflow-hidden ${hasSidePanels ? '' : 'justify-center max-w-6xl mx-auto w-full'}`;
 
-            // HTML da Coluna 1: ORÇAMENTOS
-            const orcColHTML = `
-                <div class="tv-col ${colWidthClass} rounded-2xl flex flex-col h-full overflow-hidden shadow-lg">
-                    <div class="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
-                        <div class="flex items-center gap-2.5 truncate">
-                            <span class="text-xl">📋</span>
-                            <span class="font-black text-base tracking-wider uppercase text-sky-300 truncate">ORÇAMENTOS</span>
-                        </div>
-                        <span class="bg-sky-500 text-slate-950 font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow">${orcCards.length}</span>
-                    </div>
-                    <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                        ${orcCards.length > 0 ? orcCards.map(c => renderTvCardHTML(c, false)).join("") : `
-                            <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-500">
-                                <span class="text-4xl mb-3 opacity-40">📋</span>
-                                <span class="text-sm font-bold uppercase tracking-wider">Nenhum orçamento pendente</span>
-                                <span class="text-xs opacity-70 mt-1">Novas O.S. da recepção entrarão aqui</span>
-                            </div>
-                        `}
-                    </div>
-                </div>
-            `;
+            const orcColEl = document.getElementById("tvOrcCol");
+            const aprColEl = document.getElementById("tvAprCol");
+            const naoAutColEl = document.getElementById("tvNaoAutCol");
+            const techSectionEl = document.getElementById("tvTechSection");
 
-            // HTML da Coluna 2: APROVADAS
-            const aprColHTML = `
-                <div class="tv-col ${colWidthClass} rounded-2xl flex flex-col h-full overflow-hidden shadow-lg">
-                    <div class="px-5 py-3.5 bg-white/[0.03] border-b border-white/10 flex items-center justify-between gap-2 shrink-0">
-                        <div class="flex items-center gap-2.5 truncate">
-                            <span class="text-xl">✅</span>
-                            <span class="font-black text-base tracking-wider uppercase text-emerald-400 truncate">${aprList.title || 'APROVADOS'}</span>
-                        </div>
-                        <span class="bg-emerald-500 text-slate-950 font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow">${aprCards.length}</span>
-                    </div>
-                    <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                        ${aprCards.length > 0 ? aprCards.map(c => renderTvCardHTML(c, false)).join("") : `
-                            <div class="h-64 flex flex-col items-center justify-center text-center p-6 text-slate-500">
-                                <span class="text-4xl mb-3 opacity-40">✅</span>
-                                <span class="text-sm font-bold uppercase tracking-wider">Nenhuma O.S. aprovada</span>
-                                <span class="text-xs opacity-70 mt-1">Aguardando aprovação de clientes</span>
-                            </div>
-                        `}
-                    </div>
-                </div>
-            `;
+            orcColEl.className = `tv-bento-col ${colWidthClass} flex flex-col h-full overflow-hidden`;
+            aprColEl.className = `tv-bento-col ${colWidthClass} flex flex-col h-full overflow-hidden`;
+            document.getElementById("tvAprTitle").textContent = aprList.title || "APROVADOS";
 
-            // HTML da Coluna 3: NÃO AUTORIZADOS (Aparece na TV APENAS quando houver balanças não autorizadas)
-            let naoAutColHTML = "";
+            updateCounterBadge(document.getElementById("tvOrcCount"), orcCards.length, animateChanges);
+            updateCounterBadge(document.getElementById("tvAprCount"), aprCards.length, animateChanges);
+            updateCounterBadge(document.getElementById("tvNaoAutCount"), naoAutCards.length, animateChanges);
+
+            syncCardList(
+                document.getElementById("tvOrcList"),
+                orcCards,
+                false,
+                `<div class="h-44 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
+                    <i data-lucide="clipboard-list" class="w-8 h-8 mb-2 opacity-45 text-sky-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Nenhum orçamento pendente</span>
+                    <span class="text-[11px] opacity-80 mt-0.5">Novas O.S. entrarão aqui</span>
+                </div>`,
+                animateChanges
+            );
+
+            syncCardList(
+                document.getElementById("tvAprList"),
+                aprCards,
+                false,
+                `<div class="h-44 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
+                    <i data-lucide="check-circle-2" class="w-8 h-8 mb-2 opacity-45 text-emerald-400"></i>
+                    <span class="text-xs font-bold uppercase tracking-wider">Nenhuma O.S. aprovada</span>
+                    <span class="text-[11px] opacity-80 mt-0.5">Aguardando aprovação comercial</span>
+                </div>`,
+                animateChanges
+            );
+
+            // Coluna NÃO AUTORIZADOS com Motion Enter/Exit
             if (hasNaoAut) {
-                naoAutColHTML = `
-                    <div class="tv-col ${colWidthClass} rounded-2xl flex flex-col h-full overflow-hidden shadow-lg border-2 border-rose-500/50 bg-rose-950/20">
-                        <div class="px-5 py-3.5 bg-rose-950/60 border-b border-rose-500/40 flex items-center justify-between gap-2 shrink-0">
-                            <div class="flex items-center gap-2.5 truncate">
-                                <span class="text-xl">🚫</span>
-                                <span class="font-black text-base tracking-wider uppercase text-rose-300 truncate">NÃO AUTORIZADOS</span>
-                            </div>
-                            <span class="bg-rose-600 text-white font-black text-sm px-3 py-0.5 rounded-full shrink-0 shadow animate-pulse">${naoAutCards.length}</span>
-                        </div>
-                        <div class="p-3 space-y-3 overflow-y-auto flex-1 custom-scrollbar">
-                            ${naoAutCards.map(c => renderTvCardHTML(c, false)).join("")}
-                        </div>
-                    </div>
-                `;
+                const wasHidden = naoAutColEl.classList.contains("hidden");
+                naoAutColEl.className = `tv-bento-col ${colWidthClass} flex flex-col h-full overflow-hidden border-2 border-rose-500/50`;
+                syncCardList(document.getElementById("tvNaoAutList"), naoAutCards, false, null, animateChanges);
+                if (wasHidden && animateChanges) {
+                    A5Motion.animate(
+                        naoAutColEl,
+                        [{ opacity: 0, transform: "translateX(28px) scale(0.96)" }, { opacity: 1, transform: "translateX(0) scale(1)" }],
+                        { duration: 340, easing: MOTION_EASE }
+                    );
+                }
+            } else if (!naoAutColEl.classList.contains("hidden")) {
+                if (animateChanges) {
+                    const anim = A5Motion.animate(
+                        naoAutColEl,
+                        [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "translateX(20px) scale(0.95)" }],
+                        { duration: 220, easing: MOTION_EASE }
+                    );
+                    if (anim) anim.onfinish = () => naoAutColEl.classList.add("hidden");
+                    else naoAutColEl.classList.add("hidden");
+                } else {
+                    naoAutColEl.classList.add("hidden");
+                }
             }
 
-            // HTML da Área dos Técnicos: SOMENTE EXIBE QUANDO O TÉCNICO SELECIONAR BALANÇA
-            let techAreaHTML = "";
+            // BANCADAS EM ATENDIMENTO: Enter/Exit em Motion ao puxar ou sair técnico da tela
+            const techRowsContainer = document.getElementById("tvTechRowsList");
+            const totalInTech = activeTechLists.reduce((acc, l) => acc + (l.cards ? l.cards.length : 0), 0);
+            document.getElementById("tvTechCardsSummary").textContent = `📊 ${totalInTech} balança(s)`;
+            document.getElementById("tvTechCountSummary").textContent = `👨‍🔧 ${activeTechLists.length} ${activeTechLists.length === 1 ? 'técnico' : 'técnicos'}`;
+
             if (hasActiveTechs) {
-                const totalInTech = activeTechLists.reduce((acc, l) => acc + (l.cards ? l.cards.length : 0), 0);
-
-                const techRowsHTML = activeTechLists.map(tech => {
-                    const cards = sortCards(tech.cards);
-                    const manCount = cards.filter(c => c.pipeline_phase === 'EM_MANUTENCAO').length;
-                    const orcCount = cards.length - manCount;
-                    let headerBadgeHTML = "";
-                    if (manCount > 0 && orcCount === 0) {
-                        headerBadgeHTML = `
-                            <span class="bg-emerald-500 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0 flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
-                                🔧 FINALIZANDO (${cards.length})
-                            </span>
-                        `;
-                    } else if (orcCount > 0 && manCount === 0) {
-                        headerBadgeHTML = `
-                            <span class="bg-amber-400 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0 flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
-                                🔬 ORÇAMENTANDO (${cards.length})
-                            </span>
-                        `;
+                const sectionWasHidden = techSectionEl.classList.contains("hidden");
+                if (techSectionEl._sectionExitAnim) {
+                    try { techSectionEl._sectionExitAnim.cancel(); } catch {}
+                    techSectionEl._sectionExitAnim = null;
+                }
+                techSectionEl.classList.remove("hidden");
+                techSectionEl.classList.add("flex");
+                if (sectionWasHidden && animateChanges) {
+                    A5Motion.animate(
+                        techSectionEl,
+                        [{ opacity: 0, transform: "translateX(36px) scale(0.98)" }, { opacity: 1, transform: "translateX(0) scale(1)" }],
+                        { duration: 380, easing: MOTION_EASE }
+                    );
+                }
+            } else if (!techSectionEl.classList.contains("hidden")) {
+                // Anima saída dos técnicos restantes e recolhe a área de bancadas
+                const rowsLeft = Array.from(techRowsContainer.children);
+                if (animateChanges && rowsLeft.length > 0) {
+                    rowsLeft.forEach((row) => A5Motion.exitTechRow(row, () => row.remove()));
+                    const sAnim = A5Motion.animate(
+                        techSectionEl,
+                        [{ opacity: 1, transform: "translateX(0)" }, { opacity: 0, transform: "translateX(36px)" }],
+                        { duration: 360, easing: MOTION_EASE }
+                    );
+                    techSectionEl._sectionExitAnim = sAnim;
+                    if (sAnim) {
+                        sAnim.onfinish = () => {
+                            techSectionEl._sectionExitAnim = null;
+                            techSectionEl.classList.add("hidden");
+                            techSectionEl.classList.remove("flex");
+                        };
                     } else {
-                        headerBadgeHTML = `
-                            <span class="bg-sky-500 text-slate-950 font-black text-xs px-3.5 py-1 rounded-full shadow-md shrink-0">
-                                🔬 ${orcCount} Orç. • 🔧 ${manCount} Fin.
-                            </span>
-                        `;
+                        techSectionEl.classList.add("hidden");
+                        techSectionEl.classList.remove("flex");
                     }
-
-                    return `
-                        <div class="tv-tech-row rounded-2xl border border-sky-500/35 bg-slate-900/70 shadow-xl overflow-hidden transition">
-                            <!-- Cabeçalho do Técnico (Faixa Horizontal) -->
-                            <div class="px-5 py-3 bg-sky-950/60 border-b border-sky-500/25 flex items-center justify-between gap-3">
-                                <div class="flex items-center gap-3 truncate">
-                                    <span class="text-xl">👨‍🔧</span>
-                                    <span class="font-black text-base tracking-wide uppercase text-white truncate">${esc(tech.title)}</span>
-                                </div>
-                                ${headerBadgeHTML}
-                            </div>
-
-                            <!-- Cartões da Balança selecionada pelo Técnico (Dispostos Horizontalmente) -->
-                            <div class="p-3.5 flex flex-row gap-3.5 overflow-x-auto items-stretch custom-scrollbar">
-                                ${cards.map(c => renderTvCardHTML(c, true)).join("")}
-                            </div>
-                        </div>
-                    `;
-                }).join("");
-
-                techAreaHTML = `
-                    <div class="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-                        <!-- Top Bar das Bancadas Ativas -->
-                        <div id="tvTechHeaderBar" class="tv-tech-summary mb-3 px-5 py-3 rounded-2xl bg-white/[0.03] border border-sky-500/20 flex flex-wrap items-center justify-between gap-2 shrink-0 shadow-sm">
-                            <div class="flex items-center gap-2.5">
-                                <span class="text-xl">🔧</span>
-                                <span class="font-black text-sm tracking-wider uppercase text-white">BANCADAS EM ATENDIMENTO</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-xs font-bold">
-                                <span class="px-3.5 py-1 rounded-xl bg-sky-500/15 text-sky-300 border border-sky-500/30 font-black shadow-sm">
-                                    📊 ${totalInTech} balança(s) selecionada(s)
-                                </span>
-                                <span class="px-3.5 py-1 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold shadow-sm">
-                                    👨‍🔧 ${activeTechLists.length} ${activeTechLists.length === 1 ? 'técnico atendendo' : 'técnicos atendendo'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Lista Horizontal dos Técnicos que Selecionaram Balanças -->
-                        <div class="flex-1 overflow-y-auto space-y-3.5 pr-1 custom-scrollbar">
-                            ${techRowsHTML}
-                        </div>
-                    </div>
-                `;
+                } else {
+                    techRowsContainer.innerHTML = "";
+                    techSectionEl.classList.add("hidden");
+                    techSectionEl.classList.remove("flex");
+                }
             }
 
-            container.innerHTML = orcColHTML + aprColHTML + naoAutColHTML + techAreaHTML;
+            if (hasActiveTechs) {
+                const activeTechKeys = new Set(activeTechLists.map(t => String(t.id || t.title)));
+
+                // 1. Saída animada do técnico quando suas balanças chegam a 0
+                Array.from(techRowsContainer.children).forEach((rowEl) => {
+                    const tKey = rowEl.dataset.techKey;
+                    if (!tKey) return;
+                    if (!activeTechKeys.has(tKey) && rowEl.dataset.exiting !== "1") {
+                        if (animateChanges) {
+                            A5Motion.exitTechRow(rowEl, () => rowEl.remove());
+                        } else {
+                            rowEl.remove();
+                        }
+                    }
+                });
+
+                // 2. Entrada animada (ou atualização) de cada técnico ativo
+                activeTechLists.forEach((tech) => {
+                    const tKey = String(tech.id || tech.title);
+                    const cards = sortCards(tech.cards);
+                    let rowEl = techRowsContainer.querySelector(`[data-tech-key="${CSS.escape(tKey)}"]`);
+
+                    if (!rowEl) {
+                        rowEl = document.createElement("div");
+                        rowEl.dataset.techKey = tKey;
+                        rowEl.className = "tv-tech-row overflow-hidden";
+                        rowEl.innerHTML = `
+                            <div class="px-3.5 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2.5 truncate">
+                                    <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white font-black text-[11px] flex items-center justify-center shadow-sm shadow-sky-500/25 shrink-0" data-tech-initials></span>
+                                    <span class="font-black text-sm tracking-wide uppercase truncate" data-tech-title></span>
+                                </div>
+                                <div data-tech-badge></div>
+                            </div>
+                            <div class="p-2 flex flex-row gap-2.5 overflow-x-auto items-stretch custom-scrollbar" data-tech-cards></div>
+                        `;
+                        rowEl.querySelector("[data-tech-initials]").textContent = getInitials(tech.title);
+                        rowEl.querySelector("[data-tech-title]").textContent = tech.title;
+                        rowEl.querySelector("[data-tech-badge]").innerHTML = getTechHeaderBadgeHTML(cards);
+                        techRowsContainer.appendChild(rowEl);
+                        syncCardList(rowEl.querySelector("[data-tech-cards]"), cards, true, null, false);
+                        if (animateChanges) {
+                            A5Motion.enterTechRow(rowEl, true);
+                        }
+                    } else {
+                        const wasExiting = rowEl.dataset.exiting === "1";
+                        rowEl.querySelector("[data-tech-initials]").textContent = getInitials(tech.title);
+                        rowEl.querySelector("[data-tech-title]").textContent = tech.title;
+                        rowEl.querySelector("[data-tech-badge]").innerHTML = getTechHeaderBadgeHTML(cards);
+                        techRowsContainer.appendChild(rowEl);
+                        if (wasExiting && animateChanges) {
+                            A5Motion.enterTechRow(rowEl, true);
+                        }
+                        syncCardList(rowEl.querySelector("[data-tech-cards]"), cards, true, null, animateChanges);
+                    }
+                });
+            }
+
+            tvBoardInitialized = true;
             refreshLucide();
         }
 
@@ -1038,11 +1397,15 @@
             if (!boardData.lists) return;
 
             const activeCards = [];
-            boardData.lists.forEach(l => l.cards.forEach(c => {
-                if (c.timer_end_at) activeCards.push(c);
-            }));
+            boardData.lists.forEach(l => l.cards.forEach(c => { if (c.timer_end_at) activeCards.push(c); }));
 
-            bar.innerHTML = "";
+            const activeKeys = new Set(activeCards.map(c => String(c.os_number)));
+            Array.from(bar.children).forEach((el) => {
+                if (!activeKeys.has(el.dataset.timerOs)) {
+                    el.remove();
+                }
+            });
+
             activeCards.forEach(c => {
                 const endMs = new Date(c.timer_end_at).getTime();
                 const diffSec = Math.floor((endMs - Date.now()) / 1000);
@@ -1054,52 +1417,63 @@
                         label: c.timer_label || "Estufa"
                     });
                     c.timer_end_at = null;
+                    const oldChip = bar.querySelector(`[data-timer-os="${CSS.escape(String(c.os_number))}"]`);
+                    if (oldChip) oldChip.remove();
                 } else {
+                    if (!timerInitialMaxSec[c.os_number] || diffSec > timerInitialMaxSec[c.os_number]) {
+                        timerInitialMaxSec[c.os_number] = Math.max(diffSec, 60);
+                    }
+                    const pct = Math.max(5, Math.min(100, Math.round((diffSec / timerInitialMaxSec[c.os_number]) * 100)));
                     const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
                     const secs = String(diffSec % 60).padStart(2, "0");
-                    bar.innerHTML += `
-                        <div class="bg-sky-500/15 border border-sky-400/50 text-sky-300 px-3 py-1 rounded-xl flex items-center gap-2 text-xs font-black">
-                            <span>⏱️ O.S. ${esc(c.os_number)} (${esc(c.timer_label || 'Estufa')}):</span>
-                            <span class="text-base text-white">${mins}:${secs}</span>
-                        </div>
-                    `;
+
+                    let chip = bar.querySelector(`[data-timer-os="${CSS.escape(String(c.os_number))}"]`);
+                    if (!chip) {
+                        chip = document.createElement("div");
+                        chip.dataset.timerOs = String(c.os_number);
+                        chip.className = "tv-pill-tile px-3 py-1 flex flex-col gap-0.5 min-w-[180px] border-sky-400/50 shadow-sm";
+                        chip.innerHTML = `
+                            <div class="flex items-center justify-between gap-2 text-[11px] font-extrabold">
+                                <span class="text-sky-700 dark:text-sky-200 truncate" data-t-label></span>
+                                <span class="font-mono text-xs tabular-nums text-sky-600 dark:text-sky-300" data-t-time></span>
+                            </div>
+                            <div class="w-full h-1 ember-hatch rounded-full overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] to-[#0EA5E9]" data-t-bar></div>
+                            </div>
+                        `;
+                        bar.appendChild(chip);
+                        A5Motion.enterCard(chip, 0);
+                    }
+                    chip.querySelector("[data-t-label]").textContent = `⏱️ O.S. ${c.os_number} (${c.timer_label || 'Estufa'})`;
+                    chip.querySelector("[data-t-time]").textContent = `${mins}:${secs}`;
+                    chip.querySelector("[data-t-bar]").style.width = `${pct}%`;
                 }
             });
         }
 
         // =====================================================================
-        // [L-17] YOUTUBE DA OFICINA: STREAM NATIVO SEM ANÚNCIOS, PESQUISA E AUDIO DUCKING REAL
+        // YOUTUBE PLAYER NATIVO SEM ANÚNCIOS + AUDIO DUCKING REAL + MOTION RISE
         // =====================================================================
         function extractCleanYouTubeId(input) {
             if (!input) return null;
             let str = String(input).trim();
             const urlMatch = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?v=|watch\?.+&v=))([\w-]{11})/i);
-            if (urlMatch && urlMatch[1]) {
-                return urlMatch[1];
-            }
+            if (urlMatch && urlMatch[1]) return urlMatch[1];
             if (str.includes("?")) str = str.split("?")[0];
             if (str.includes("&")) str = str.split("&")[0];
             const idMatch = str.match(/^([a-zA-Z0-9_-]{11})$/);
-            if (idMatch && idMatch[1]) {
-                return idMatch[1];
-            }
-            return null;
+            return idMatch ? idMatch[1] : null;
         }
 
         let ytSavedVolume = parseInt(localStorage.getItem("a5_yt_vol") || "80", 10);
         let ytWasPlaying = false;
         let isAudioDucked = false;
         let activeAnnouncement = false;
-        let activeTts = false;
         let duckingSafetyTimer = null;
         let isYtLoading = false;
-
-        // Fila de reprodução contínua e resultados de pesquisa
         let lastYtSearchResults = [];
         let ytQueue = [];
         let ytQueueIndex = 0;
-
-        // Padrão: Kamisa 10 (Não É Exagero - Ao Vivo)
         let currentYtVideoId = extractCleanYouTubeId(localStorage.getItem("a5_yt_video_id")) || "GrH68P0o60U";
 
         const YT_PRESETS = {
@@ -1108,17 +1482,9 @@
                 name: "🎤 Kamisa 10 (Ao Vivo)",
                 channel: "Kamisa 10",
                 queue: [
-                    { id: "GrH68P0o60U", title: "Não É Exagero | Kamisa 10 (Na Vibe do K10 RJ - Pagode Ao Vivo)", channel: "Kamisa 10" },
-                    { id: "TJ-WAgH5hpk", title: "Kamisa 10 - HOJE TEM FOLGA (ITATIAIA) - Show Completo", channel: "Kamisa 10" },
-                    { id: "pBb_87eaPDE", title: "KAMISA 10 • A Maior Roda de Samba do Mundo • Ao Vivo", channel: "Piatã FM" }
-                ]
-            },
-            sertanejo: {
-                id: "GrH68P0o60U",
-                name: "🎤 Kamisa 10 (Ao Vivo)",
-                channel: "Kamisa 10",
-                queue: [
-                    { id: "GrH68P0o60U", title: "Não É Exagero | Kamisa 10 (Na Vibe do K10 RJ - Pagode Ao Vivo)", channel: "Kamisa 10" }
+                    { id: "GrH68P0o60U", title: "Não É Exagero | Kamisa 10 (Ao Vivo)", channel: "Kamisa 10" },
+                    { id: "TJ-WAgH5hpk", title: "Kamisa 10 - HOJE TEM FOLGA", channel: "Kamisa 10" },
+                    { id: "pBb_87eaPDE", title: "KAMISA 10 • Roda de Samba", channel: "Piatã FM" }
                 ]
             },
             rock: {
@@ -1126,17 +1492,17 @@
                 name: "🎸 Rock Clássico (Mix)",
                 channel: "Classic Rock",
                 queue: [
-                    { id: "erfv9QasZAw", title: "Classic Rock Songs 70s 80s 90s Playlist (1h46m)", channel: "Classic Rock" },
-                    { id: "fJ9rUzIMcZQ", title: "Queen – Bohemian Rhapsody (Official Video)", channel: "Queen Official" }
+                    { id: "erfv9QasZAw", title: "Classic Rock Songs 70s 80s 90s Playlist", channel: "Classic Rock" },
+                    { id: "fJ9rUzIMcZQ", title: "Queen – Bohemian Rhapsody", channel: "Queen Official" }
                 ]
             },
             lofi: {
                 id: "lTRiuFIWV54",
-                name: "☕ Lo-Fi Hip Hop Oficina",
+                name: "☕ Lo-Fi Oficina",
                 channel: "Lofi Girl",
                 queue: [
-                    { id: "lTRiuFIWV54", title: "1 A.M Study Session • [lofi hip hop/chill beats]", channel: "Lofi Girl" },
-                    { id: "CFGLoQIhmow", title: "lofi hip hop mix • beats to relax/study to", channel: "Lofi Hip Hop" }
+                    { id: "lTRiuFIWV54", title: "1 A.M Study Session • lofi beats", channel: "Lofi Girl" },
+                    { id: "CFGLoQIhmow", title: "lofi hip hop mix", channel: "Lofi Hip Hop" }
                 ]
             },
             flashback: {
@@ -1144,15 +1510,13 @@
                 name: "📻 Flashback Anos 80/90",
                 channel: "Flashback Hits",
                 queue: [
-                    { id: "JcrBHxWHX74", title: "ANOS 80 PARA DANÇAR • Flashback Anos 80 e 90 (2h07m)", channel: "Flashback Hits" },
-                    { id: "djV11Xbc914", title: "a-ha - Take On Me (Official Video)", channel: "a-ha" }
+                    { id: "JcrBHxWHX74", title: "Flashback Anos 80 e 90", channel: "Flashback Hits" },
+                    { id: "djV11Xbc914", title: "a-ha - Take On Me", channel: "a-ha" }
                 ]
             }
         };
 
-        function getYtNativeVideo() {
-            return document.getElementById("ytNativeVideo");
-        }
+        function getYtNativeVideo() { return document.getElementById("ytNativeVideo"); }
 
         function setupYtNativePlayerEvents() {
             const video = getYtNativeVideo();
@@ -1169,33 +1533,20 @@
 
             video.addEventListener("playing", () => {
                 isYtLoading = false;
-                const loading = document.getElementById("ytLoadingOverlay");
-                const placeholder = document.getElementById("ytPlaceholder");
-                if (loading) loading.classList.add("hidden");
-                if (placeholder) placeholder.classList.add("hidden");
+                document.getElementById("ytLoadingOverlay")?.classList.add("hidden");
+                document.getElementById("ytPlaceholder")?.classList.add("hidden");
                 updateYtUiState();
             });
-
-            video.addEventListener("pause", () => {
-                updateYtUiState();
-            });
-
-            video.addEventListener("waiting", () => {
-                updateYtUiState();
-            });
-
-            video.addEventListener("ended", () => {
-                playNextYtTrack();
-            });
-
+            video.addEventListener("pause", updateYtUiState);
+            video.addEventListener("waiting", updateYtUiState);
+            video.addEventListener("ended", playNextYtTrack);
             video.addEventListener("error", () => {
                 isYtLoading = false;
-                const loading = document.getElementById("ytLoadingOverlay");
-                if (loading) loading.classList.add("hidden");
+                document.getElementById("ytLoadingOverlay")?.classList.add("hidden");
                 const statusBadge = document.getElementById("ytStatusBadge");
                 if (statusBadge) {
                     statusBadge.textContent = "Tente outra faixa";
-                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300";
+                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-500 border border-rose-500/30";
                 }
             });
         }
@@ -1205,19 +1556,15 @@
             const cleanId = extractCleanYouTubeId(videoId) || "GrH68P0o60U";
             currentYtVideoId = cleanId;
             localStorage.setItem("a5_yt_video_id", cleanId);
-
             const video = getYtNativeVideo();
             if (!video) return;
 
-            const placeholder = document.getElementById("ytPlaceholder");
-            const loading = document.getElementById("ytLoadingOverlay");
+            document.getElementById("ytPlaceholder")?.classList.add("hidden");
+            document.getElementById("ytLoadingOverlay")?.classList.remove("hidden");
             const loadingTitle = document.getElementById("ytLoadingTitle");
             const nowTitle = document.getElementById("ytNowPlayingTitle");
             const nowChannel = document.getElementById("ytNowPlayingChannel");
             const miniTitle = document.getElementById("ytMiniTitle");
-
-            if (placeholder) placeholder.classList.add("hidden");
-            if (loading) loading.classList.remove("hidden");
             if (loadingTitle) loadingTitle.textContent = fallbackTitle || "Carregando música do YouTube...";
             if (fallbackTitle && nowTitle) nowTitle.textContent = fallbackTitle;
             if (fallbackChannel && nowChannel) nowChannel.textContent = fallbackChannel;
@@ -1225,37 +1572,28 @@
 
             isYtLoading = true;
             updateYtUiState();
-
             try {
                 const res = await fetch(`/api/youtube/info/${encodeURIComponent(cleanId)}`);
                 const data = await res.json();
-                if (!res.ok || !data.video) {
-                    throw new Error(data.error || "Vídeo indisponível");
-                }
-
+                if (!res.ok || !data.video) throw new Error(data.error || "Vídeo indisponível");
                 const v = data.video;
                 if (nowTitle) nowTitle.textContent = v.title;
                 if (nowChannel) nowChannel.textContent = `${v.channel || "YouTube"} • ${v.duration_str || ""}`;
-                if (miniTitle) {
-                    miniTitle.textContent = v.title;
-                    miniTitle.title = v.title;
-                }
-
+                if (miniTitle) miniTitle.textContent = v.title;
                 video.poster = v.thumbnail || "";
                 video.src = v.stream_url;
                 video.volume = isAudioDucked ? 0 : Math.max(0, Math.min(1, ytSavedVolume / 100));
-
                 await video.play();
             } catch (err) {
-                console.warn("Erro ao reproduzir vídeo do YouTube:", err);
                 isYtLoading = false;
-                if (loading) loading.classList.add("hidden");
-                const statusBadge = document.getElementById("ytStatusBadge");
-                if (statusBadge) {
-                    statusBadge.textContent = "Erro ao abrir";
-                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300";
-                }
+                document.getElementById("ytLoadingOverlay")?.classList.add("hidden");
             }
+        }
+
+        function setEqBarsPlaying(playing) {
+            document.querySelectorAll("#ytEqBars .eq-bar").forEach((bar) => {
+                bar.classList.toggle("eq-bar-paused", !playing);
+            });
         }
 
         function updateYtUiState() {
@@ -1264,47 +1602,30 @@
             const badgeDot = document.getElementById("ytBadgeDot");
             const statusBadge = document.getElementById("ytStatusBadge");
             const miniStatusDot = document.getElementById("ytMiniStatusDot");
-
             if (!video) return;
 
             if (isAudioDucked) {
+                setEqBarsPlaying(false);
                 if (playBtn) playBtn.innerHTML = "<span>🔇 Silenciado</span>";
-                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping transition-colors";
-                if (statusBadge) {
-                    statusBadge.textContent = "Silenciado (Alerta)";
-                    statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/25 text-rose-300 animate-pulse";
-                }
-                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                if (statusBadge) { statusBadge.textContent = "Silenciado"; statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-400/35 animate-pulse"; }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
             } else if (isYtLoading) {
+                setEqBarsPlaying(false);
                 if (playBtn) playBtn.innerHTML = "<span>⏳ Abrindo...</span>";
-                if (statusBadge) {
-                    statusBadge.textContent = "Carregando...";
-                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 animate-pulse";
-                }
+                if (statusBadge) { statusBadge.textContent = "Carregando"; statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-600 dark:text-sky-300 border border-sky-400/35 animate-pulse"; }
             } else if (!video.paused && !video.ended && video.readyState >= 2) {
+                setEqBarsPlaying(true);
                 if (playBtn) playBtn.innerHTML = "<span>⏸️ Pausar</span>";
-                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/50 transition-colors";
-                if (statusBadge) {
-                    statusBadge.textContent = "Tocando";
-                    statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300";
-                }
-                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-            } else if (video.src && video.paused && video.currentTime > 0) {
-                if (playBtn) playBtn.innerHTML = "<span>▶️ Tocar</span>";
-                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-amber-400 transition-colors";
-                if (statusBadge) {
-                    statusBadge.textContent = "Pausado";
-                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300";
-                }
-                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-amber-400";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
+                if (statusBadge) { statusBadge.textContent = "Tocando"; statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-700 dark:text-sky-200 border border-sky-400/40"; }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
             } else {
+                setEqBarsPlaying(false);
                 if (playBtn) playBtn.innerHTML = "<span>▶️ Tocar</span>";
-                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-slate-500 transition-colors";
-                if (statusBadge) {
-                    statusBadge.textContent = "Pronto";
-                    statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400";
-                }
-                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-slate-500";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-slate-400 dark:bg-sky-800";
+                if (statusBadge) { statusBadge.textContent = video.src ? "Pausado" : "Pronto"; statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/30"; }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-slate-400";
             }
         }
 
@@ -1312,117 +1633,75 @@
             setupYtNativePlayerEvents();
             const video = getYtNativeVideo();
             if (!video) return;
-
             if (!video.src || video.src === window.location.href) {
                 playYouTubeVideo(currentYtVideoId, "🎤 Kamisa 10 (Ao Vivo)", "Kamisa 10");
                 return;
             }
-
-            if (!video.paused) {
-                video.pause();
-            } else {
-                const placeholder = document.getElementById("ytPlaceholder");
-                if (placeholder) placeholder.classList.add("hidden");
-                video.play().catch(() => {
-                    playYouTubeVideo(currentYtVideoId);
-                });
+            if (!video.paused) video.pause();
+            else {
+                document.getElementById("ytPlaceholder")?.classList.add("hidden");
+                video.play().catch(() => playYouTubeVideo(currentYtVideoId));
             }
         }
 
         function changeYtVolume(vol) {
             ytSavedVolume = parseInt(vol, 10);
             localStorage.setItem("a5_yt_vol", ytSavedVolume);
-            const volText = document.getElementById("ytVolVal");
-            const miniVol = document.getElementById("ytMiniVol");
-            if (volText) volText.textContent = ytSavedVolume + "%";
-            if (miniVol) miniVol.textContent = "Vol: " + ytSavedVolume + "%";
-
+            document.getElementById("ytVolVal").textContent = ytSavedVolume + "%";
+            document.getElementById("ytMiniVol").textContent = "Vol: " + ytSavedVolume + "%";
             const video = getYtNativeVideo();
-            if (video && !isAudioDucked) {
-                video.volume = Math.max(0, Math.min(1, ytSavedVolume / 100));
-            }
+            if (video && !isAudioDucked) video.volume = Math.max(0, Math.min(1, ytSavedVolume / 100));
         }
 
         function playYtPreset(key) {
             const preset = YT_PRESETS[key] || YT_PRESETS.kamisa10;
-            if (!preset) return;
             ytQueue = Array.isArray(preset.queue) ? preset.queue.slice() : [{ id: preset.id, title: preset.name, channel: preset.channel }];
             ytQueueIndex = 0;
-            const first = ytQueue[0];
-            playYouTubeVideo(first.id, first.title, first.channel);
+            playYouTubeVideo(ytQueue[0].id, ytQueue[0].title, ytQueue[0].channel);
         }
 
         function playNextYtTrack() {
-            if (!ytQueue || ytQueue.length === 0) {
-                playYtPreset("kamisa10");
-                return;
-            }
+            if (!ytQueue || ytQueue.length === 0) return playYtPreset("kamisa10");
             ytQueueIndex = (ytQueueIndex + 1) % ytQueue.length;
             const next = ytQueue[ytQueueIndex];
-            if (next && next.id) {
-                playYouTubeVideo(next.id, next.title, next.channel);
-            }
+            if (next?.id) playYouTubeVideo(next.id, next.title, next.channel);
         }
 
-        // =====================================================================
-        // PESQUISA DE MÚSICAS NO YOUTUBE EM TEMPO REAL
-        // =====================================================================
         async function searchYouTubeMusic() {
             const input = document.getElementById("ytSearchInput");
             const btn = document.getElementById("ytSearchBtn");
             const wrap = document.getElementById("ytSearchResultsWrap");
             const listEl = document.getElementById("ytSearchResultsList");
             if (!input || !input.value.trim()) return;
-
             const q = input.value.trim();
 
-            // Se o usuário colou direto um link do YouTube, toca imediatamente
             const directId = extractCleanYouTubeId(q);
             if (directId && (q.includes("youtu") || q.length === 11)) {
-                playYouTubeVideo(directId, "Carregando vídeo do YouTube...", "YouTube");
+                playYouTubeVideo(directId, "Carregando vídeo...", "YouTube");
                 input.value = "";
                 return;
             }
-
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = "⏳...";
-            }
-            if (wrap) wrap.classList.remove("hidden");
-            if (listEl) {
-                listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400 animate-pulse">🔍 Pesquisando "${esc(q)}" no YouTube...</div>`;
-            }
-
+            btn.disabled = true; btn.textContent = "⏳";
+            wrap.classList.remove("hidden");
+            listEl.innerHTML = `<div class="yt-muted text-center py-3 text-[11px] animate-pulse">🔍 Pesquisando "${esc(q)}"...</div>`;
             try {
                 const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(q)}&limit=8`);
                 const data = await res.json();
-                const results = data.results || [];
-                lastYtSearchResults = results;
-
-                if (results.length === 0) {
-                    listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-slate-400">Nenhuma música encontrada para "${esc(q)}".</div>`;
-                } else {
-                    listEl.innerHTML = results.map((item, idx) => `
-                        <button type="button" onclick="selectSearchedYtTrack(${idx})"
-                                class="yt-search-item w-full p-1.5 rounded-xl border border-white/10 bg-slate-900/90 hover:bg-rose-500/20 hover:border-rose-500/50 flex items-center gap-2.5 text-left transition group">
-                            <img src="${esc(item.thumbnail)}" alt="" class="w-14 h-10 rounded-lg object-cover shrink-0 bg-slate-800 border border-white/10">
+                lastYtSearchResults = data.results || [];
+                listEl.innerHTML = lastYtSearchResults.length === 0
+                    ? `<div class="yt-muted text-center py-3 text-[11px]">Nenhum resultado.</div>`
+                    : lastYtSearchResults.map((item, idx) => `
+                        <button type="button" onclick="selectSearchedYtTrack(${idx})" class="yt-search-item w-full p-1.5 rounded-xl flex items-center gap-2 text-left transition cursor-pointer">
+                            <img src="${esc(item.thumbnail)}" alt="" class="w-11 h-8 rounded-lg object-cover shrink-0 border border-sky-400/20">
                             <div class="min-w-0 flex-1">
-                                <div class="text-[11px] font-bold text-white group-hover:text-rose-200 line-clamp-1">${esc(item.title)}</div>
-                                <div class="text-[10px] text-slate-400 truncate">${esc(item.channel)} • <span class="text-rose-300 font-mono">${esc(item.duration)}</span></div>
+                                <div class="text-[11px] font-extrabold line-clamp-1">${esc(item.title)}</div>
+                                <div class="yt-muted text-[9.5px] truncate mt-0.5">${esc(item.channel)} • <span class="font-mono font-bold text-sky-600 dark:text-sky-300">${esc(item.duration)}</span></div>
                             </div>
-                            <span class="text-xs px-1.5 py-0.5 rounded bg-rose-600/80 text-white font-black shrink-0">▶️</span>
-                        </button>
-                    `).join("");
-                }
-            } catch (err) {
-                if (listEl) {
-                    listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-rose-400">Erro ao pesquisar no YouTube.</div>`;
-                }
+                        </button>`).join("");
+            } catch (e) {
+                listEl.innerHTML = `<div class="text-center py-3 text-[11px] text-rose-500 font-bold">Erro na busca.</div>`;
             } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.textContent = "Buscar";
-                }
+                btn.disabled = false; btn.textContent = "Buscar";
             }
         }
 
@@ -1433,202 +1712,129 @@
             ytQueueIndex = idx;
             playYouTubeVideo(item.id, item.title, item.channel);
         }
-
-        function closeYtSearchResults() {
-            const wrap = document.getElementById("ytSearchResultsWrap");
-            if (wrap) wrap.classList.add("hidden");
-        }
-
-        // =====================================================================
-        // CONTA YOUTUBE PREMIUM / LOGIN DO NAVEGADOR
-        // =====================================================================
+        function closeYtSearchResults() { document.getElementById("ytSearchResultsWrap")?.classList.add("hidden"); }
         function toggleYtAccountPanel() {
             const panel = document.getElementById("ytAccountPanel");
             if (!panel) return;
+            const willShow = panel.classList.contains("hidden");
             panel.classList.toggle("hidden");
+            if (willShow) A5Motion.enterCard(panel, 0);
         }
-
         function openYouTubeLoginPopup() {
-            const w = 520, h = 640;
-            const left = Math.max(0, (window.screen.width - w) / 2);
-            const top = Math.max(0, (window.screen.height - h) / 2);
-            window.open(
-                "https://accounts.google.com/ServiceLogin?service=youtube&continue=https://www.youtube.com",
-                "YouTubePremiumLogin",
-                `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes,status=no`
-            );
-            const msg = document.getElementById("ytAccountStatusMsg");
-            if (msg) {
-                msg.textContent = "🔑 Faça login na janela aberta e depois clique em Vincular Firefox ou Chrome/Edge.";
-                msg.classList.remove("hidden");
-            }
+            window.open("https://accounts.google.com/ServiceLogin?service=youtube&continue=https://www.youtube.com", "YouTubePremiumLogin", "width=520,height=640");
         }
-
         async function syncYouTubeBrowserAccount(browserName) {
             const msg = document.getElementById("ytAccountStatusMsg");
-            const badge = document.getElementById("ytAccountActiveBadge");
-            if (msg) {
-                msg.textContent = `⏳ Sincronizando sessão YouTube Premium do ${browserName.toUpperCase()}...`;
-                msg.classList.remove("hidden");
-            }
+            if (msg) { msg.textContent = `⏳ Vinculando ${browserName}...`; msg.classList.remove("hidden"); }
             try {
-                const res = await fetch("/api/youtube/account", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ mode: "browser_cookies", browser: browserName })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    if (msg) msg.textContent = `✅ Conta vinculada (${browserName.toUpperCase()}) • Stream Premium Sem Anúncios Ativo!`;
-                    if (badge) badge.textContent = `👑 ${browserName.toUpperCase()} Vinculado`;
-                }
-            } catch (e) {
-                if (msg) msg.textContent = "✅ Motor Direto Sem Anúncios Ativo!";
-            }
+                const res = await fetch("/api/youtube/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "browser_cookies", browser: browserName }) });
+                if (res.ok && msg) msg.textContent = `✅ Conta vinculada (${browserName.toUpperCase()})!`;
+            } catch {}
         }
-
         function toggleYtVideoVisibility(hideVideo) {
             const wrap = document.getElementById("ytPlayerContainerWrap");
-            if (wrap) {
-                wrap.style.display = hideVideo ? "none" : "block";
-            }
+            if (wrap) wrap.style.display = hideVideo ? "none" : "block";
             localStorage.setItem("a5_yt_hide_video", hideVideo ? "1" : "0");
+        }
+
+        function openYtWidgetMotion() {
+            const widget = document.getElementById("ytFloatingWidget");
+            const pill = document.getElementById("ytMiniPill");
+            if (!widget) return;
+            if (pill && !pill.classList.contains("hidden")) {
+                A5Motion.sinkDown(pill, 16, () => {
+                    pill.classList.add("hidden");
+                    pill.classList.remove("flex");
+                });
+            }
+            widget.classList.remove("hidden");
+            widget.classList.add("flex");
+            refreshLucide();
+            A5Motion.riseUp(widget, 42);
+            widget.querySelectorAll(".yt-stagger").forEach((sec, idx) => {
+                A5Motion.animate(
+                    sec,
+                    [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }],
+                    { duration: 300, delay: 70 + idx * 45, easing: MOTION_EASE }
+                );
+            });
+        }
+
+        function closeYtWidgetMotion(showMiniPill) {
+            const widget = document.getElementById("ytFloatingWidget");
+            const pill = document.getElementById("ytMiniPill");
+            if (!widget) return;
+            A5Motion.sinkDown(widget, 30, () => {
+                widget.classList.add("hidden");
+                widget.classList.remove("flex");
+                if (showMiniPill && pill) {
+                    pill.classList.remove("hidden");
+                    pill.classList.add("flex");
+                    refreshLucide();
+                    A5Motion.riseUp(pill, 18);
+                }
+            });
         }
 
         function toggleYtPlayerModal() {
             setupYtNativePlayerEvents();
             const widget = document.getElementById("ytFloatingWidget");
-            const pill = document.getElementById("ytMiniPill");
-            if (!widget) return;
-            const isHidden = widget.classList.contains("hidden");
-            if (isHidden) {
-                widget.classList.remove("hidden");
-                if (pill) pill.classList.add("hidden");
+            if (widget.classList.contains("hidden")) {
+                openYtWidgetMotion();
             } else {
-                widget.classList.add("hidden");
-                const video = getYtNativeVideo();
-                if (video && !video.paused && pill) {
-                    pill.classList.remove("hidden");
-                    pill.classList.add("flex");
-                }
+                const v = getYtNativeVideo();
+                closeYtWidgetMotion(Boolean(v && !v.paused));
             }
         }
-
         function minimizeYtWidget() {
-            const widget = document.getElementById("ytFloatingWidget");
-            const pill = document.getElementById("ytMiniPill");
-            if (widget) widget.classList.add("hidden");
-            if (pill) {
-                pill.classList.remove("hidden");
-                pill.classList.add("flex");
-            }
+            closeYtWidgetMotion(true);
         }
-
         function restoreYtWidget() {
-            const widget = document.getElementById("ytFloatingWidget");
-            const pill = document.getElementById("ytMiniPill");
-            if (widget) widget.classList.remove("hidden");
-            if (pill) {
-                pill.classList.add("hidden");
-                pill.classList.remove("flex");
-            }
+            openYtWidgetMotion();
         }
-
         if (localStorage.getItem("a5_yt_hide_video") === "1") {
             const chk = document.getElementById("ytHideVideoChk");
             if (chk) chk.checked = true;
             toggleYtVideoVisibility(true);
         }
 
-        // =====================================================================
-        // MOTOR DE AUDIO DUCKING (SILENCIA YOUTUBE E ÁUDIO NOS ALERTAS)
-        // =====================================================================
         function setAudioDucking(active) {
             const indicator = document.getElementById("duckingIndicator");
             const video = getYtNativeVideo();
-
             if (active) {
                 if (!isAudioDucked) {
                     isAudioDucked = true;
-
-                    // 1. Silencia imediatamente o Player Nativo do YouTube da Oficina
                     if (video) {
                         try {
                             ytWasPlaying = !video.paused && !video.ended;
                             video.volume = 0;
-                            if (ytWasPlaying) {
-                                video.pause();
-                            }
+                            if (ytWasPlaying) video.pause();
                         } catch (e) {}
                     }
-
-                    // 2. Silencia quaisquer outros elementos HTML5 <audio> e <video>
-                    document.querySelectorAll("audio, video").forEach(media => {
-                        if (media === video) return;
-                        try {
-                            media._prevVol = media.volume;
-                            media.volume = 0;
-                            media.pause();
-                        } catch (err) {}
-                    });
                 }
-
-                if (indicator) {
-                    indicator.classList.remove("hidden");
-                    indicator.innerHTML = "🔇 <strong>YOUTUBE SILENCIADO</strong> • ALERTA DA OFICINA";
-                    indicator.className = "bg-rose-500/25 border border-rose-400 text-rose-300 px-3 py-1 rounded-xl text-xs font-black animate-pulse flex items-center gap-1.5 shadow-lg";
-                }
-
+                indicator?.classList.remove("hidden");
                 updateYtUiState();
-
-                // Trava de segurança: garante o retorno do áudio após no máximo 15s
                 clearTimeout(duckingSafetyTimer);
-                duckingSafetyTimer = setTimeout(() => {
-                    activeAnnouncement = false;
-                    activeTts = false;
-                    setAudioDucking(false);
-                }, 15000);
+                duckingSafetyTimer = setTimeout(() => { activeAnnouncement = false; setAudioDucking(false); }, 15000);
             } else {
                 if (isAudioDucked) {
                     isAudioDucked = false;
-
-                    // 1. Restaura o Player Nativo do YouTube da Oficina
                     if (video) {
                         try {
                             video.volume = Math.max(0, Math.min(1, ytSavedVolume / 100));
-                            if (ytWasPlaying) {
-                                video.play().catch(() => {});
-                            }
+                            if (ytWasPlaying) video.play().catch(() => {});
                         } catch (e) {}
                     }
-
-                    // 2. Restaura outros elementos HTML5
-                    document.querySelectorAll("audio, video").forEach(media => {
-                        if (media === video) return;
-                        try {
-                            media.volume = media._prevVol !== undefined ? media._prevVol : 1.0;
-                            if (ytWasPlaying) media.play().catch(() => {});
-                        } catch (err) {}
-                    });
                 }
-
-                if (indicator) {
-                    indicator.classList.add("hidden");
-                }
-
+                indicator?.classList.add("hidden");
                 updateYtUiState();
                 clearTimeout(duckingSafetyTimer);
             }
         }
 
         function checkEndAudioDucking() {
-            if (!activeAnnouncement && !activeTts) {
-                // Margem de 400ms para a voz ecoar antes da música voltar
-                setTimeout(() => {
-                    if (!activeAnnouncement && !activeTts) {
-                        setAudioDucking(false);
-                    }
-                }, 400);
+            if (!activeAnnouncement) {
+                setTimeout(() => { if (!activeAnnouncement) setAudioDucking(false); }, 400);
             }
         }
 
@@ -1636,65 +1842,24 @@
             if (tvMuted && !forcePlay) return;
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
-
             const now = audioCtx.currentTime;
-
-            if (type === "bell") {
-                playTone(587.33, now, 0.35, "sine");
-                playTone(440.00, now + 0.35, 0.55, "sine");
-            } else if (type === "urgent") {
-                playTone(880, now, 0.18, "square");
-                playTone(880, now + 0.25, 0.18, "square");
-                playTone(1046.5, now + 0.5, 0.35, "square");
-            } else if (type === "victory") {
-                playTone(523.25, now, 0.15, "triangle");
-                playTone(659.25, now + 0.15, 0.15, "triangle");
-                playTone(783.99, now + 0.30, 0.15, "triangle");
-                playTone(1046.50, now + 0.45, 0.55, "triangle");
-            }
+            if (type === "bell") { playTone(587.33, now, 0.35, "sine"); playTone(440.00, now + 0.35, 0.55, "sine"); }
+            else if (type === "urgent") { playTone(880, now, 0.18, "square"); playTone(880, now + 0.25, 0.18, "square"); playTone(1046.5, now + 0.5, 0.35, "square"); }
+            else if (type === "victory") { playTone(523.25, now, 0.15, "triangle"); playTone(659.25, now + 0.15, 0.15, "triangle"); playTone(783.99, now + 0.3, 0.15, "triangle"); playTone(1046.5, now + 0.45, 0.55, "triangle"); }
         }
-
         function playTone(freq, startTime, duration, waveType = "sine") {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = waveType;
-            osc.frequency.setValueAtTime(freq, startTime);
-            gain.gain.setValueAtTime(0.35, startTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(startTime);
-            osc.stop(startTime + duration);
-        }
-
-        let activeTtsUtterance = null;
-        let cachedVoices = [];
-
-        function initVoices() {
-            if ("speechSynthesis" in window) {
-                cachedVoices = window.speechSynthesis.getVoices() || [];
-            }
-        }
-        if ("speechSynthesis" in window) {
-            initVoices();
-            window.speechSynthesis.onvoiceschanged = initVoices;
-        }
-
-        function speakText(text, forcePriority = false) {
-            // Desativado: o sistema utiliza exclusivamente Edge-TTS Neural em alta definição
-            if ("speechSynthesis" in window) {
-                try { window.speechSynthesis.cancel(); } catch (e) {}
-            }
-            activeTts = false;
-            checkEndAudioDucking();
+            osc.type = waveType; osc.frequency.setValueAtTime(freq, startTime);
+            gain.gain.setValueAtTime(0.35, startTime); gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(startTime); osc.stop(startTime + duration);
         }
 
         function triggerTvAnnouncement(payload) {
-            // SILENCIA O YOUTUBE E O ÁUDIO IMEDIATAMENTE NO INÍCIO DO ALERTA
             activeAnnouncement = true;
             setAudioDucking(true);
-
-            const isPriorityAnnouncement = (payload.type === "director_call" || payload.type === "call_alert" || payload.type === "support_alert" || Boolean(payload.is_urgent));
+            const isPriority = ["director_call", "call_alert", "support_alert"].includes(payload.type) || Boolean(payload.is_urgent);
 
             const modal = document.getElementById("tvAnnouncementModal");
             const box = document.getElementById("tvAnnouncementBox");
@@ -1705,140 +1870,61 @@
             const extra = document.getElementById("annExtra");
 
             if (payload.type === "os_finished") {
-                box.className = "max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 border-emerald-500 bg-zinc-950/95 shadow-[0_0_80px_rgba(16,185,129,0.35)] overflow-hidden relative";
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-emerald-500/20 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-400 mb-2 animate-bounce"><i data-lucide="trophy" class="w-12 h-12"></i></div>`;
+                box.className = "ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 border-emerald-400 bg-[#071525]/95 shadow-[0_0_80px_rgba(16,185,129,0.35)]";
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-emerald-500/20 border-2 border-emerald-400/45 flex items-center justify-center text-emerald-400 animate-bounce"><i data-lucide="trophy" class="w-12 h-12"></i></div>`;
                 badge.textContent = "EQUIPAMENTO PRONTO E LACRADO";
-                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-3 bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30";
+                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-emerald-400 text-slate-950";
                 title.textContent = `O.S. ${payload.os_number} FINALIZADA!`;
-                title.className = "text-5xl md:text-6xl font-black font-mono tracking-tight mb-3 text-white break-words drop-shadow-md";
                 subtitle.textContent = payload.client_name;
-                subtitle.className = "text-2xl md:text-3xl font-extrabold text-emerald-400 uppercase mb-4 break-words";
-                extra.innerHTML = `
-                    <div class="flex flex-wrap items-center justify-center gap-3 text-sm font-semibold text-zinc-300">
-                        <span class="px-3.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
-                            <i data-lucide="user" class="w-4 h-4 text-emerald-400"></i>
-                            Técnico: <strong class="text-white">${esc(payload.tech_name || 'Oficina')}</strong>
-                        </span>
-                        <span class="px-3.5 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center gap-2">
-                            <i data-lucide="award" class="w-4 h-4 text-emerald-400"></i>
-                            Placar Hoje: <strong class="text-white">${payload.finished_today} balanças</strong>
-                        </span>
-                        ${payload.inmetro_seal ? `
-                            <span class="px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 flex items-center gap-2 text-emerald-300 font-mono">
-                                <i data-lucide="shield-check" class="w-4 h-4"></i>
-                                Lacre IPEM A5: <strong>${esc(payload.inmetro_seal)}</strong>
-                            </span>
-                        ` : ''}
-                    </div>
-                `;
-
-                playSynthesizedSound("victory", isPriorityAnnouncement);
+                subtitle.className = "text-2xl md:text-3xl font-extrabold text-emerald-300 uppercase mb-4 break-words";
+                extra.innerHTML = `<span class="px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/25 text-sm text-sky-100">Técnico: <strong>${esc(payload.tech_name || 'Oficina')}</strong> • Placar: <strong>${payload.finished_today}</strong></span>`;
+                playSynthesizedSound("victory", isPriority);
                 confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 } });
-            } else if (payload.type === "new_arrival") {
-                const isUrg = payload.is_urgent;
-                const borderCls = isUrg ? "border-amber-500 shadow-[0_0_80px_rgba(245,158,11,0.35)]" : "border-sky-500 shadow-[0_0_80px_rgba(14,165,233,0.3)]";
-                box.className = `max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 ${borderCls} bg-zinc-950/95 overflow-hidden relative`;
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-amber-500/20 border-2 border-amber-500/40 text-amber-400' : 'bg-sky-500/20 border-2 border-sky-500/40 text-sky-400'} flex items-center justify-center mb-2 animate-pulse"><i data-lucide="${isUrg ? 'alert-triangle' : 'bell'}" class="w-12 h-12"></i></div>`;
-                badge.textContent = isUrg ? `PRIORIDADE / ${payload.stage}` : `NOVA ENTRADA / ${payload.stage}`;
-                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-3 ${isUrg ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30' : 'bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/30'}`;
-                title.textContent = `O.S. ${payload.os_number}`;
-                title.className = "text-5xl md:text-6xl font-black font-mono tracking-tight mb-3 text-white break-words drop-shadow-md";
-                subtitle.textContent = payload.client_name;
-                subtitle.className = `text-2xl md:text-3xl font-extrabold ${isUrg ? 'text-amber-400' : 'text-sky-400'} uppercase mb-4 break-words`;
-                extra.innerHTML = payload.equipment_type ? `
-                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-sm font-semibold text-zinc-300">
-                        <i data-lucide="scale" class="w-4 h-4 text-sky-400"></i>
-                        <span>${esc(payload.equipment_type)}</span>
-                    </div>
-                ` : "";
-
-                playSynthesizedSound(isUrg ? "urgent" : "bell", isPriorityAnnouncement);
             } else if (payload.type === "director_call") {
                 const isUrg = payload.is_urgent;
-                const borderCls = isUrg ? "border-rose-500 shadow-[0_0_90px_rgba(244,63,94,0.5)]" : "border-amber-500 shadow-[0_0_80px_rgba(245,158,11,0.35)]";
-                box.className = `max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 ${borderCls} bg-zinc-950/95 overflow-hidden relative`;
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-rose-500/20 border-2 border-rose-500/40 text-rose-400' : 'bg-amber-500/20 border-2 border-amber-500/40 text-amber-400'} flex items-center justify-center mb-2 ${isUrg ? 'animate-bounce' : 'animate-pulse'}"><i data-lucide="${isUrg ? 'alert-octagon' : 'volume-2'}" class="w-12 h-12"></i></div>`;
+                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isUrg ? 'border-rose-500 shadow-[0_0_90px_rgba(244,63,94,0.5)]' : 'border-sky-400 shadow-[0_0_80px_rgba(56,189,248,0.38)]'} bg-[#071525]/95`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-rose-500/20 text-rose-400 animate-bounce' : 'bg-sky-400/20 text-sky-300 animate-pulse'} flex items-center justify-center"><i data-lucide="${isUrg ? 'alert-octagon' : 'volume-2'}" class="w-12 h-12"></i></div>`;
                 badge.textContent = isUrg ? "🚨 CHAMADO URGENTE DO SR. JACSON" : "📢 MENSAGEM DO SR. JACSON";
-                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-black uppercase tracking-widest mb-3 ${isUrg ? 'bg-rose-500 text-slate-950 shadow-lg shadow-rose-500/30 animate-pulse' : 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30'}`;
+                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-black uppercase tracking-widest ${isUrg ? 'bg-rose-500 text-white' : 'bg-sky-400 text-slate-950'}`;
                 title.textContent = payload.tech_name;
-                title.className = "text-5xl md:text-6xl font-black uppercase tracking-tight mb-3 text-white break-words drop-shadow-md";
                 subtitle.textContent = payload.reason || "Comparecer à Sala do Sr. Jacson";
-                subtitle.className = `text-2xl md:text-3xl font-extrabold ${isUrg ? 'text-rose-400' : 'text-amber-400'} uppercase mb-4 break-words`;
+                subtitle.className = `text-2xl md:text-3xl font-extrabold ${isUrg ? 'text-rose-400' : 'text-sky-300'} uppercase mb-4 break-words`;
                 extra.innerHTML = payload.is_voice_record
-                    ? `<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-sm font-bold text-amber-300 animate-pulse"><i data-lucide="mic" class="w-4 h-4"></i><span>Reproduzindo áudio gravado no microfone...</span></div>`
-                    : `<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300"><i data-lucide="user-check" class="w-3.5 h-3.5 text-amber-400"></i><span>${esc(payload.sender || 'Sr. Jacson')}</span></div>`;
-
+                    ? `<span class="px-4 py-1.5 rounded-full bg-sky-400/20 border border-sky-400/40 text-sm font-bold text-sky-200 animate-pulse">🎙️ Reproduzindo áudio da Diretoria...</span>`
+                    : `<span class="px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/25 text-xs text-sky-100">${esc(payload.sender || 'Sr. Jacson')}</span>`;
                 playSynthesizedSound(isUrg ? "urgent" : "bell", true);
-            } else if (payload.type === "call_alert") {
-                const isUrg = payload.is_urgent;
-                box.className = "max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 border-amber-500 bg-zinc-950/95 shadow-[0_0_80px_rgba(245,158,11,0.35)] overflow-hidden relative";
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-amber-500/20 border-2 border-amber-500/40 text-amber-400 flex items-center justify-center mb-2 animate-bounce"><i data-lucide="bell-ring" class="w-12 h-12"></i></div>`;
-                badge.textContent = "🔔 CHAMADO NA RECEPÇÃO";
-                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-black uppercase tracking-widest mb-3 bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30";
-                title.textContent = payload.tech_name;
-                title.className = "text-5xl md:text-6xl font-black uppercase tracking-tight mb-3 text-white break-words drop-shadow-md";
-                subtitle.textContent = payload.reason || "Comparecer na recepção";
-                subtitle.className = "text-2xl md:text-3xl font-extrabold text-amber-400 uppercase mb-4 break-words";
-                extra.innerHTML = `<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold text-zinc-300"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400"></i><span>Recepção / Atendimento</span></div>`;
-
-                playSynthesizedSound("urgent", true);
             } else {
-                box.className = "max-w-4xl w-full rounded-3xl p-8 md:p-12 text-center border-4 border-sky-500 bg-zinc-950/95 shadow-[0_0_80px_rgba(14,165,233,0.35)] overflow-hidden relative";
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-sky-500/20 border-2 border-sky-500/40 text-sky-400 flex items-center justify-center mb-2 animate-pulse"><i data-lucide="megaphone" class="w-12 h-12"></i></div>`;
-                badge.textContent = payload.title || "AVISO OPERACIONAL";
-                badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest mb-3 bg-sky-500 text-slate-950 shadow-lg shadow-sky-500/30";
+                const isCall = payload.type === "call_alert";
+                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isCall ? 'border-amber-400' : 'border-sky-400'} bg-[#071525]/95 shadow-[0_0_80px_rgba(56,189,248,0.35)]`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-sky-400/20 border-2 border-sky-400/40 flex items-center justify-center text-sky-300 animate-pulse"><i data-lucide="${isCall ? 'bell-ring' : 'bell'}" class="w-12 h-12"></i></div>`;
+                badge.textContent = isCall ? "🔔 CHAMADO NA RECEPÇÃO" : (payload.title || "ATUALIZAÇÃO NA ESTEIRA");
+                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest ${isCall ? 'bg-amber-400 text-slate-950' : 'bg-sky-400 text-slate-950'}`;
                 title.textContent = payload.os_number ? `O.S. ${payload.os_number}` : payload.tech_name;
-                title.className = "text-5xl md:text-6xl font-black uppercase tracking-tight mb-3 text-white break-words drop-shadow-md";
                 subtitle.textContent = payload.client_name || payload.reason || "";
-                subtitle.className = "text-2xl md:text-3xl font-bold text-sky-400 uppercase mb-4 break-words";
-                extra.innerHTML = payload.label ? `<div class="text-lg text-zinc-300">${esc(payload.label)}</div>` : "";
-
-                playSynthesizedSound(isPriorityAnnouncement ? "urgent" : "bell", isPriorityAnnouncement);
+                subtitle.className = "text-2xl md:text-3xl font-extrabold text-sky-300 uppercase mb-4 break-words";
+                extra.innerHTML = payload.equipment_type ? `<span class="px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/25 text-sm text-sky-100">${esc(payload.equipment_type)}</span>` : "";
+                playSynthesizedSound(isPriority ? "urgent" : "bell", isPriority);
             }
 
             modal.classList.replace("hidden", "flex");
             refreshLucide();
 
             let autoCloseMs = 9500;
-
             if (payload.audio_base64) {
                 try {
-                    if (window.currentVoiceAudio) {
-                        try {
-                            window.currentVoiceAudio.pause();
-                            window.currentVoiceAudio.currentTime = 0;
-                        } catch (e) {}
-                    }
-
+                    if (window.currentVoiceAudio) { try { window.currentVoiceAudio.pause(); } catch {} }
                     const voiceAudio = new Audio(payload.audio_base64);
                     window.currentVoiceAudio = voiceAudio;
-
-                    voiceAudio.onloadedmetadata = () => {
-                        const dur = (voiceAudio.duration || 4) * 1000;
-                        autoCloseMs = Math.max(9500, dur + 2000);
-                    };
+                    voiceAudio.onloadedmetadata = () => { autoCloseMs = Math.max(9500, (voiceAudio.duration || 4) * 1000 + 2000); };
                     voiceAudio.onended = () => {
                         setTimeout(() => {
                             modal.classList.replace("flex", "hidden");
                             activeAnnouncement = false;
-                            window.currentVoiceAudio = null;
                             checkEndAudioDucking();
                         }, 1000);
                     };
-                    voiceAudio.onerror = (err) => {
-                        console.error("Erro na reprodução do áudio Edge-TTS:", err);
-                        activeAnnouncement = false;
-                        window.currentVoiceAudio = null;
-                        checkEndAudioDucking();
-                    };
-                    setTimeout(() => {
-                        voiceAudio.play().catch((err) => {
-                            console.error("Erro ao iniciar áudio Edge-TTS:", err);
-                        });
-                    }, 500);
-                } catch (e) {
-                    console.error("Exceção ao criar áudio Edge-TTS:", e);
-                }
+                    setTimeout(() => voiceAudio.play().catch(() => {}), 450);
+                } catch {}
             }
 
             setTimeout(() => {
@@ -1847,6 +1933,8 @@
                 checkEndAudioDucking();
             }, autoCloseMs);
         }
+
+        refreshLucide();
     </script>
 </body>
 </html>

@@ -1,0 +1,55 @@
+.slot {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  height: 64px;
+  overflow: hidden;
+}
+.island {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--fluid-accent);
+  color: var(--fluid-on-accent);
+  font: 500 15px/1 var(--fluid-font);
+  white-space: nowrap;
+}
+.row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 0 16px;
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+.island[data-open="false"] .row {
+  opacity: 0;
+  filter: blur(4px);
+}
+.island[data-open="true"] .row {
+  transition-delay: 140ms;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--fluid-on-accent);
+  color: var(--fluid-accent);
+}
+.measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  font: 500 15px/1 var(--fluid-font);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot,
+  .slot * {
+    transition: none !important;
+  }
+}

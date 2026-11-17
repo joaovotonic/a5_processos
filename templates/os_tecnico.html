@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="dark">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>O.S. {{ card.os_number }} - Esteira A5</title>
+    <title>O.S. {{ card.os_number }} • Esteira A5</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,177 +13,322 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <style>
+        :root {
+            --bg: #F5F5F7;
+            --surface: rgba(255, 255, 255, 0.96);
+            --subtle: #EEF1F6;
+            --border: rgba(203, 213, 225, 0.85);
+            --text: #18181B;
+            --muted: #64748B;
+        }
+        html.dark {
+            --bg: #09090B;
+            --surface: rgba(24, 24, 28, 0.92);
+            --subtle: rgba(39, 39, 46, 0.72);
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #F4F4F5;
+            --muted: #A1A1AA;
+        }
         body {
-            background-color: #09090b;
-            color: #f4f4f5;
+            background-color: var(--bg);
+            color: var(--text);
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .glass-card {
-            background: rgba(18, 18, 23, 0.95);
+        .bento-card {
+            background: var(--surface);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.1);
+            animation: slideUpBento 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        html.dark .bento-card {
+            box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.68);
+        }
+        .bento-tile {
+            background: var(--subtle);
+            border: 1px solid var(--border);
+            border-radius: 16px;
         }
         .tech-btn {
-            background: rgba(24, 24, 27, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.15s ease-in-out;
+            background: var(--subtle);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, background-color 0.2s ease;
+            touch-action: manipulation;
         }
         .tech-btn:active {
-            transform: scale(0.96);
-            background: #0284c7 !important;
-            border-color: #38bdf8 !important;
+            transform: scale(0.95);
+            background: #2563EB !important;
+            border-color: #3B82F6 !important;
             color: #ffffff !important;
         }
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.8; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.02); }
+        .btn-blue-pill {
+            background: linear-gradient(135deg, #5D87FF 0%, #2563EB 100%);
+            color: #FFFFFF;
+            border-radius: 20px;
+            box-shadow: 0 10px 26px -6px rgba(37, 99, 235, 0.45);
+            transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+            touch-action: manipulation;
         }
-        .glow-pulse { animation: pulseGlow 1.8s infinite ease-in-out; }
+        .btn-blue-pill:active { transform: scale(0.97); }
+        @keyframes slideUpBento {
+            from { opacity: 0; transform: translateY(12px) scale(0.985); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between p-4 pb-8 max-w-md mx-auto">
 
     <!-- CABEÇALHO -->
-    <header class="flex items-center justify-between pb-3 border-b border-white/5">
+    <header class="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-white/8">
         <div class="flex items-center gap-2.5">
-            <svg viewBox="0 0 48 32" class="w-8 h-6 shrink-0 drop-shadow" xmlns="http://www.w3.org/2000/svg">
-                <rect width="48" height="32" rx="7" fill="#254a93"/>
-                <rect x="0.75" y="0.75" width="46.5" height="30.5" rx="6.25" fill="none" stroke="#5a8fd9" stroke-width="1" stroke-opacity="0.4"/>
-                <text x="24" y="16.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="16" fill="#ffffff" text-anchor="middle" dominant-baseline="central">A5</text>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-8 w-auto shrink-0 drop-shadow-sm" fill="none">
+                <defs>
+                    <linearGradient id="osA5Grad" x1="1" y1="3" x2="89" y2="59" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#5D87FF"/>
+                        <stop offset="100%" stop-color="#1D4ED8"/>
+                    </linearGradient>
+                </defs>
+                <rect x="1" y="3" width="88" height="56" rx="12" fill="url(#osA5Grad)"/>
+                <rect x="1.5" y="3.5" width="87" height="55" rx="11.5" stroke="#ffffff" stroke-opacity="0.25"/>
+                <path d="M 27.1 8.2 L 29.8 8.2 L 46.7 48.3 C 47.6 50.4 49.1 51.3 52.6 51.6 L 52.6 53.7 L 30.5 53.7 L 30.5 51.6 C 34.6 51.3 36.2 50.5 35.4 48.2 L 32.0 38.2 L 18.7 38.2 L 15.5 48.2 C 14.8 50.5 16.4 51.3 20.8 51.6 L 20.8 53.7 L 4.2 53.7 L 4.2 51.6 C 7.6 51.3 9.3 50.4 10.3 48.0 Z M 25.3 20.8 L 20.1 34.5 L 30.6 34.5 Z M 60.1 9.6 L 74.8 9.6 C 76.8 9.6 78.3 9.1 79.5 8.3 L 80.3 8.3 L 77.7 17.2 L 62.6 17.2 L 61.8 26.2 C 64.2 25.1 66.9 24.6 69.8 24.6 C 77.4 24.6 82.4 29.8 82.4 38.0 C 82.4 47.8 75.3 54.8 65.1 54.8 C 58.4 54.8 54.1 52.1 54.1 49.0 C 54.1 46.7 55.8 45.3 58.0 45.3 C 60.1 45.3 61.4 46.5 62.7 48.6 C 63.9 50.6 65.3 51.5 67.2 51.5 C 72.3 51.5 75.6 47.6 75.6 41.7 C 75.6 35.9 72.0 32.8 66.2 32.8 C 63.5 32.8 61.1 33.6 59.5 35.3 L 58.5 34.6 Z" fill="#ffffff" fill-rule="evenodd"/>
             </svg>
             <div>
-                <h1 class="text-xs font-black uppercase tracking-wider text-white">ESTEIRA DE PRODUÇÃO</h1>
-                <p class="text-[10px] text-sky-400 font-bold">A5 Tecnologia • Chave QR Code</p>
+                <h1 class="text-xs font-extrabold uppercase tracking-wider">ESTEIRA DE PRODUÇÃO</h1>
+                <p class="text-[10px] text-blue-600 dark:text-sky-400 font-bold">A5 Tecnologia • Acesso QR</p>
             </div>
         </div>
 
-        <a href="/admin" class="text-[10px] font-bold text-zinc-400 hover:text-white px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800">
-            Painel Kanban
-        </a>
+        <div class="flex items-center gap-1.5">
+            <button type="button" onclick="toggleTheme()" id="osThemeBtn"
+                class="p-2 rounded-full bento-tile text-xs font-bold cursor-pointer"
+                title="Alternar Claro/Escuro">
+                <i data-lucide="moon" id="osThemeIcon" class="w-3.5 h-3.5 text-blue-600"></i>
+            </button>
+            <a href="/tv" class="text-[11px] font-bold px-3 py-1.5 rounded-full bento-tile hover:border-blue-500">
+                Painel TV
+            </a>
+        </div>
     </header>
 
-    <!-- CARD PRINCIPAL: DADOS DA BALANÇA -->
-    <main class="space-y-4 my-auto py-2">
-        <div class="glass-card rounded-3xl p-5 space-y-3.5 shadow-2xl relative overflow-hidden">
-            <!-- Faixa superior com Número da O.S. e Status -->
-            <div class="flex items-center justify-between border-b border-white/5 pb-2.5">
+    <!-- DADOS PRINCIPAIS DA O.S. -->
+    <main class="space-y-4 my-auto py-3">
+        <div class="bento-card p-5 space-y-3.5">
+            <div class="flex items-center justify-between border-b border-slate-200/70 dark:border-white/8 pb-2.5">
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-mono font-black px-2.5 py-1 rounded-xl bg-sky-500 text-slate-950 shadow-sm">
+                    <span class="text-xs font-mono font-black px-3 py-1 rounded-full bg-gradient-to-r from-[#5D87FF] to-[#2563EB] text-white shadow-sm">
                         O.S. {{ card.os_number }}
                     </span>
-                    <span class="text-[10px] font-bold text-zinc-400 font-mono">{{ card.created_at[:10] }}</span>
+                    <span class="text-[11px] font-bold text-slate-500 dark:text-zinc-400 font-mono">{{ card.created_at[:10] }}</span>
                 </div>
-                <span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-lg bg-zinc-800 text-zinc-300 border border-zinc-700">
+                <span class="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bento-tile">
                     {{ card.list_title }}
                 </span>
             </div>
 
-            <!-- Dados do Cliente e Equipamento -->
             <div class="space-y-1">
-                <span class="text-[10px] font-black uppercase text-amber-400 block tracking-wider">Cliente:</span>
-                <h2 class="text-base font-black text-white leading-tight uppercase break-words">{{ card.client_name }}</h2>
+                <span class="text-[10px] font-black uppercase text-blue-600 dark:text-sky-400 block tracking-wider">Cliente:</span>
+                <h2 class="text-base font-black leading-tight uppercase break-words">{{ card.client_name }}</h2>
             </div>
 
             <div class="grid grid-cols-2 gap-2 text-xs pt-1">
-                <div class="bg-zinc-900/60 p-2.5 rounded-2xl border border-white/5">
-                    <span class="text-[9px] font-bold uppercase text-zinc-400 block">Equipamento:</span>
-                    <strong class="text-zinc-200 block truncate">{{ card.equipment_model or card.equipment_type }}</strong>
+                <div class="bento-tile p-3">
+                    <span class="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Equipamento</span>
+                    <strong class="block truncate mt-0.5">{{ card.equipment_model or card.equipment_type }}</strong>
                 </div>
-                <div class="bg-zinc-900/60 p-2.5 rounded-2xl border border-white/5">
-                    <span class="text-[9px] font-bold uppercase text-zinc-400 block">Nº de Série:</span>
-                    <strong class="text-zinc-200 block font-mono truncate">{{ card.serial_number or 'Não informado' }}</strong>
+                <div class="bento-tile p-3">
+                    <span class="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block">Nº de Série</span>
+                    <strong class="block font-mono truncate mt-0.5">{{ card.serial_number or 'Não informado' }}</strong>
                 </div>
             </div>
 
             {% if card.reported_defect %}
-                <div class="bg-zinc-900/80 p-2.5 rounded-2xl border border-white/5 text-xs">
-                    <span class="text-[9px] font-bold uppercase text-zinc-400 block mb-0.5">Defeito Informado:</span>
-                    <p class="text-zinc-300 font-medium leading-relaxed">{{ card.reported_defect }}</p>
+                <div class="bento-tile p-3 text-xs">
+                    <span class="text-[9px] font-bold uppercase text-slate-500 dark:text-zinc-400 block mb-0.5">Defeito Informado</span>
+                    <p class="font-medium leading-relaxed">{{ card.reported_defect }}</p>
                 </div>
             {% endif %}
         </div>
 
-        <!-- ============================================================================== -->
-        <!-- ÁREA DE AÇÃO DA ESTEIRA (DINÂMICA DE ACORDO COM O ESTADO ATUAL)                -->
-        <!-- ============================================================================== -->
-
-        <!-- CASO 1: O.S. ESTÁ EM 'ORÇAMENTOS' (AGUARDANDO TÉCNICO INICIAR) -->
+        <!-- ÁREA DE AÇÃO POR FASE -->
         {% if card.state == 'AGUARDANDO_TECNICO_ORCAMENTO' %}
-            <div class="glass-card rounded-3xl p-5 space-y-3.5 border border-sky-500/30 shadow-xl">
+            <div class="bento-card p-5 space-y-3.5 border-blue-500/35">
                 <div class="text-center space-y-1">
-                    <span class="text-[11px] font-black uppercase tracking-wider text-sky-400 block">1º PASSO DA ESTEIRA</span>
-                    <h3 class="text-sm font-black text-white">Qual técnico vai fazer este orçamento?</h3>
-                    <p class="text-[11px] text-zinc-400">Clique no seu nome para puxar a balança e iniciar o tempo de diagnóstico:</p>
+                    <span class="text-[11px] font-black uppercase tracking-wider text-blue-600 dark:text-sky-400 block">1º PASSO DA ESTEIRA</span>
+                    <h3 class="text-sm font-black">Qual técnico vai fazer este orçamento?</h3>
+                    <p class="text-[11px] text-slate-500 dark:text-zinc-400">Toque no seu nome para iniciar o diagnóstico:</p>
                 </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-1">
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
                     {% for tech in card.technicians %}
-                        <button type="button" onclick="claimOrcamento('{{ tech }}')"
-                            class="tech-btn p-3 rounded-2xl text-xs font-black text-zinc-100 flex items-center justify-center gap-1.5 shadow">
-                            <i data-lucide="user" class="w-3.5 h-3.5 text-sky-400"></i>
+                        <button type="button" onclick="claimOrcamento('{{ tech }}', this)"
+                            class="tech-btn p-3.5 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i data-lucide="user" class="w-4 h-4 text-blue-500"></i>
                             <span>{{ tech }}</span>
                         </button>
                     {% endfor %}
                 </div>
+
+                <!-- Opção de Estufa / Teste logo ao iniciar o orçamento -->
+                <div class="pt-2 border-t border-slate-200/70 dark:border-white/8 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[11px] font-extrabold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                            <i data-lucide="timer" class="w-3.5 h-3.5"></i>
+                            <span>Iniciar já com Estufa ou Teste? (Opcional)</span>
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5" id="preTimerModeGroup">
+                        <button type="button" onclick="setPreTimerMode('none')" data-pre-mode="none"
+                            class="pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition">
+                            Não precisa
+                        </button>
+                        <button type="button" onclick="setPreTimerMode('Estufa de Placa')" data-pre-mode="Estufa de Placa"
+                            class="pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition">
+                            🔥 Estufa
+                        </button>
+                        <button type="button" onclick="setPreTimerMode('Teste em Bancada')" data-pre-mode="Teste em Bancada"
+                            class="pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition">
+                            🧪 Teste
+                        </button>
+                    </div>
+                    <div id="preTimerMinutesRow" class="hidden space-y-2 pt-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-bold uppercase text-slate-500 dark:text-zinc-400">Tempo na TV:</span>
+                            <div class="flex flex-1 gap-1.5">
+                                <button type="button" onclick="setPreTimerMinutes(15)" data-pre-min="15"
+                                    class="pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold bento-tile cursor-pointer">15 min</button>
+                                <button type="button" onclick="setPreTimerMinutes(30)" data-pre-min="30"
+                                    class="pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer">30 min</button>
+                                <button type="button" onclick="setPreTimerMinutes(60)" data-pre-min="60"
+                                    class="pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold bento-tile cursor-pointer">60 min</button>
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold text-center">
+                            Ao tocar no seu nome acima, o cronômetro será iniciado automaticamente na TV.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-        <!-- CASO 2: O.S. ESTÁ NO NOME DO TÉCNICO EM ORÇAMENTO (FINALIZAR ORÇAMENTO) -->
         {% elif card.state == 'EM_ORCAMENTO_BANCADA' %}
-            <div class="glass-card rounded-3xl p-5 space-y-4 border border-amber-500/30 text-center shadow-xl">
+            <div class="bento-card p-5 space-y-4 border-amber-500/35 text-center">
                 <div class="space-y-1">
-                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 inline-block">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 inline-block">
                         EM ORÇAMENTO COM: {{ card.tech_name | upper }}
                     </span>
-                    <h3 class="text-base font-black text-white pt-1">Diagnóstico em Andamento</h3>
-                    <p class="text-xs text-zinc-400">Ao concluir a análise das peças e o valor, finalize para enviar para a Recepção:</p>
+                    <h3 class="text-base font-black pt-1">Diagnóstico em Andamento</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">Finalize após concluir a análise das peças:</p>
                 </div>
-
-                <!-- Botão Gigante de Finalizar Orçamento -->
                 <button type="button" onclick="concluirOrcamento()"
-                    class="w-full bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-sky-600/30 flex items-center justify-center gap-2.5 glow-pulse">
+                    class="w-full btn-blue-pill font-black py-4 text-sm flex items-center justify-center gap-2.5 cursor-pointer">
                     <i data-lucide="check-circle-2" class="w-5 h-5"></i>
                     <span>ORÇAMENTO OK</span>
                 </button>
             </div>
 
-        <!-- CASO 3: ORÇAMENTO FEITO OU ENVIADO AO CLIENTE (AGUARDANDO APROVAÇÃO) -->
+            <!-- Cronômetro opcional de Estufa / Teste durante o Orçamento -->
+            <div class="bento-card p-4 space-y-3 border-sky-500/30" id="techTimerCard">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                        <span>Estufa / Teste na TV</span>
+                    </span>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/12 text-sky-600 dark:text-sky-300 border border-sky-500/25">
+                        Opcional
+                    </span>
+                </div>
+
+                {% if card.timer_end_at %}
+                    <div id="activeTimerPanel" data-end-at="{{ card.timer_end_at }}" class="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/30 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <div class="text-[10px] font-bold uppercase text-sky-600 dark:text-sky-300">Em andamento na TV</div>
+                                <div class="text-xs font-black">{{ card.timer_label or 'Estufa de Placa' }}</div>
+                            </div>
+                            <div id="techTimerCountdown" class="font-mono text-2xl font-black tabular-nums text-sky-600 dark:text-sky-300">--:--</div>
+                        </div>
+                        <button type="button" onclick="cancelTechTimer(this)"
+                            class="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition">
+                            <i data-lucide="x-circle" class="w-4 h-4"></i>
+                            <span>Cancelar Cronômetro</span>
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="space-y-2.5">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="selectTechTimerLabel('Estufa de Placa')" data-timer-type="Estufa de Placa"
+                                class="tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition">
+                                🔥 Estufa de Placa
+                            </button>
+                            <button type="button" onclick="selectTechTimerLabel('Teste em Bancada')" data-timer-type="Teste em Bancada"
+                                class="tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition">
+                                🧪 Teste em Bancada
+                            </button>
+                        </div>
+                        <input type="text" id="techTimerLabelInput" value="Estufa de Placa"
+                            placeholder="Descrição (ex: Estufa de Placa, Teste de Fonte...)"
+                            class="w-full px-3 py-2 rounded-xl bento-tile text-xs font-semibold focus:outline-none focus:border-sky-500">
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="startTechTimer(15, this)"
+                                class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 text-xs font-black cursor-pointer transition">
+                                15 min
+                            </button>
+                            <button type="button" onclick="startTechTimer(30, this)"
+                                class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 text-xs font-black cursor-pointer transition">
+                                30 min
+                            </button>
+                            <button type="button" onclick="startTechTimer(60, this)"
+                                class="py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/35 text-sky-700 dark:text-sky-300 text-xs font-black cursor-pointer transition">
+                                60 min
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-2 pt-0.5">
+                            <input type="number" id="techTimerCustomMinutes" min="1" max="480" value="45"
+                                class="w-24 px-3 py-2 rounded-xl bento-tile text-xs font-mono font-bold text-center focus:outline-none focus:border-sky-500">
+                            <button type="button" onclick="startCustomTechTimer(this)"
+                                class="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-sky-400 to-blue-600 text-white text-xs font-black cursor-pointer shadow-sm">
+                                Iniciar Tempo Personalizado (min)
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
         {% elif card.state in ('ORCAMENTOS_FEITOS', 'ORCAMENTOS_ENVIADOS') %}
-            <div class="glass-card rounded-3xl p-6 space-y-3 border border-zinc-700 text-center">
-                <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+            <div class="bento-card p-6 space-y-3 text-center">
+                <div class="w-12 h-12 mx-auto rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
                     <i data-lucide="clock" class="w-6 h-6"></i>
                 </div>
                 <div class="space-y-1">
-                    <h3 class="text-sm font-black text-white">Orçamento em Análise</h3>
-                    <p class="text-xs text-zinc-300">
+                    <h3 class="text-sm font-black">Orçamento em Análise</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">
                         {% if card.state == 'ORCAMENTOS_FEITOS' %}
-                            O orçamento foi concluído pelo técnico e está com a Priscila na recepção para envio ao cliente.
+                            Concluído pelo técnico e na fila da Recepção para envio ao cliente.
                         {% else %}
-                            O orçamento já foi enviado ao cliente. Aguardando aprovação comercial para liberar o conserto.
+                            Enviado ao cliente. Aguardando aprovação comercial.
                         {% endif %}
                     </p>
                 </div>
-                <span class="text-[10px] font-mono text-zinc-400 block pt-1">Tempo líquido pausado até aprovação</span>
+                <span class="text-[10px] font-mono text-slate-400 block pt-1">Tempo líquido pausado até aprovação</span>
             </div>
 
-        <!-- CASO: ORÇAMENTO NÃO AUTORIZADO (TÉCNICO FECHA A BALANÇA) -->
         {% elif card.state == 'NAO_AUTORIZADO' %}
-            <div class="glass-card rounded-3xl p-5 space-y-4 border border-rose-500/40 text-center shadow-xl">
+            <div class="bento-card p-5 space-y-4 border-rose-500/40 text-center">
                 <div class="space-y-1">
-                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-block animate-pulse">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/35 inline-block">
                         🚫 ORÇAMENTO NÃO AUTORIZADO
                     </span>
-                    <h3 class="text-base font-black text-white pt-1">Fechar Balança p/ Devolução</h3>
-                    <p class="text-xs text-zinc-300 leading-relaxed">
-                        O cliente optou por não autorizar o serviço. Feche e monte o equipamento para liberar a entrega na recepção:
-                    </p>
+                    <h3 class="text-base font-black pt-1">Fechar Balança p/ Devolução</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">Feche e monte o equipamento para liberar entrega na recepção:</p>
                 </div>
 
                 {% if not card.tech_name %}
                     <div class="pt-1 text-left space-y-1.5">
-                        <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Quem está fechando a balança?</label>
-                        <select id="fecharTechSelect" class="w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 text-xs text-white font-bold focus:outline-none focus:border-rose-500">
+                        <label class="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase block">Quem está fechando a balança?</label>
+                        <select id="fecharTechSelect" class="w-full px-3 py-2.5 rounded-xl bento-tile text-xs font-bold focus:outline-none">
                             {% for tech in card.technicians %}
                                 <option value="{{ tech }}">{{ tech }}</option>
                             {% endfor %}
@@ -190,90 +336,108 @@
                     </div>
                 {% endif %}
 
-                <!-- Botão Gigante de Fechar Balança -->
                 <button type="button" onclick="fecharBalancaNaoAutorizada()"
-                    class="w-full bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-rose-600/30 flex items-center justify-center gap-2.5 glow-pulse">
+                    class="w-full bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-rose-600/25 flex items-center justify-center gap-2.5 cursor-pointer">
                     <i data-lucide="package-check" class="w-5 h-5"></i>
                     <span>FECHAR BALANÇA (FINALIZAR)</span>
                 </button>
             </div>
 
-        <!-- CASO 4: O.S. APROVADA PELO CLIENTE (PUXAR PARA MANUTENÇÃO) -->
         {% elif card.state == 'APROVADOS' %}
-            <div class="glass-card rounded-3xl p-5 space-y-3.5 border border-emerald-500/40 shadow-xl">
+            <div class="bento-card p-5 space-y-3.5 border-emerald-500/40">
                 <div class="text-center space-y-1">
-                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-block animate-bounce">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 inline-block animate-bounce">
                         🎉 ORÇAMENTO APROVADO!
                     </span>
-                    <h3 class="text-sm font-black text-white pt-1">Quem vai fazer a manutenção?</h3>
-                    <p class="text-[11px] text-zinc-400">Selecione seu nome para puxar a balança para a sua bancada:</p>
+                    <h3 class="text-sm font-black pt-1">Quem vai fazer a manutenção?</h3>
+                    <p class="text-[11px] text-slate-500 dark:text-zinc-400">Toque no seu nome para puxar para a bancada:</p>
                 </div>
-
-                <div class="grid grid-cols-2 gap-2 pt-1">
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
                     {% for tech in card.technicians %}
                         <button type="button" onclick="claimManutencao('{{ tech }}')"
-                            class="tech-btn p-3 rounded-2xl text-xs font-black text-zinc-100 flex items-center justify-center gap-1.5 shadow">
-                            <i data-lucide="wrench" class="w-3.5 h-3.5 text-emerald-400"></i>
+                            class="tech-btn p-3.5 text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i data-lucide="wrench" class="w-4 h-4 text-emerald-500"></i>
                             <span>{{ tech }}</span>
                         </button>
                     {% endfor %}
                 </div>
             </div>
 
-        <!-- CASO 5: O.S. EM MANUTENÇÃO COM O TÉCNICO (FINALIZAR BALANÇA) -->
         {% elif card.state == 'EM_MANUTENCAO_BANCADA' %}
-            <div class="glass-card rounded-3xl p-5 space-y-4 border border-emerald-500/40 text-center shadow-xl">
+            <div class="bento-card p-5 space-y-4 border-emerald-500/40 text-center">
                 <div class="space-y-1">
-                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-block">
+                    <span class="text-[10px] font-mono font-bold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 inline-block">
                         EM MANUTENÇÃO COM: {{ card.tech_name | upper }}
                     </span>
-                    <h3 class="text-base font-black text-white pt-1">Conserto em Andamento</h3>
-                    <p class="text-xs text-zinc-400">Ao concluir a calibração, selagem e limpeza, aperte para finalizar a balança:</p>
+                    <h3 class="text-base font-black pt-1">Conserto em Andamento</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">Após calibração, selagem e limpeza, finalize:</p>
                 </div>
-
-                <!-- Botão Gigante de Finalizar Balança -->
                 <button type="button" onclick="finalizarBalanca()"
-                    class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-slate-950 font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2.5 glow-pulse">
+                    class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black py-4 rounded-2xl text-sm transition shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2.5 cursor-pointer">
                     <i data-lucide="trophy" class="w-5 h-5"></i>
                     <span>FINALIZAR BALANÇA</span>
                 </button>
             </div>
 
-        <!-- CASO 6: BALANÇA FINALIZADA -->
         {% elif card.state == 'FINALIZADAS' %}
-            <div class="glass-card rounded-3xl p-6 space-y-3 border border-emerald-500/50 text-center shadow-2xl bg-emerald-950/20">
-                <div class="w-14 h-14 mx-auto rounded-3xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div class="bento-card p-6 space-y-3 border-emerald-500/50 text-center">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                     <i data-lucide="check-check" class="w-8 h-8"></i>
                 </div>
                 <div class="space-y-1">
-                    <h3 class="text-base font-black text-white">Balança Pronta e Finalizada!</h3>
-                    <p class="text-xs text-zinc-300">Serviço concluído por <strong class="text-emerald-400">{{ card.tech_name }}</strong>.</p>
+                    <h3 class="text-base font-black">Balança Pronta e Finalizada!</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">Concluída por <strong class="text-emerald-600 dark:text-emerald-400">{{ card.tech_name }}</strong>.</p>
                 </div>
-                <div class="bg-zinc-900/80 p-3 rounded-2xl border border-white/5 text-xs text-zinc-300 font-mono">
-                    Tempo Líquido: <strong class="text-emerald-400 text-sm">{{ card.tempo_liquido_str }}</strong>
+                <div class="bento-tile p-3 text-xs font-mono">
+                    Tempo Líquido: <strong class="text-emerald-600 dark:text-emerald-400 text-sm">{{ card.tempo_liquido_str }}</strong>
                 </div>
+            </div>
+
+        {% elif card.state == 'NAO_ENCONTRADA' %}
+            <div class="bento-card p-6 space-y-3 border-rose-500/40 text-center">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-rose-500/15 text-rose-500 flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+                </div>
+                <div class="space-y-1">
+                    <h3 class="text-base font-black">Ordem de Serviço não localizada</h3>
+                    <p class="text-xs text-slate-500 dark:text-zinc-400">
+                        Confirme com a Recepção se a O.S. <strong class="font-mono">{{ card.os_number }}</strong> foi cadastrada ou recriada.
+                    </p>
+                </div>
+                <a href="/tv" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bento-tile text-xs font-bold">
+                    <i data-lucide="tv" class="w-4 h-4 text-blue-500"></i>
+                    <span>Abrir Painel TV</span>
+                </a>
             </div>
 
         {% else %}
-            <div class="glass-card rounded-3xl p-5 text-center text-xs text-zinc-400">
-                O.S. localizada na lista: <strong class="text-white">{{ card.list_title }}</strong>
+            <div class="bento-card p-5 text-center text-xs text-slate-500 dark:text-zinc-400">
+                O.S. localizada na coluna: <strong class="text-zinc-900 dark:text-white">{{ card.list_title }}</strong>
             </div>
         {% endif %}
-
     </main>
 
-    <!-- RODAPÉ -->
-    <footer class="text-center text-[11px] text-zinc-500 pt-3">
-        <span>A5 Tecnologia • Manaus/AM • Sistema Autorizado Prix</span>
+    <footer class="text-center text-[11px] text-slate-400 dark:text-zinc-500 pt-3 font-medium">
+        A5 Tecnologia • Manaus/AM • Sistema Autorizado Prix
     </footer>
 
-    <!-- SCRIPT DE AÇÕES DA ESTEIRA -->
     <script>
-        lucide.createIcons();
+        function applyTheme(mode) {
+            const isDark = mode === "dark";
+            document.documentElement.classList.toggle("dark", isDark);
+            localStorage.setItem("a5_theme", isDark ? "dark" : "clean");
+            const icon = document.getElementById("osThemeIcon");
+            if (icon) icon.setAttribute("data-lucide", isDark ? "sun" : "moon");
+            if (window.lucide) lucide.createIcons();
+        }
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.contains("dark");
+            applyTheme(isDark ? "clean" : "dark");
+        }
+        applyTheme(localStorage.getItem("a5_theme") || "clean");
 
         const osNumber = "{{ card.os_number }}";
 
-        // Beep de sucesso e vibração
         function triggerHapticAndSound() {
             try {
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -285,117 +449,188 @@
                 osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
                 gain.gain.setValueAtTime(0.3, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.16);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.16);
             } catch (e) {}
         }
 
-        // 1. Técnico assume Orçamento
-        async function claimOrcamento(techName) {
+        async function runOsAction(btnEl, url, payload, opts) {
+            opts = opts || {};
+            if (btnEl && btnEl.dataset.busy === "1") return;
+            var prevHtml = btnEl ? btnEl.innerHTML : "";
+            if (btnEl) {
+                btnEl.dataset.busy = "1";
+                btnEl.disabled = true;
+                btnEl.style.opacity = "0.75";
+                btnEl.innerHTML = '<span class="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span><span>' + (opts.loadingText || "Enviando...") + '</span>';
+            }
             triggerHapticAndSound();
             try {
-                const res = await fetch("/api/esteira/claim-orcamento", {
+                const res = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ os_number: osNumber, tecnico: techName })
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
+                    if (opts.onSuccess) opts.onSuccess();
+                    else location.reload();
+                    return;
+                }
+                alert("Erro: " + (data.error || opts.fallbackError || "Falha ao processar solicitação."));
+            } catch (err) {
+                alert("Falha de conexão com o servidor. Tente novamente.");
+            }
+            if (btnEl) {
+                btnEl.dataset.busy = "0";
+                btnEl.disabled = false;
+                btnEl.style.opacity = "";
+                btnEl.innerHTML = prevHtml;
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        let selectedPreTimerMode = "none";
+        let selectedPreTimerMinutes = 30;
+
+        function setPreTimerMode(mode) {
+            selectedPreTimerMode = mode;
+            document.querySelectorAll(".pre-mode-btn").forEach((btn) => {
+                const active = btn.dataset.preMode === mode;
+                btn.className = active
+                    ? "pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition"
+                    : "pre-mode-btn px-2.5 py-2 rounded-xl text-[11px] font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition";
+            });
+            const row = document.getElementById("preTimerMinutesRow");
+            if (row) row.classList.toggle("hidden", mode === "none");
+        }
+
+        function setPreTimerMinutes(mins) {
+            selectedPreTimerMinutes = mins;
+            document.querySelectorAll(".pre-min-btn").forEach((btn) => {
+                const active = Number(btn.dataset.preMin) === mins;
+                btn.className = active
+                    ? "pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer"
+                    : "pre-min-btn flex-1 py-1.5 rounded-xl text-[11px] font-bold bento-tile cursor-pointer";
+            });
+        }
+
+        function selectTechTimerLabel(label) {
+            const input = document.getElementById("techTimerLabelInput");
+            if (input) input.value = label;
+            document.querySelectorAll(".tech-timer-type-btn").forEach((btn) => {
+                const active = btn.dataset.timerType === label;
+                btn.className = active
+                    ? "tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-extrabold border border-sky-500 bg-sky-500/15 text-sky-700 dark:text-sky-300 cursor-pointer transition"
+                    : "tech-timer-type-btn py-2 px-3 rounded-xl text-xs font-bold bento-tile text-slate-600 dark:text-zinc-300 cursor-pointer transition";
+            });
+        }
+
+        function startTechTimer(mins, btnEl) {
+            const input = document.getElementById("techTimerLabelInput");
+            const label = (input && input.value.trim()) || "Estufa de Placa";
+            return runOsAction(btnEl || null, "/api/timer/start", {
+                os_number: osNumber,
+                minutes: mins,
+                label: label
+            }, {
+                loadingText: "Iniciando...",
+                fallbackError: "Não foi possível iniciar o cronômetro."
+            });
+        }
+
+        function startCustomTechTimer(btnEl) {
+            const customInput = document.getElementById("techTimerCustomMinutes");
+            const mins = parseInt((customInput && customInput.value) || "30", 10);
+            if (!mins || mins < 1 || mins > 480) {
+                alert("Informe um tempo entre 1 e 480 minutos.");
+                return;
+            }
+            return startTechTimer(mins, btnEl);
+        }
+
+        function cancelTechTimer(btnEl) {
+            return runOsAction(btnEl || null, "/api/timer/cancel", { os_number: osNumber }, {
+                loadingText: "Cancelando...",
+                fallbackError: "Não foi possível cancelar o cronômetro."
+            });
+        }
+
+        (function initTechTimerCountdown() {
+            const panel = document.getElementById("activeTimerPanel");
+            const cdEl = document.getElementById("techTimerCountdown");
+            if (!panel || !cdEl) return;
+            const endMs = new Date(panel.dataset.endAt).getTime();
+            const update = () => {
+                const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+                const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
+                const secs = String(diffSec % 60).padStart(2, "0");
+                cdEl.textContent = mins + ":" + secs;
+            };
+            update();
+            setInterval(update, 1000);
+        })();
+
+        function claimOrcamento(techName, btnEl) {
+            var btn = btnEl || (window.event && window.event.currentTarget ? window.event.currentTarget : null);
+            return runOsAction(btn, "/api/esteira/claim-orcamento", { os_number: osNumber, tecnico: techName }, {
+                loadingText: "Iniciando...",
+                fallbackError: "Não foi possível assumir o orçamento.",
+                onSuccess: async function () {
+                    if (selectedPreTimerMode && selectedPreTimerMode !== "none") {
+                        try {
+                            await fetch("/api/timer/start", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    os_number: osNumber,
+                                    minutes: selectedPreTimerMinutes || 30,
+                                    label: selectedPreTimerMode
+                                })
+                            });
+                        } catch (e) {}
+                    }
                     location.reload();
-                } else {
-                    alert("Erro: " + (data.error || "Não foi possível assumir o orçamento."));
                 }
-            } catch (err) {
-                alert("Falha de rede: " + err.message);
-            }
+            });
         }
 
-        // 2. Técnico conclui Orçamento
-        async function concluirOrcamento() {
-            triggerHapticAndSound();
-            try {
-                const res = await fetch("/api/esteira/concluir-orcamento", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ os_number: osNumber })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    location.reload();
-                } else {
-                    alert("Erro: " + (data.error || "Não foi possível concluir o orçamento."));
-                }
-            } catch (err) {
-                alert("Falha de rede: " + err.message);
-            }
+        function concluirOrcamento() {
+            var btn = window.event && window.event.currentTarget ? window.event.currentTarget : null;
+            return runOsAction(btn, "/api/esteira/concluir-orcamento", { os_number: osNumber }, {
+                loadingText: "Concluindo...",
+                fallbackError: "Não foi possível concluir."
+            });
         }
 
-        // 3. Técnico assume Manutenção
-        async function claimManutencao(techName) {
-            triggerHapticAndSound();
-            try {
-                const res = await fetch("/api/esteira/claim-manutencao", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ os_number: osNumber, tecnico: techName })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    location.reload();
-                } else {
-                    alert("Erro: " + (data.error || "Não foi possível puxar a balança."));
-                }
-            } catch (err) {
-                alert("Falha de rede: " + err.message);
-            }
+        function claimManutencao(techName) {
+            var btn = window.event && window.event.currentTarget ? window.event.currentTarget : null;
+            return runOsAction(btn, "/api/esteira/claim-manutencao", { os_number: osNumber, tecnico: techName }, {
+                loadingText: "Puxando O.S...",
+                fallbackError: "Não foi possível puxar a balança."
+            });
         }
 
-        // 4. Técnico finaliza a balança
-        async function finalizarBalanca() {
-            triggerHapticAndSound();
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            try {
-                const res = await fetch("/api/esteira/finalizar-balanca", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ os_number: osNumber })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    setTimeout(() => location.reload(), 800);
-                } else {
-                    alert("Erro: " + (data.error || "Não foi possível finalizar a balança."));
-                }
-            } catch (err) {
-                alert("Falha de rede: " + err.message);
-            }
+        function finalizarBalanca() {
+            var btn = window.event && window.event.currentTarget ? window.event.currentTarget : null;
+            if (typeof confetti === "function") confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            return runOsAction(btn, "/api/esteira/finalizar-balanca", { os_number: osNumber }, {
+                loadingText: "Finalizando...",
+                fallbackError: "Não foi possível finalizar.",
+                onSuccess: function () { setTimeout(function () { location.reload(); }, 750); }
+            });
         }
 
-        // 5. Técnico fecha balança não autorizada
-        async function fecharBalancaNaoAutorizada() {
+        function fecharBalancaNaoAutorizada() {
             const techSelect = document.getElementById("fecharTechSelect");
             const tech = techSelect ? techSelect.value : "{{ card.tech_name }}";
             if (!confirm("Confirma que a balança foi fechada e montada para entrega?")) return;
-            triggerHapticAndSound();
-            try {
-                const res = await fetch("/api/esteira/fechar-balanca", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ os_number: osNumber, tech_name: tech })
-                });
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    location.reload();
-                } else {
-                    alert("Erro: " + (data.error || "Não foi possível fechar a balança."));
-                }
-            } catch (err) {
-                alert("Falha de rede: " + err.message);
-            }
+            var btn = window.event && window.event.currentTarget ? window.event.currentTarget : null;
+            return runOsAction(btn, "/api/esteira/fechar-balanca", { os_number: osNumber, tech_name: tech }, {
+                loadingText: "Fechando...",
+                fallbackError: "Não foi possível fechar."
+            });
         }
     </script>
 </body>
 </html>
-

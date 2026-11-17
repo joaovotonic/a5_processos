@@ -3,140 +3,209 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#0f172a">
-    <title>Fotos da Recepção | A5 Tecnologia</title>
+    <meta name="theme-color" content="#2563EB">
+    <title>Fotos da Recepção • A5 Tecnologia</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { darkMode: 'class' };</script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            color-scheme: light;
-            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-            background: #f1f5f9;
-            color: #0f172a;
+            --bg: #F5F5F7;
+            --surface: rgba(255, 255, 255, 0.96);
+            --subtle: #EEF1F6;
+            --border: rgba(203, 213, 225, 0.9);
+            --text: #18181B;
+            --muted: #64748B;
         }
-        * { box-sizing: border-box; }
-        body { margin: 0; padding: 20px 14px 40px; }
-        main {
-            max-width: 680px;
-            margin: 0 auto;
-            padding: 24px;
-            border: 1px solid #cbd5e1;
-            border-radius: 20px;
-            background: #fff;
-            box-shadow: 0 16px 40px #0f172a14;
+        html.dark {
+            --bg: #09090B;
+            --surface: rgba(24, 24, 28, 0.94);
+            --subtle: #121216;
+            --border: rgba(255, 255, 255, 0.08);
+            --text: #F4F4F5;
+            --muted: #A1A1AA;
         }
-        h1 { margin: 0; font-size: 1.45rem; }
-        .intro { margin: 8px 0 22px; color: #475569; font-size: .95rem; line-height: 1.5; }
-        .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-        label { display: block; color: #334155; font-size: .82rem; font-weight: 650; }
-        input, textarea {
-            display: block;
-            width: 100%;
-            margin-top: 6px;
-            padding: 11px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 10px;
-            background: #fff;
-            color: #0f172a;
-            font: inherit;
-            font-size: .95rem;
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
-        input:focus, textarea:focus { outline: 2px solid #38bdf8; outline-offset: 1px; }
-        .wide { grid-column: 1 / -1; }
-        .photo-field {
-            padding: 14px;
-            border: 1px dashed #0284c7;
-            border-radius: 12px;
-            background: #f0f9ff;
+        .bento-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            box-shadow: 0 14px 36px -14px rgba(15, 23, 42, 0.12);
+            animation: cardEnter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        .hint { margin: 7px 0 0; color: #475569; font-size: .78rem; line-height: 1.45; }
-        button {
-            width: 100%;
-            margin-top: 18px;
-            padding: 13px 16px;
-            border: 0;
-            border-radius: 11px;
-            background: #0284c7;
-            color: white;
-            font: inherit;
-            font-weight: 750;
-            cursor: pointer;
+        html.dark .bento-card {
+            box-shadow: 0 20px 44px -16px rgba(0, 0, 0, 0.72);
         }
-        button:disabled { cursor: wait; opacity: .65; }
-        #status { margin: 14px 0 0; padding: 12px; border-radius: 10px; font-size: .9rem; }
-        #status[hidden] { display: none; }
-        #status.success { background: #dcfce7; color: #166534; }
-        #status.error { background: #fee2e2; color: #991b1b; }
-        .footer { margin: 18px 0 0; color: #64748b; font-size: .78rem; text-align: center; }
-        @media (max-width: 520px) {
-            body { padding: 12px 10px 28px; }
-            main { padding: 19px 15px; border-radius: 15px; }
-            .fields { grid-template-columns: 1fr; gap: 12px; }
-            .wide { grid-column: auto; }
+        .bento-input {
+            background: var(--subtle);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .bento-input:focus {
+            outline: none;
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+        }
+        .btn-blue-pill {
+            background: linear-gradient(135deg, #5D87FF 0%, #2563EB 100%);
+            color: #ffffff;
+            border-radius: 9999px;
+            box-shadow: 0 8px 22px -6px rgba(37, 99, 235, 0.45);
+            transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+            touch-action: manipulation;
+        }
+        .btn-blue-pill:active { transform: scale(0.98); }
+        @keyframes cardEnter {
+            from { opacity: 0; transform: translateY(10px) scale(0.985); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
     </style>
 </head>
-<body>
-<main>
-    <h1>Fotos da Recepção</h1>
-    <p class="intro">
+<body class="min-h-screen py-6 px-3 sm:px-5">
+<main class="max-w-2xl mx-auto bento-card p-5 sm:p-7 space-y-5">
+    <div class="flex items-start justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-zinc-800">
+        <div class="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-9 w-auto shrink-0 drop-shadow-sm" fill="none">
+                <defs>
+                    <linearGradient id="recA5Grad" x1="1" y1="3" x2="89" y2="59" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#5D87FF"/>
+                        <stop offset="100%" stop-color="#1D4ED8"/>
+                    </linearGradient>
+                </defs>
+                <rect x="1" y="3" width="88" height="56" rx="12" fill="url(#recA5Grad)"/>
+                <rect x="1.5" y="3.5" width="87" height="55" rx="11.5" stroke="#ffffff" stroke-opacity="0.25"/>
+                <path d="M 27.1 8.2 L 29.8 8.2 L 46.7 48.3 C 47.6 50.4 49.1 51.3 52.6 51.6 L 52.6 53.7 L 30.5 53.7 L 30.5 51.6 C 34.6 51.3 36.2 50.5 35.4 48.2 L 32.0 38.2 L 18.7 38.2 L 15.5 48.2 C 14.8 50.5 16.4 51.3 20.8 51.6 L 20.8 53.7 L 4.2 53.7 L 4.2 51.6 C 7.6 51.3 9.3 50.4 10.3 48.0 Z M 25.3 20.8 L 20.1 34.5 L 30.6 34.5 Z M 60.1 9.6 L 74.8 9.6 C 76.8 9.6 78.3 9.1 79.5 8.3 L 80.3 8.3 L 77.7 17.2 L 62.6 17.2 L 61.8 26.2 C 64.2 25.1 66.9 24.6 69.8 24.6 C 77.4 24.6 82.4 29.8 82.4 38.0 C 82.4 47.8 75.3 54.8 65.1 54.8 C 58.4 54.8 54.1 52.1 54.1 49.0 C 54.1 46.7 55.8 45.3 58.0 45.3 C 60.1 45.3 61.4 46.5 62.7 48.6 C 63.9 50.6 65.3 51.5 67.2 51.5 C 72.3 51.5 75.6 47.6 75.6 41.7 C 75.6 35.9 72.0 32.8 66.2 32.8 C 63.5 32.8 61.1 33.6 59.5 35.3 L 58.5 34.6 Z" fill="#ffffff" fill-rule="evenodd"/>
+            </svg>
+            <div>
+                <h1 class="text-lg font-extrabold tracking-tight leading-tight">Fotos da Recepção</h1>
+                <p class="text-xs text-slate-500 dark:text-zinc-400">Pré-entrada rápida de equipamentos</p>
+            </div>
+        </div>
+        <button type="button" onclick="toggleTheme()" class="p-2 rounded-full bento-input cursor-pointer" title="Alternar Claro/Escuro">
+            <i data-lucide="moon" id="intakeThemeIcon" class="w-4 h-4 text-blue-600"></i>
+        </button>
+    </div>
+
+    <p class="text-xs sm:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed">
         Registre os dados do cliente e fotografe o equipamento antes de abrir a Ordem de Serviço no Teorema.
         Depois, a recepção poderá vincular esta entrada à O.S.
     </p>
 
-    <form id="intakeForm" enctype="multipart/form-data">
-        <div class="fields">
-            <label>
-                Cliente / Empresa *
-                <input name="client_name" autocomplete="organization" required maxlength="200">
+    <form id="intakeForm" enctype="multipart/form-data" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Cliente / Empresa *</span>
+                <input name="client_name" autocomplete="organization" required maxlength="200" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                Nome fantasia
-                <input name="trade_name" autocomplete="organization-title" maxlength="200">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Nome fantasia</span>
+                <input name="trade_name" autocomplete="organization-title" maxlength="200" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                CPF / CNPJ
-                <input name="cnpj_cpf" inputmode="numeric" autocomplete="off">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>CPF / CNPJ</span>
+                <input name="cnpj_cpf" inputmode="numeric" autocomplete="off" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                Telefone
-                <input name="phone" type="tel" autocomplete="tel">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Telefone</span>
+                <input name="phone" type="tel" autocomplete="tel" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                E-mail
-                <input name="email" type="email" autocomplete="email">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>E-mail</span>
+                <input name="email" type="email" autocomplete="email" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                Cidade / Estado
-                <input name="city_state" autocomplete="address-level2">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Cidade / Estado</span>
+                <input name="city_state" autocomplete="address-level2" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label class="wide">
-                Endereço
-                <input name="address" autocomplete="street-address">
+            <label class="block sm:col-span-2 space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Endereço</span>
+                <input name="address" autocomplete="street-address" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                Modelo do equipamento
-                <input name="equipment_model" autocomplete="off">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Modelo do equipamento</span>
+                <input name="equipment_model" autocomplete="off" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label>
-                Número de série
-                <input name="serial_number" autocomplete="off">
+            <label class="block space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Número de série</span>
+                <input name="serial_number" autocomplete="off" class="w-full px-3.5 py-2.5 text-sm bento-input">
             </label>
-            <label class="wide">
-                Defeito informado
-                <textarea name="reported_defect" rows="3"></textarea>
+            <label class="block sm:col-span-2 space-y-1.5 font-bold text-slate-600 dark:text-zinc-300">
+                <span>Defeito informado</span>
+                <textarea name="reported_defect" rows="3" class="w-full px-3.5 py-2.5 text-sm bento-input"></textarea>
             </label>
-            <label class="wide photo-field">
-                Fotos do equipamento *
-                <input name="entry_photos" type="file" accept="image/*" capture="environment" multiple required>
-                <span class="hint">No celular, escolha a câmera para fotografar. É possível selecionar mais de uma foto.</span>
+
+            <label class="block sm:col-span-2 p-4 rounded-2xl border-2 border-dashed border-blue-500/45 bg-blue-500/8 space-y-2 cursor-pointer">
+                <span class="font-extrabold text-blue-700 dark:text-sky-300 flex items-center gap-2 text-sm">
+                    <i data-lucide="camera" class="w-4 h-4"></i>
+                    <span>Fotos do equipamento *</span>
+                </span>
+                <input id="photoInput" name="entry_photos" type="file" accept="image/*" capture="environment" multiple required
+                       class="block w-full text-xs text-slate-600 dark:text-zinc-300 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-500">
+                <span class="block text-[11px] text-slate-500 dark:text-zinc-400">
+                    No celular, escolha a câmera para fotografar. Você pode selecionar várias fotos.
+                </span>
+                <div id="photoPreviewStrip" class="hidden flex flex-wrap gap-2 pt-1"></div>
             </label>
         </div>
-        <button id="submitButton" type="submit">Salvar fotos e dados</button>
-        <p id="status" role="status" aria-live="polite" hidden></p>
+
+        <button id="submitButton" type="submit" class="w-full btn-blue-pill py-3.5 px-5 font-extrabold text-sm cursor-pointer">
+            Salvar fotos e dados
+        </button>
+        <p id="status" role="status" aria-live="polite" hidden class="p-3.5 rounded-2xl text-xs font-bold"></p>
     </form>
 
-    <p class="footer">A5 Tecnologia · Pré-entrada de fotos</p>
+    <p class="text-center text-[11px] text-slate-400 dark:text-zinc-500 font-medium pt-1">
+        A5 Tecnologia · Pré-entrada de fotos
+    </p>
 </main>
+
 <script>
+    function applyTheme(mode) {
+        const isDark = mode === "dark";
+        document.documentElement.classList.toggle("dark", isDark);
+        localStorage.setItem("a5_theme", isDark ? "dark" : "clean");
+        const icon = document.getElementById("intakeThemeIcon");
+        if (icon) icon.setAttribute("data-lucide", isDark ? "sun" : "moon");
+        if (window.lucide) lucide.createIcons();
+    }
+    function toggleTheme() {
+        applyTheme(document.documentElement.classList.contains("dark") ? "clean" : "dark");
+    }
+    applyTheme(localStorage.getItem("a5_theme") || "clean");
+
+    const photoInput = document.getElementById("photoInput");
+    const previewStrip = document.getElementById("photoPreviewStrip");
+    if (photoInput && previewStrip) {
+        photoInput.addEventListener("change", () => {
+            previewStrip.innerHTML = "";
+            const files = Array.from(photoInput.files || []);
+            if (files.length === 0) {
+                previewStrip.classList.add("hidden");
+                return;
+            }
+            previewStrip.classList.remove("hidden");
+            files.forEach((f) => {
+                const url = URL.createObjectURL(f);
+                const img = document.createElement("img");
+                img.src = url;
+                img.className = "w-16 h-16 rounded-xl object-cover border border-blue-400/50 shadow-sm";
+                previewStrip.appendChild(img);
+            });
+        });
+    }
+
     const form = document.getElementById("intakeForm");
     const button = document.getElementById("submitButton");
     const status = document.getElementById("status");
@@ -160,11 +229,12 @@
                 throw new Error("O servidor não confirmou o salvamento.");
             }
             form.reset();
-            status.className = "success";
+            if (previewStrip) { previewStrip.innerHTML = ""; previewStrip.classList.add("hidden"); }
+            status.className = "p-3.5 rounded-2xl text-xs font-bold bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30";
             status.textContent = "Fotos salvas. A recepção já pode vincular esta entrada à O.S.";
             status.hidden = false;
         } catch (error) {
-            status.className = "error";
+            status.className = "p-3.5 rounded-2xl text-xs font-bold bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30";
             status.textContent = error instanceof Error
                 ? error.message
                 : "Falha ao salvar. Verifique a conexão e tente novamente.";

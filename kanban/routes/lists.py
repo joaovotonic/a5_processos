@@ -2,6 +2,7 @@
 from flask import Blueprint, jsonify
 
 from .. import realtime
+from ..auth import require_api_roles
 from ..services import lists as lists_service
 from ..services.board import get_full_board
 from ..utils import get_text, json_body, to_int
@@ -21,6 +22,7 @@ def get_board():
 
 
 @bp.route("/lists", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def create_list():
     """Cria uma nova lista/coluna dinamicamente (+ Adicionar outra lista)."""
     data = json_body()
@@ -29,6 +31,7 @@ def create_list():
 
 
 @bp.route("/lists/<int:list_id>", methods=["PUT"])
+@require_api_roles("admin_recepcao", "master")
 def rename_list(list_id):
     """Renomeia uma lista existente."""
     lists_service.rename_list(list_id, get_text(json_body(), "title").upper())
@@ -36,6 +39,7 @@ def rename_list(list_id):
 
 
 @bp.route("/lists/<int:list_id>", methods=["DELETE"])
+@require_api_roles("admin_recepcao", "master")
 def delete_list(list_id):
     """Remove uma lista vazia."""
     lists_service.delete_list(list_id)
@@ -43,6 +47,7 @@ def delete_list(list_id):
 
 
 @bp.route("/lists/reorder", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def reorder_lists():
     """Salva a nova ordem das colunas quando arrastadas no painel Admin."""
     raw_ids = json_body().get("list_ids") or []

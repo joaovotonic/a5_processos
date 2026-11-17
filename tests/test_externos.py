@@ -34,9 +34,13 @@ class TestExternalRoutes(unittest.TestCase):
         cls._db_snap = take_db_snapshot()
         init_db()
         cls.app = create_app()
+        cls.app.config["TESTING"] = True
         cls.client = cls.app.test_client()
 
     def setUp(self):
+        # Autentica sessão Master para testar endpoints protegidos de Recepção e Diretoria
+        res = self.client.post("/api/auth/login", json={"username": "admin", "password": "admin"})
+        self.assertEqual(res.status_code, 200)
         # Limpa dados de chamados de teste anteriores
         with connect() as conn:
             conn.execute("DELETE FROM external_orders WHERE os_number LIKE 'TEST%' OR client_name LIKE 'TEST%'")
@@ -423,16 +427,18 @@ Reduzido Descrição:
         self.assertIn('audio', resp.content_type.lower())
         resp.close()
 
-        with open('templates/admin.html', 'r', encoding='utf-8') as f:
-            admin_src = f.read()
-        self.assertIn('playDoorbellSound', admin_src)
-        self.assertIn('campainha.wav', admin_src)
-        self.assertNotIn('modalRemarcarChamados', admin_src)
-        self.assertNotIn('openRescheduleModal', admin_src)
-        self.assertIn('modalNaoAtendido', admin_src)
-        self.assertIn('openNaoAtendidoModal', admin_src)
+        with open(os.path.join('frontend', 'src', 'lib', 'api.ts'), 'r', encoding='utf-8') as f:
+            api_src = f.read()
+        self.assertIn('playDoorbellSound', api_src)
+        self.assertIn('campainha.wav', api_src)
 
-        with open('templates/diretoria.html', 'r', encoding='utf-8') as f:
+        with open(os.path.join('frontend', 'src', 'components', 'admin', 'AdminExternosView.tsx'), 'r', encoding='utf-8') as f:
+            ext_src = f.read()
+        self.assertNotIn('modalRemarcarChamados', ext_src)
+        self.assertIn('naoAtendidoOrder', ext_src)
+        self.assertIn('handleAttendance', ext_src)
+
+        with open(os.path.join('frontend', 'src', 'pages', 'DiretoriaPage.tsx'), 'r', encoding='utf-8') as f:
             dir_src = f.read()
         self.assertIn('playDoorbellSound', dir_src)
 
@@ -599,18 +605,22 @@ Reduzido Descrição:
         r_list_after = self.client.get("/api/chat/messages")
         self.assertEqual(r_list_after.get_json()["unread_for_jacson"], 0)
 
-        # 5. Verifica elementos de UI nos templates
-        with open("templates/diretoria.html", "r", encoding="utf-8") as f:
-            dir_html = f.read()
-        self.assertIn("toggleCollapseTechRoute", dir_html)
-        self.assertIn("toggleTechInRouteScreen", dir_html)
-        self.assertIn("btnFinalizeDirectorRoute", dir_html)
-        self.assertIn("diretoriaChatWidget", dir_html)
-        self.assertNotIn('const defaultTechs = ["EDSON", "ANTONIO"]', dir_html)
+        # 5. Verifica elementos da nova UI React + build SPA
+        self.assertTrue(os.path.isfile(os.path.join("frontend", "dist", "index.html")))
+        with open(os.path.join("frontend", "src", "components", "diretoria", "DiretoriaRotasSection.tsx"), "r", encoding="utf-8") as f:
+            rotas_src = f.read()
+        self.assertIn("collapsedTechs", rotas_src)
+        self.assertIn("toggleTechChip", rotas_src)
+        self.assertIn("Finalizar e Liberar Rota", rotas_src)
+        self.assertNotIn('const defaultTechs = ["EDSON", "ANTONIO"]', rotas_src)
 
-        with open("templates/admin.html", "r", encoding="utf-8") as f:
-            adm_html = f.read()
-        self.assertIn("adminChatWidget", adm_html)
+        with open(os.path.join("frontend", "src", "pages", "DiretoriaPage.tsx"), "r", encoding="utf-8") as f:
+            dir_page_src = f.read()
+        self.assertIn('<ChatWidget viewer="jacson"', dir_page_src)
+
+        with open(os.path.join("frontend", "src", "pages", "AdminPage.tsx"), "r", encoding="utf-8") as f:
+            adm_page_src = f.read()
+        self.assertIn('<ChatWidget viewer="priscila"', adm_page_src)
 
         # Limpeza do registro de teste
         delete_external_order(old_id)
@@ -693,6 +703,59 @@ Reduzido Descrição:
         finally:
             for oid in enzo_ids + antonio_ids:
                 delete_external_order(oid)
+
+    def test_15_unified_geral_shift_combines_morning_and_afternoon(self):
+        """
+        Sem separação Manhã/Tarde: consultar ou salvar rota com shift='geral'
+        mantém chamados de manhã e tarde visíveis na mesma rota do dia.
+        """
+        from kanban.services.externos import (
+            build_route_image_filename,
+            create_external_order,
+            delete_external_order,
+            format_whatsapp_conjunta_message,
+            get_grouped_routes,
+        )
+
+        day = datetime.now().strftime("%Y-%m-%d")
+        o_manha = create_external_order({
+            "os_number": "999111",
+            "client_name": "TEST MANHA MERCADO",
+            "technician": "ENZO",
+            "route_date": day,
+            "route_shift": "manha",
+            "route_order": 1,
+            "status": "routed",
+            "attendance_status": "pending",
+        })["id"]
+        o_tarde = create_external_order({
+            "os_number": "999112",
+            "client_name": "TEST TARDE MERCADO",
+            "technician": "JOAO",
+            "route_date": day,
+            "route_shift": "tarde",
+            "route_order": 1,
+            "status": "routed",
+            "attendance_status": "pending",
+        })["id"]
+
+        try:
+            summary = get_grouped_routes(day, "geral")
+            self.assertEqual(summary["route_shift"], "geral")
+            self.assertEqual(summary["shift_label"], "")
+            self.assertIn("ENZO", summary["technicians"])
+            self.assertIn("JOAO", summary["technicians"])
+
+            msg = format_whatsapp_conjunta_message("16/11/2026", summary["technicians"], shift="geral")
+            header_line = msg.splitlines()[0]
+            self.assertIn("ROTA GERAL DE EXTERNOS (CONJUNTA) - 16/11/2026", header_line)
+            self.assertNotIn("MANHÃ", header_line)
+            self.assertNotIn("TARDE", header_line)
+
+            self.assertEqual(build_route_image_filename("2026-11-16", "geral", "ENZO"), "ROTA_ENZO_16-11-2026.png")
+        finally:
+            delete_external_order(o_manha)
+            delete_external_order(o_tarde)
 
     @classmethod
     def tearDownClass(cls):
