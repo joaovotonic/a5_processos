@@ -1,0 +1,53 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fluid-accent);
+  color: var(--fluid-on-accent);
+  font: 600 13px/1 var(--fluid-font);
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.button[data-compact="true"] {
+  height: 30px;
+  font-size: 11px;
+}
+.button[data-compact="true"] .inner {
+  gap: 6px;
+  padding: 0 11px 0 9px;
+}
+.button[data-compact="true"] .icon {
+  width: 13px;
+  height: 13px;
+}
+.button:focus-visible {
+  outline: 2px solid var(--fluid-focus);
+  outline-offset: 3px;
+}
+.inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 22px 0 18px;
+}
+.icon {
+  display: inline-block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.measure {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  font: 500 15px/1 var(--fluid-font);
+  white-space: nowrap;
+}
+.measure > span {
+  position: absolute;
+}

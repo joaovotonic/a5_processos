@@ -7,6 +7,7 @@ DATA_DIR = os.path.abspath(os.environ.get("A5_DATA_DIR", BASE_DIR))
 
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
+FRONTEND_DIST_DIR = os.path.join(BASE_DIR, "frontend", "dist")
 UPLOAD_FOLDER = os.path.join(DATA_DIR, "static", "uploads")
 
 ENTRADA_PDFS_DIR = os.path.join(DATA_DIR, "entrada_pdfs")

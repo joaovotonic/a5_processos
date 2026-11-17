@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Etiqueta O.S. {{ card.os_number }} - {{ card.client_name }}</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script src="/static/js/qrcode.min.js"></script>
     <style>
         @page {
             size: 60mm 40mm;
@@ -18,11 +19,8 @@
             print-color-adjust: exact !important;
         }
         body {
-            width: 60mm;
-            height: 40mm;
             background: #ffffff;
             color: #000000;
-            overflow: hidden;
         }
         .label-container {
             width: 60mm;
@@ -33,6 +31,7 @@
             justify-content: space-between;
             overflow: hidden;
             background: #ffffff;
+            color: #000000;
         }
 
         /* 1. CABEÇALHO */
@@ -185,21 +184,32 @@
             color: #ffffff;
         }
 
-        /* QR CODE REDIMENSIONADO E BEM AJUSTADO */
+        /* QR CODE REDIMENSIONADO COM ZONA DE SILÊNCIO E NITIDEZ TÉRMICA */
         .qr-box-wrap {
             flex-shrink: 0;
-            padding-left: 1.8mm;
+            padding-left: 1.4mm;
             border-left: 0.35mm solid #000000;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: #ffffff;
         }
         .qr-box {
-            width: 15mm;
-            height: 15mm;
+            width: 15.8mm;
+            height: 15.8mm;
+            padding: 0.6mm;
+            background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        .qr-box img,
+        .qr-box canvas {
+            width: 14.6mm !important;
+            height: 14.6mm !important;
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
         }
 
         /* 4. RODAPÉ */
@@ -216,11 +226,13 @@
 
         @media screen {
             body {
+                width: 100%;
+                min-height: 100vh;
+                padding: 24px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                min-height: 100vh;
                 background: #09090b;
                 color: #f4f4f5;
             }
@@ -252,6 +264,11 @@
             }
         }
         @media print {
+            body {
+                width: 60mm;
+                height: 40mm;
+                overflow: hidden;
+            }
             .no-print {
                 display: none !important;
             }
@@ -318,23 +335,36 @@
         </div>
     </div>
 
-    <div class="no-print">
-        <button class="btn" onclick="window.print()">🖨️ Imprimir Etiqueta (60x40mm)</button>
-        <button class="btn" style="background:#334155" onclick="window.close()">Fechar</button>
+    <div class="no-print" style="flex-direction: column; align-items: center; gap: 10px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn" onclick="window.print()">🖨️ Imprimir Etiqueta (60x40mm)</button>
+            <a class="btn" style="background:#16a34a; text-decoration:none;" href="{{ qr_url }}">📱 Abrir Tela da O.S.</a>
+            <button class="btn" style="background:#334155" onclick="window.close()">Fechar</button>
+        </div>
+        <div style="font-family: monospace; font-size: 11px; color: #cbd5e1; max-width: 92vw; word-break: break-all; text-align: center;">
+            QR: {{ qr_url }}
+        </div>
     </div>
 
     <script>
-        new QRCode(document.getElementById("qrcode"), {
-            text: "{{ qr_url }}",
-            width: 56,
-            height: 56,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
+        (function renderLabelQr() {
+            var target = document.getElementById("qrcode");
+            var qrText = {{ qr_url | tojson }};
+            if (!target || typeof QRCode === "undefined") return;
+            new QRCode(target, {
+                text: qrText,
+                width: 224,
+                height: 224,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        })();
+        window.addEventListener("load", function () {
+            requestAnimationFrame(function () {
+                setTimeout(function () { window.print(); }, 220);
+            });
         });
-        window.onload = () => {
-            setTimeout(() => window.print(), 400);
-        };
     </script>
 </body>
 </html>

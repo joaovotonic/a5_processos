@@ -266,6 +266,19 @@ def parse_external_os_pdf(pdf_path: str) -> Dict[str, Any]:
     return data
 
 
+def _is_unified_shift(shift: Optional[str]) -> bool:
+    return (shift or "").strip().lower() in ("geral", "all")
+
+
+def _format_shift_label(shift: Optional[str]) -> str:
+    s = (shift or "").strip().lower()
+    if s == "manha":
+        return "MANHÃ"
+    if s == "tarde":
+        return "TARDE"
+    return ""
+
+
 def list_external_orders(
     date_filter: Optional[str] = None,
     shift_filter: Optional[str] = None,
@@ -274,7 +287,7 @@ def list_external_orders(
     search: Optional[str] = None,
     pending_only: bool = False
 ) -> List[Dict[str, Any]]:
-    """Consulta chamados externos com filtros opcionais incluindo turno (Manhã / Tarde)."""
+    """Consulta chamados externos com filtros opcionais de data, status, técnico ou busca."""
     query = "SELECT * FROM external_orders WHERE 1=1"
     params = []
 
@@ -290,7 +303,7 @@ def list_external_orders(
             query += " AND (route_date = ? OR open_date = ?)"
             params.extend([date_filter, date_filter])
 
-        if shift_filter:
+        if shift_filter and not _is_unified_shift(shift_filter):
             query += " AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)"
             params.append(shift_filter.lower())
 
@@ -325,7 +338,7 @@ def create_external_order(data: Dict[str, Any]) -> Dict[str, Any]:
     tasks = (data.get("tasks_notes") or "").strip()
     tech = (data.get("technician") or "").strip().upper()
     route_date = (data.get("route_date") or now_dt.strftime("%Y-%m-%d")).strip()
-    route_shift = (data.get("route_shift") or get_current_shift()).lower().strip()
+    route_shift = (data.get("route_shift") or "geral").lower().strip()
     route_order = int(data.get("route_order") or 0)
     status = data.get("status") or ("routed" if tech else "pending_route")
     attendance_status = (data.get("attendance_status") or "pending").lower().strip()
@@ -486,7 +499,8 @@ def notify_director_pending_routes(date_str: str, shift: Optional[str] = None) -
     e emite evento WebSocket com alerta sonoro para a Diretoria.
     """
     now_iso = datetime.now().isoformat()
-    shift_val = (shift or get_current_shift()).lower()
+    shift_val = (shift or "geral").lower()
+    unified = _is_unified_shift(shift_val)
 
     with connect() as conn:
         conn.execute("""
@@ -512,18 +526,30 @@ def notify_director_pending_routes(date_str: str, shift: Optional[str] = None) -
                 VALUES (?, ?, 'pending_director', ?, ?)
             """, (date_str, shift_val, now_iso, now_iso))
 
-        orders = conn.execute("""
-            SELECT * FROM external_orders
-            WHERE (route_date = ? AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL))
-               OR status IN ('pending_route', 'pending_director')
-               OR technician IS NULL
-               OR TRIM(technician) = ''
-               OR COALESCE(attendance_status, 'pending') = 'not_attended'
-            ORDER BY id ASC
-        """, (date_str, shift_val)).fetchall()
+        if unified:
+            orders = conn.execute("""
+                SELECT * FROM external_orders
+                WHERE route_date = ?
+                   OR status IN ('pending_route', 'pending_director')
+                   OR technician IS NULL
+                   OR TRIM(technician) = ''
+                   OR COALESCE(attendance_status, 'pending') = 'not_attended'
+                ORDER BY id ASC
+            """, (date_str,)).fetchall()
+        else:
+            orders = conn.execute("""
+                SELECT * FROM external_orders
+                WHERE (route_date = ? AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL))
+                   OR status IN ('pending_route', 'pending_director')
+                   OR technician IS NULL
+                   OR TRIM(technician) = ''
+                   OR COALESCE(attendance_status, 'pending') = 'not_attended'
+                ORDER BY id ASC
+            """, (date_str, shift_val)).fetchall()
         order_list = [dict(o) for o in orders]
 
-    shift_label = "MANHÃ" if shift_val == "manha" else "TARDE"
+    shift_label = _format_shift_label(shift_val)
+    shift_msg_part = f" de {shift_label}" if shift_label else ""
 
     try:
         from ..realtime import _emit_safe
@@ -533,7 +559,7 @@ def notify_director_pending_routes(date_str: str, shift: Optional[str] = None) -
             "shift_label": shift_label,
             "total_calls": len(order_list),
             "sent_at": now_iso,
-            "message": f"Priscila enviou {len(order_list)} chamado(s) de {shift_label} para montagem de rota!"
+            "message": f"Priscila enviou {len(order_list)} chamado(s){shift_msg_part} para montagem de rota!"
         })
     except Exception as e:
         logger.warning(f"Falha ao emitir socketio para diretoria: {e}")
@@ -556,12 +582,13 @@ def save_route_assignments(
     route_shift: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Salva a organização das rotas feita pelo Sr. Jacson na Diretoria para o turno informado.
+    Salva a organização das rotas feita pelo Sr. Jacson na Diretoria para a data informada.
     Aceita tanto lista plana de paradas quanto lista agrupada por técnico {'technician': ..., 'orders': [...]}.
     """
     now_iso = datetime.now().isoformat()
     new_status = "routed" if finalize else "draft"
-    shift_val = (route_shift or get_current_shift()).lower()
+    shift_val = (route_shift or "geral").lower()
+    unified = _is_unified_shift(shift_val)
 
     flat_items: List[Dict[str, Any]] = []
     for item in assignments:
@@ -637,14 +664,22 @@ def save_route_assignments(
                 now_iso
             ))
 
-        rows = conn.execute("""
-            SELECT * FROM external_orders
-            WHERE route_date = ? AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
-            ORDER BY technician ASC, route_order ASC, id ASC
-        """, (route_date, shift_val)).fetchall()
+        if unified:
+            rows = conn.execute("""
+                SELECT * FROM external_orders
+                WHERE route_date = ?
+                ORDER BY technician ASC, route_order ASC, id ASC
+            """, (route_date,)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT * FROM external_orders
+                WHERE route_date = ? AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
+                ORDER BY technician ASC, route_order ASC, id ASC
+            """, (route_date, shift_val)).fetchall()
         updated_orders = [dict(r) for r in rows]
 
-    shift_label = "MANHÃ" if shift_val == "manha" else "TARDE"
+    shift_label = _format_shift_label(shift_val)
+    shift_msg_part = f" da {shift_label}" if shift_label else ""
 
     if finalize:
         try:
@@ -656,7 +691,7 @@ def save_route_assignments(
                 "finalized_by": director_name,
                 "finalized_at": now_iso,
                 "total_orders": len(updated_orders),
-                "message": f"Sr. Jacson finalizou e liberou as rotas da {shift_label} de {route_date}! Prontas para envio via WhatsApp."
+                "message": f"Sr. Jacson finalizou e liberou as rotas{shift_msg_part} de {route_date}! Prontas para envio via WhatsApp."
             })
         except Exception as e:
             logger.warning(f"Falha ao emitir socketio de rotas finalizadas: {e}")
@@ -674,13 +709,14 @@ def save_route_assignments(
 
 def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, Any]:
     """
-    Retorna os chamados agrupados por técnico para a data e turno selecionados.
+    Retorna os chamados agrupados por técnico para a data selecionada (ou turno específico se legado).
     REGRA DE OURO: Qualquer chamado pendente (ou que ficou pendente/não atendido em qualquer outro dia)
     retorna automaticamente e permanece sempre visível em 'unassigned' ('Chamados Externos Aguardando Rota' /
     'Aguardando Distribuição'), independente da data selecionada (passada, presente ou futura),
     preservando sua data de abertura (open_date).
     """
-    shift_val = (shift or get_current_shift()).lower()
+    shift_val = (shift or "geral").lower()
+    unified = _is_unified_shift(shift_val)
     now_iso = datetime.now().isoformat()
     today_str = datetime.now().strftime("%Y-%m-%d")
 
@@ -706,22 +742,46 @@ def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, 
               )
         """, (now_iso, today_str, date_str))
 
-        route_info = conn.execute(
-            "SELECT * FROM external_routes WHERE route_date = ? AND route_shift = ?",
-            (date_str, shift_val)
-        ).fetchone()
+        if unified:
+            route_info = conn.execute(
+                """
+                SELECT * FROM external_routes
+                WHERE route_date = ?
+                ORDER BY CASE WHEN route_shift = 'geral' THEN 0 ELSE 1 END,
+                         CASE WHEN status = 'finalized' THEN 0 ELSE 1 END,
+                         id DESC
+                LIMIT 1
+                """,
+                (date_str,)
+            ).fetchone()
 
-        # 1. Paradas já atribuídas a técnicos para esta data e turno (todos os técnicos da rota)
-        routed_rows = conn.execute("""
-            SELECT * FROM external_orders
-            WHERE route_date = ?
-              AND technician IS NOT NULL
-              AND TRIM(technician) != ''
-              AND status NOT IN ('pending_route', 'pending_director')
-              AND COALESCE(attendance_status, 'pending') != 'not_attended'
-              AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
-            ORDER BY technician ASC, route_order ASC, id ASC
-        """, (date_str, shift_val)).fetchall()
+            # 1. Paradas já atribuídas a técnicos para esta data (sem separar por Manhã/Tarde)
+            routed_rows = conn.execute("""
+                SELECT * FROM external_orders
+                WHERE route_date = ?
+                  AND technician IS NOT NULL
+                  AND TRIM(technician) != ''
+                  AND status NOT IN ('pending_route', 'pending_director')
+                  AND COALESCE(attendance_status, 'pending') != 'not_attended'
+                ORDER BY technician ASC, route_order ASC, id ASC
+            """, (date_str,)).fetchall()
+        else:
+            route_info = conn.execute(
+                "SELECT * FROM external_routes WHERE route_date = ? AND route_shift = ?",
+                (date_str, shift_val)
+            ).fetchone()
+
+            # 1. Paradas já atribuídas a técnicos para esta data e turno (todos os técnicos da rota)
+            routed_rows = conn.execute("""
+                SELECT * FROM external_orders
+                WHERE route_date = ?
+                  AND technician IS NOT NULL
+                  AND TRIM(technician) != ''
+                  AND status NOT IN ('pending_route', 'pending_director')
+                  AND COALESCE(attendance_status, 'pending') != 'not_attended'
+                  AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)
+                ORDER BY technician ASC, route_order ASC, id ASC
+            """, (date_str, shift_val)).fetchall()
 
         # 2. Chamados pendentes ("Aguardando Rota" / "Aguardando Distribuição") de QUALQUER data ou turno.
         # Só entra aqui quem realmente está sem técnico / pendente / não atendido — nunca uma parada
@@ -758,7 +818,7 @@ def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, 
             item["status"] = "pending_route"
         unassigned.append(item)
 
-    shift_label = "MANHÃ" if shift_val == "manha" else "TARDE"
+    shift_label = _format_shift_label(shift_val)
 
     return {
         "route_date": date_str,
@@ -773,11 +833,12 @@ def get_grouped_routes(date_str: str, shift: Optional[str] = None) -> Dict[str, 
     }
 
 
-def format_whatsapp_route_message(date_str: str, technician_name: str, stops: List[Dict[str, Any]], shift: str = "manha") -> str:
+def format_whatsapp_route_message(date_str: str, technician_name: str, stops: List[Dict[str, Any]], shift: str = "geral") -> str:
     """Gera o texto formatado para envio direto no WhatsApp do técnico ou grupo."""
-    shift_label = "MANHÃ" if shift.lower() == "manha" else "TARDE"
+    shift_label = _format_shift_label(shift)
+    header_shift = f" - {shift_label}" if shift_label else ""
     lines = []
-    lines.append(f"🚚 *ROTA DE EXTERNOS - {shift_label} - {date_str}*")
+    lines.append(f"🚚 *ROTA DE EXTERNOS{header_shift} - {date_str}*")
     lines.append(f"👨‍🔧 *TÉCNICO / EQUIPE: {technician_name.upper()}*")
     lines.append("=" * 32)
 
@@ -806,11 +867,12 @@ def format_whatsapp_route_message(date_str: str, technician_name: str, stops: Li
     return "\n".join(lines)
 
 
-def format_whatsapp_conjunta_message(date_str: str, technicians_dict: Dict[str, List[Dict[str, Any]]], shift: str = "manha") -> str:
+def format_whatsapp_conjunta_message(date_str: str, technicians_dict: Dict[str, List[Dict[str, Any]]], shift: str = "geral") -> str:
     """Gera texto com todas as rotas unificadas para envio no grupo geral da equipe."""
-    shift_label = "MANHÃ" if shift.lower() == "manha" else "TARDE"
+    shift_label = _format_shift_label(shift)
+    header_shift = f" - {shift_label}" if shift_label else ""
     lines = []
-    lines.append(f"🚚 *ROTA GERAL DE EXTERNOS (CONJUNTA) - {shift_label} - {date_str}*")
+    lines.append(f"🚚 *ROTA GERAL DE EXTERNOS (CONJUNTA){header_shift} - {date_str}*")
     lines.append("=" * 36)
 
     for tech_name, stops in technicians_dict.items():
@@ -846,9 +908,12 @@ def build_route_image_filename(date_str: str, shift: str, tech_or_conjunta: str)
         clean_date = f"{parts[2]}-{parts[1]}-{parts[0]}"
     else:
         clean_date = date_str.replace("/", "-")
-    shift_clean = "MANHA" if shift.lower() == "manha" else "TARDE"
     tech_clean = re.sub(r"[^A-Z0-9]", "_", tech_or_conjunta.upper()).strip("_")
-    return f"ROTA_{tech_clean}_{shift_clean}_{clean_date}.png"
+    shift_label = _format_shift_label(shift)
+    if shift_label:
+        shift_clean = "MANHA" if shift_label == "MANHÃ" else "TARDE"
+        return f"ROTA_{tech_clean}_{shift_clean}_{clean_date}.png"
+    return f"ROTA_{tech_clean}_{clean_date}.png"
 
 
 def save_route_image_file(image_base64: str, filename: str) -> Dict[str, Any]:
@@ -917,7 +982,7 @@ def export_external_routes_csv(
         query += " AND route_date BETWEEN ? AND ?"
         params.extend([date_from, date_to])
 
-    if shift_filter:
+    if shift_filter and not _is_unified_shift(shift_filter):
         query += " AND (route_shift = ? OR route_shift = '' OR route_shift IS NULL)"
         params.append(shift_filter.lower())
 

@@ -2,6 +2,7 @@
 from flask import Blueprint, jsonify, request
 
 from .. import realtime, rules
+from ..auth import require_api_roles
 from ..config import DEFAULT_EQUIPMENT_TYPE
 from ..errors import ApiError
 from ..services import cards as cards_service
@@ -88,6 +89,7 @@ def create_pending_entry():
 
 
 @bp.route("/pending-entries/<int:entry_id>", methods=["DELETE"])
+@require_api_roles("admin_recepcao", "master")
 def delete_pending_entry(entry_id):
     """Remove uma pré-entrada de fotos da recepção."""
     cards_service.delete_pending_entry(entry_id)
@@ -96,6 +98,7 @@ def delete_pending_entry(entry_id):
 
 
 @bp.route("/cards", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def create_card():
     """
     Cria uma nova Ordem de Serviço (O.S.) pela Recepção (Priscila).
@@ -145,6 +148,7 @@ def get_card_by_os(os_number):
 
 
 @bp.route("/cards/<int:card_id>/move", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def move_card(card_id):
     """
     Move um cartão de uma coluna para outra (Drag-and-Drop da Priscila ou clique rápido)
@@ -178,6 +182,7 @@ def move_card(card_id):
 
 
 @bp.route("/cards/<int:card_id>/approve-quote", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def approve_quote(card_id):
     """Aprova o orçamento da O.S., move para APROVADAS e libera a tela de finalização no QR Code."""
     data = json_body()
@@ -189,6 +194,7 @@ def approve_quote(card_id):
 
 
 @bp.route("/cards/<int:card_id>/reopen-quote", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def reopen_quote(card_id):
     """Reabre o orçamento de uma O.S. para edição (liberado pela Recepção)."""
     data = json_body()
@@ -217,6 +223,7 @@ def request_reopen_quote(card_id):
 
 
 @bp.route("/cards/<int:card_id>/deny-reopen", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def deny_reopen_quote(card_id):
     """Recusa a solicitação de reabertura do orçamento."""
     data = json_body()
@@ -227,6 +234,7 @@ def deny_reopen_quote(card_id):
 
 
 @bp.route("/cards/<int:card_id>/send-quote", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def send_quote_route(card_id):
     """Marca que a Priscila enviou o orçamento ao cliente e move para ORÇAMENTOS ENVIADOS."""
     data = json_body()
@@ -237,6 +245,7 @@ def send_quote_route(card_id):
 
 
 @bp.route("/cards/<int:card_id>/finalize-admin", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def finalize_admin_route(card_id):
     """Move a O.S. de BALANÇAS PRONTAS para FINALIZADAS após conferência da Priscila."""
     data = json_body()
@@ -247,6 +256,7 @@ def finalize_admin_route(card_id):
 
 
 @bp.route("/cards/<int:card_id>/cancel", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def cancel_card(card_id):
     """Cancela o atendimento de uma O.S., movendo para ORÇAMENTOS NÃO AUTORIZADOS."""
     data = json_body()
@@ -258,6 +268,7 @@ def cancel_card(card_id):
 
 
 @bp.route("/cards/<int:card_id>/toggle-label", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def toggle_card_label(card_id):
     """Alterna (marca/desmarca) uma etiqueta na balança."""
     data = json_body()
@@ -269,6 +280,7 @@ def toggle_card_label(card_id):
 
 
 @bp.route("/cards/<int:card_id>/update", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def update_card(card_id):
     """Atualiza etiquetas, Nº da O.S., dados do cliente, anotações da Priscila, prateleira ou fotos."""
     card = cards_service.update_card(
@@ -281,6 +293,7 @@ def update_card(card_id):
 
 
 @bp.route("/cards/<int:card_id>", methods=["DELETE", "POST"])
+@require_api_roles("admin_recepcao", "master")
 def delete_card(card_id):
     """Remove uma O.S. cadastrada por engano (requer autorização de admin: admin / admin)."""
     data = {}
@@ -399,6 +412,7 @@ def finish_os_mobile():
 
 
 @bp.route("/timer/start", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def start_timer():
     """Inicia um cronômetro de estufa/teste para uma O.S."""
     data = json_body()
@@ -416,6 +430,7 @@ def start_timer():
 
 
 @bp.route("/timer/cancel", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def cancel_timer():
     """Cancela o cronômetro ativo de uma O.S."""
     data = json_body()
@@ -426,6 +441,7 @@ def cancel_timer():
 
 
 @bp.route("/director/call", methods=["POST"])
+@require_api_roles("diretoria", "master")
 def director_call():
     """Dispara chamado ou áudio de voz do Sr. Jacson para a TV."""
     data = json_body()
@@ -463,6 +479,7 @@ def api_concluir_orcamento():
 
 
 @bp.route("/esteira/adm-enviar-cliente", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def api_adm_enviar_cliente():
     from ..services.esteira import adm_enviar_cliente
     data = json_body()
@@ -471,6 +488,7 @@ def api_adm_enviar_cliente():
 
 
 @bp.route("/esteira/adm-aprovar", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def api_adm_aprovar():
     from ..services.esteira import adm_aprovar
     data = json_body()
@@ -479,6 +497,7 @@ def api_adm_aprovar():
 
 
 @bp.route("/esteira/adm-nao-autorizar", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def api_adm_nao_autorizar():
     from ..services.esteira import adm_nao_autorizar
     data = json_body()
@@ -497,6 +516,7 @@ def api_fechar_balanca():
 
 
 @bp.route("/cards/<path:os_number>/advance-admin", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def api_advance_admin(os_number):
     """Avança a O.S. na esteira via ação da recepção."""
     from ..services.esteira import advance_admin_pipeline
@@ -524,6 +544,7 @@ def api_finalizar_balanca():
 
 @bp.route("/cards/<path:os_number>/delete", methods=["POST", "DELETE"])
 @bp.route("/cards/<path:os_number>", methods=["DELETE"])
+@require_api_roles("admin_recepcao", "master")
 def api_delete_card(os_number):
     """Exclui a O.S. do sistema Kanban da A5 Tecnologia (requer admin / admin)."""
     data = {}
@@ -543,8 +564,33 @@ def api_delete_card(os_number):
 
 
 @bp.route("/cards/manual", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def api_create_manual_card():
     """Cria uma O.S. (banner) manualmente direto no Kanban."""
     from ..services.esteira import create_manual_os
     data = json_body()
     return jsonify(create_manual_os(data))
+
+
+@bp.route("/admin/call-tech", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
+def api_admin_call_tech():
+    """Recepção chama um técnico ou setor na TV da oficina."""
+    data = json_body()
+    tech_name = data.get("tech_name") or "Técnico"
+    reason = data.get("reason") or "Comparecer na recepção"
+    realtime.announce_call_tech(tech_name, reason)
+    return jsonify({"success": True})
+
+
+@bp.route("/admin/panic-silence", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
+def api_admin_panic_silence():
+    """Alterna modo silencioso da TV da oficina."""
+    from ..database import connect
+    data = json_body()
+    muted = bool(data.get("muted"))
+    with connect() as conn:
+        conn.execute("UPDATE settings SET value = ? WHERE key = 'tv_muted'", ("1" if muted else "0",))
+    realtime.notify_tv_mute(muted)
+    return jsonify({"success": True, "muted": muted})

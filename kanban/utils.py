@@ -44,6 +44,11 @@ def format_os_number(os_number: str) -> str:
 # ==============================================================================
 # REDE
 # ==============================================================================
+def _is_loopback_host(host: str) -> bool:
+    clean = (host or "").split(":")[0].strip().lower()
+    return clean in {"", "localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"}
+
+
 def get_local_ip():
     """Descobre automaticamente o IP da placa de rede/Wi-Fi local do PC da Recepção."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -55,6 +60,36 @@ def get_local_ip():
     finally:
         s.close()
     return ip
+
+
+def resolve_public_base_url() -> str:
+    """
+    Resolve a URL base alcançável pelo celular (QR Code da O.S. e Pré-Entrada):
+    1. Se a requisição chegou via proxy/túnel (Cloudflare Tunnel / trycloudflare), usa X-Forwarded-Host.
+    2. Se TUNNEL_MODE + TUNNEL_PUBLIC_HOSTNAME estiver ativo (mesmo acessado via localhost no servidor), usa o domínio HTTPS público.
+    3. Se o host da requisição atual já for público/LAN (não loopback), usa ele próprio.
+    4. Se acessado via localhost/127.0.0.1 localmente, substitui pelo IP real da rede Wi-Fi/LAN para o celular conseguir abrir.
+    """
+    from .config import PORT, TUNNEL_MODE, TUNNEL_PUBLIC_HOSTNAME
+
+    xf_host = (request.headers.get("X-Forwarded-Host") or "").split(",")[0].strip()
+    if xf_host and not _is_loopback_host(xf_host):
+        xf_proto = (request.headers.get("X-Forwarded-Proto") or "https").split(",")[0].strip().lower()
+        if xf_proto not in ("http", "https"):
+            xf_proto = "https"
+        return f"{xf_proto}://{xf_host}".rstrip("/")
+
+    if TUNNEL_MODE and TUNNEL_PUBLIC_HOSTNAME:
+        clean_host = TUNNEL_PUBLIC_HOSTNAME.replace("https://", "").replace("http://", "").strip("/")
+        return f"https://{clean_host}"
+
+    req_host = (request.host or "").strip()
+    if req_host and not _is_loopback_host(req_host):
+        cf_vis = request.headers.get("CF-Visitor") or ""
+        scheme = "https" if (request.scheme == "https" or '"https"' in cf_vis) else "http"
+        return f"{scheme}://{req_host}".rstrip("/")
+
+    return f"http://{get_local_ip()}:{PORT}"
 
 
 # ==============================================================================

@@ -59,9 +59,18 @@ def format_parts_summary(parts_items):
 # CONSULTAS
 # ==============================================================================
 def get_card_row_by_os(os_number):
-    clean_os = str(os_number or "").strip().lstrip("0") or "0"
+    from ..utils import format_os_number
+    raw = str(os_number or "").strip()
+    std = format_os_number(raw)
+    clean_digits = re.sub(r"\D", "", raw).lstrip("0") or "0"
     with connect() as conn:
-        return conn.execute("SELECT * FROM cards WHERE os_number = ? OR os_number = ?", (clean_os, os_number)).fetchone()
+        return conn.execute(
+            """
+            SELECT * FROM cards
+            WHERE os_number = ? OR os_number = ? OR os_number = ? OR os_number = ? OR os_number = ? OR id = ?
+            """,
+            (std, clean_digits, clean_digits.zfill(6), clean_digits.zfill(10), raw, clean_digits),
+        ).fetchone()
 
 
 def get_card_details(os_number):

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A5 Tecnologia • Esteira de Produção & Diretoria</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      window.__A5_BOOT_AT__ = typeof performance !== "undefined" ? performance.now() : Date.now();
+      try {
+        if (localStorage.getItem("a5_theme") === "dark") {
+          document.documentElement.classList.add("dark", "dark-mode");
+        }
+      } catch (e) {}
+    </script>
+    <style>
+      #a5-initial-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: linear-gradient(135deg, #F4F6FA 0%, #FFFFFF 50%, #E6F0FF 100%);
+        font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+        color: #18181B;
+      }
+      html.dark #a5-initial-loader {
+        background: linear-gradient(135deg, #09090B 0%, #0F1117 50%, #0A192F 100%);
+        color: #F4F4F5;
+      }
+      .a5-boot-bar-track {
+        width: 144px;
+        height: 4px;
+        border-radius: 9999px;
+        overflow: hidden;
+        background: rgba(59, 130, 246, 0.16);
+      }
+      .a5-boot-bar-fill {
+        width: 45%;
+        height: 100%;
+        border-radius: 9999px;
+        background: linear-gradient(90deg, #5D87FF, #2563EB);
+        animation: a5BootSlide 1.15s ease-in-out infinite;
+      }
+      @keyframes a5BootSlide {
+        0% { transform: translateX(-110%); }
+        100% { transform: translateX(260%); }
+      }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="a5-initial-loader" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" style="height: 48px; width: auto;" fill="none">
+        <defs>
+          <linearGradient id="a5BootGrad" x1="1" y1="3" x2="89" y2="59" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#3B82F6"/>
+            <stop offset="100%" stop-color="#1D4ED8"/>
+          </linearGradient>
+        </defs>
+        <rect x="1" y="3" width="88" height="56" rx="12" fill="url(#a5BootGrad)"/>
+        <rect x="1.5" y="3.5" width="87" height="55" rx="11.5" stroke="#ffffff" stroke-opacity="0.25"/>
+        <path d="M 27.1 8.2 L 29.8 8.2 L 46.7 48.3 C 47.6 50.4 49.1 51.3 52.6 51.6 L 52.6 53.7 L 30.5 53.7 L 30.5 51.6 C 34.6 51.3 36.2 50.5 35.4 48.2 L 32.0 38.2 L 18.7 38.2 L 15.5 48.2 C 14.8 50.5 16.4 51.3 20.8 51.6 L 20.8 53.7 L 4.2 53.7 L 4.2 51.6 C 7.6 51.3 9.3 50.4 10.3 48.0 Z M 25.3 20.8 L 20.1 34.5 L 30.6 34.5 Z M 60.1 9.6 L 74.8 9.6 C 76.8 9.6 78.3 9.1 79.5 8.3 L 80.3 8.3 L 77.7 17.2 L 62.6 17.2 L 61.8 26.2 C 64.2 25.1 66.9 24.6 69.8 24.6 C 77.4 24.6 82.4 29.8 82.4 38.0 C 82.4 47.8 75.3 54.8 65.1 54.8 C 58.4 54.8 54.1 52.1 54.1 49.0 C 54.1 46.7 55.8 45.3 58.0 45.3 C 60.1 45.3 61.4 46.5 62.7 48.6 C 63.9 50.6 65.3 51.5 67.2 51.5 C 72.3 51.5 75.6 47.6 75.6 41.7 C 75.6 35.9 72.0 32.8 66.2 32.8 C 63.5 32.8 61.1 33.6 59.5 35.3 L 58.5 34.6 Z" fill="#ffffff" fill-rule="evenodd"/>
+      </svg>
+      <div style="font-size: 14px; font-weight: 700; letter-spacing: -0.01em;">
+        A5 <span style="color: #2563EB;">Tecnologia</span>
+      </div>
+      <div class="a5-boot-bar-track"><div class="a5-boot-bar-fill"></div></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

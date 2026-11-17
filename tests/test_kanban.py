@@ -31,6 +31,7 @@ class TestA5KanbanComplete(unittest.TestCase):
         cls.app.config["TESTING"] = True
         db.init_db()
         cls.client = cls.app.test_client()
+        cls.client.post("/api/auth/login", json={"username": "admin", "password": "admin"})
         cls.sio = socketio.test_client(cls.app)
         # Limpa dados de teste anteriores se houver
         with connect() as conn:
@@ -39,31 +40,36 @@ class TestA5KanbanComplete(unittest.TestCase):
             conn.execute("DELETE FROM pending_entries WHERE client_name LIKE '%PADARIA CENTRAL%'")
 
     def test_01_http_pages(self):
-        """Testa todas as páginas web do sistema."""
-        r = self.client.get("/")
-        self.assertEqual(r.status_code, 302)
-        self.assertTrue(r.headers["Location"].endswith("/admin"))
+        """Testa todas as páginas web públicas e autenticadas do sistema."""
+        anon = self.app.test_client()
+        r_anon = anon.get("/")
+        self.assertEqual(r_anon.status_code, 302)
+        self.assertTrue(r_anon.headers["Location"].endswith("/login"))
 
-        pages = [
-            "/admin",
-            "/recepcao-fotos",
-            "/painel-tv",
-            "/tv",
-            "/diretoria",
-            "/chamado",
-        ]
-        for p in pages:
-            res = self.client.get(p)
-            self.assertEqual(res.status_code, 200, f"Falha ao carregar página {p}")
+        for pub in ("/login", "/recepcao-fotos", "/painel-tv", "/tv", "/healthz"):
+            res = anon.get(pub)
+            self.assertEqual(res.status_code, 200, f"Falha na página pública {pub}")
+
+        # Usuário Master autenticado acessa /admin, /diretoria e /chamado
+        r_auth = self.client.get("/")
+        self.assertEqual(r_auth.status_code, 302)
+        self.assertTrue(r_auth.headers["Location"].endswith("/admin"))
+
+        for priv in ("/admin", "/diretoria", "/chamado"):
+            res = self.client.get(priv)
+            self.assertEqual(res.status_code, 200, f"Falha ao carregar página protegida {priv}")
 
     def test_director_call_buttons_are_ordered_and_identify_roles(self):
-        with self.client.session_transaction() as session:
-            session["diretoria_auth"] = True
+        dir_client = self.app.test_client()
+        dir_client.post("/api/auth/login", json={"username": "jacson", "password": "jacson123"})
 
-        response = self.client.get("/diretoria")
+        response = dir_client.get("/diretoria")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertNotIn("TODA A OFICINA", html)
+        self.assertIn("window.__A5_CONFIG__", html)
+        config_raw = html.split("window.__A5_CONFIG__ = ", 1)[1].split(";</script>", 1)[0]
+        boot_cfg = json.loads(config_raw)
+
         targets = [
             "João Otoni",
             "Wisley",
@@ -76,14 +82,9 @@ class TestA5KanbanComplete(unittest.TestCase):
             "Edson",
             "Antonio",
         ]
-        positions = [html.index(f"quickCall('{target}')") for target in targets]
-        self.assertEqual(positions, sorted(positions))
-        self.assertIn("font-black uppercase text-slate-900", html)
-        self.assertIn('id="directorFinalizedRoutePanel"', html)
-        self.assertIn('id="directorFinalizedRouteBody"', html)
-        self.assertIn("renderDirectorRoutePreview(false);", html)
-        for role in ("Técnico", "ADM"):
-            self.assertIn(f">{role}</span>", html)
+        call_targets = boot_cfg["callTargets"]
+        self.assertEqual([t["target"] for t in call_targets], targets)
+        self.assertEqual({t["role"] for t in call_targets}, {"Técnico", "ADM"})
 
     def test_02_catalogs_and_search(self):
         """Testa busca de peças Toledo e catálogo de modelos de balanças."""
@@ -549,12 +550,14 @@ class TestA5KanbanComplete(unittest.TestCase):
         self.assertTrue(up["success"])
         self.assertEqual(up["github_repo"], "joaovotonic/a5_processos")
 
-        # Verifica se o banner fixo está presente no HTML do Admin
+        # Verifica se /admin carrega a SPA e se o banner fixo das 16h40 está no AdminPage React
         r_admin = self.client.get("/admin")
-        html = r_admin.get_data(as_text=True)
-        self.assertIn("cloudBackupFixedBanner", html)
-        self.assertIn("triggerGithubCloudBackup", html)
-        self.assertIn("joaovotonic/a5_processos", html)
+        self.assertEqual(r_admin.status_code, 200)
+        with open(os.path.join("frontend", "src", "pages", "AdminPage.tsx"), "r", encoding="utf-8") as f:
+            admin_tsx = f.read()
+        self.assertIn("showCloudBanner", admin_tsx)
+        self.assertIn("handleCloudBackup", admin_tsx)
+        self.assertIn("joaovotonic/a5_processos", admin_tsx)
 
     @classmethod
     def tearDownClass(cls):

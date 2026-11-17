@@ -231,8 +231,10 @@ def upload_database_to_github(dry_run: bool = False) -> Dict[str, Any]:
                 "external_orders": [dict(r) for r in conn.execute("SELECT * FROM external_orders ORDER BY id").fetchall()],
                 "settings": {r["key"]: r["value"] for r in conn.execute("SELECT key, value FROM settings").fetchall()},
             }
-            with open(cloud_json_path, "w", encoding="utf-8") as f:
+            tmp_json_path = f"{cloud_json_path}.tmp"
+            with open(tmp_json_path, "w", encoding="utf-8") as f:
                 json.dump(dump, f, ensure_ascii=False, indent=2)
+            os.replace(tmp_json_path, cloud_json_path)
 
         if dry_run:
             return {

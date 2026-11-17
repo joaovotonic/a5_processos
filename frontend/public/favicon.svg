@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288 65" width="288" height="65">
+  <defs>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2c559c"/>
+      <stop offset="100%" stop-color="#204080"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left Blue Badge with A5 (Exact Match to Official Brand) -->
+  <rect x="4" y="5" width="76" height="55" rx="10" fill="url(#badgeGrad)"/>
+  <rect x="5" y="6" width="74" height="53" rx="9" fill="none" stroke="#5a8fd9" stroke-width="1.5" stroke-opacity="0.4"/>
+  <text x="42" y="32.5" font-family="'Times New Roman', Georgia, serif" font-weight="bold" font-size="34" fill="#ffffff" text-anchor="middle" dominant-baseline="central" letter-spacing="-1">A5</text>
+
+  <!-- Right Text: Tecnologia Balanças e Sistemas -->
+  <!-- Line 1: Tecnologia (Title Case, Official Brand Blue) -->
+  <text x="96" y="33" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="700" font-size="28" fill="#254a93" letter-spacing="-0.3">Tecnologia</text>
+
+  <!-- Line 2: Balanças e Sistemas (Cyan / Sky) -->
+  <text x="96" y="53" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="600" font-size="14.5" fill="#2aa6c8" letter-spacing="0.2">Balanças e Sistemas</text>
+</svg>

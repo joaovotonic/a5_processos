@@ -246,6 +246,10 @@ def init_db():
         _ensure_scale_models(cursor)
         _ensure_external_routes_tables(cursor)
 
+    from .auth import ensure_users_table
+    with connect() as conn:
+        ensure_users_table(conn)
+
     perform_daily_backup()
 
 

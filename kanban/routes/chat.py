@@ -5,6 +5,7 @@ Recepção/Admin (Priscila) e Diretoria (Sr. Jacson).
 from datetime import datetime
 from flask import Blueprint, request, jsonify
 
+from ..auth import require_api_roles
 from ..database import connect
 from ..realtime import _emit_safe
 
@@ -43,6 +44,7 @@ def _format_chat_row(row) -> dict:
 
 
 @bp.route("/messages", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def get_chat_messages():
     """Retorna histórico recente de mensagens entre Priscila e Sr. Jacson e contagem de não lidas."""
     try:
@@ -80,6 +82,7 @@ def get_chat_messages():
 
 
 @bp.route("/messages", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def send_chat_message():
     """Envia uma nova mensagem no chat Priscila <-> Sr. Jacson e notifica via WebSocket."""
     try:
@@ -116,6 +119,7 @@ def send_chat_message():
 
 
 @bp.route("/read", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def mark_chat_read():
     """Marca as mensagens recebidas pelo visualizador ('jacson' ou 'priscila') como lidas."""
     try:

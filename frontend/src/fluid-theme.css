@@ -1,0 +1,23 @@
+:root {
+  --fluid-accent: #2563EB;
+  --fluid-on-accent: #FFFFFF;
+  --fluid-surface: #FFFFFF;
+  --fluid-surface-2: #F5F5F7;
+  --fluid-text: #18181B;
+  --fluid-text-2: #64748B;
+  --fluid-border: #E5E7EB;
+  --fluid-focus: #3B82F6;
+  --fluid-radius: 14px;
+  --fluid-font: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+html.dark {
+  --fluid-accent: #3B82F6;
+  --fluid-on-accent: #FFFFFF;
+  --fluid-surface: #18181C;
+  --fluid-surface-2: #09090B;
+  --fluid-text: #F4F4F5;
+  --fluid-text-2: #A1A1AA;
+  --fluid-border: rgba(255, 255, 255, 0.1);
+  --fluid-focus: #38BDF8;
+}

@@ -1,6 +1,7 @@
 """API de relatórios da gerência: métricas, exportação CSV e backup."""
 from flask import Blueprint, Response, jsonify, request, send_file
 
+from ..auth import require_api_roles
 from ..backup import perform_daily_backup
 from ..services.board import get_analytics_summary
 from ..services.reports import build_os_csv
@@ -9,12 +10,14 @@ bp = Blueprint("api_reports", __name__, url_prefix="/api")
 
 
 @bp.route("/analytics", methods=["GET"])
+@require_api_roles("diretoria", "master")
 def analytics():
     """Dados para o painel /gerencia."""
     return jsonify(get_analytics_summary())
 
 
 @bp.route("/export/csv", methods=["GET"])
+@require_api_roles("diretoria", "master")
 def export_csv():
     """Exporta relatório completo de O.S. para Excel (CSV UTF-8 com BOM)."""
     content, filename = build_os_csv(request.args.get("period", "all"))  # day, month, year, all
@@ -26,12 +29,14 @@ def export_csv():
 
 
 @bp.route("/backup/download", methods=["GET"])
+@require_api_roles("admin_recepcao", "master")
 def download_backup():
     """Gera um backup imediato e faz download do arquivo .db."""
     return send_file(perform_daily_backup(force=True), as_attachment=True)
 
 
 @bp.route("/diretoria/report", methods=["GET"])
+@require_api_roles("diretoria", "master")
 def api_diretoria_report():
     """Relatório executivo dinâmico de produtividade e tempos da esteira para o Sr. Jacson."""
     from ..services.diretoria import get_director_productivity_report
@@ -50,6 +55,7 @@ def api_diretoria_report():
 
 
 @bp.route("/diretoria/reset-metrics", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def api_reset_diretoria_metrics():
     """
     Zera os contadores históricos pós-organização manual do Kanban pela Priscila
@@ -66,6 +72,7 @@ def api_reset_diretoria_metrics():
 
 
 @bp.route("/backup/github-status", methods=["GET"])
+@require_api_roles("admin_recepcao", "master")
 def api_github_backup_status():
     """Retorna o status do backup diário em nuvem no GitHub (alerta fixo das 16h40 de seg a sex)."""
     from ..backup import get_cloud_backup_status
@@ -73,6 +80,7 @@ def api_github_backup_status():
 
 
 @bp.route("/backup/github-cloud", methods=["POST"])
+@require_api_roles("admin_recepcao", "master")
 def api_github_cloud_backup():
     """Gera o backup consolidado do banco de dados e envia para o GitHub (joaovotonic/a5_processos)."""
     from .. import realtime
