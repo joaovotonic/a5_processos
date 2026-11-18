@@ -12,46 +12,41 @@
     <script>tailwind.config = { darkMode: 'class' };</script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --tv-bg: #EFF7FF;
-            --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.34), transparent 44%),
-                              radial-gradient(circle at 90% 100%, rgba(56, 189, 248, 0.24), transparent 48%),
-                              linear-gradient(180deg, #F4FAFF 0%, #EAF4FF 100%);
-            --tv-surface: rgba(255, 255, 255, 0.90);
-            --tv-card: rgba(255, 255, 255, 0.98);
-            --tv-subtle: rgba(224, 242, 254, 0.72);
+            --tv-bg-gradient: linear-gradient(180deg, #F4FAFF 0%, #E8F3FF 100%);
+            --tv-surface: rgba(255, 255, 255, 0.96);
+            --tv-card: #FFFFFF;
+            --tv-subtle: rgba(224, 242, 254, 0.85);
             --tv-subtle-strong: #E0F2FE;
-            --tv-border: rgba(56, 189, 248, 0.32);
-            --tv-border-strong: rgba(14, 165, 233, 0.54);
+            --tv-border: rgba(56, 189, 248, 0.34);
+            --tv-border-strong: rgba(14, 165, 233, 0.56);
             --tv-text: #0F172A;
             --tv-muted: #475569;
             --tv-sky: #38BDF8;
             --tv-sky-strong: #0EA5E9;
             --tv-sky-text: #0284C7;
-            --tv-shadow: 0 12px 30px -12px rgba(14, 165, 233, 0.18);
-            --tv-card-shadow: 0 4px 12px -4px rgba(14, 165, 233, 0.14);
+            --tv-shadow: 0 6px 16px -8px rgba(14, 165, 233, 0.16);
+            --tv-card-shadow: 0 2px 8px -3px rgba(14, 165, 233, 0.12);
         }
 
         html.dark {
             --tv-bg: #070E1A;
-            --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.20), transparent 44%),
-                              radial-gradient(circle at 88% 100%, rgba(16, 185, 129, 0.12), transparent 46%),
-                              linear-gradient(180deg, #070E1A 0%, #0A1426 100%);
-            --tv-surface: rgba(13, 24, 42, 0.86);
-            --tv-card: rgba(17, 31, 54, 0.95);
-            --tv-subtle: rgba(56, 189, 248, 0.11);
-            --tv-subtle-strong: rgba(56, 189, 248, 0.20);
-            --tv-border: rgba(56, 189, 248, 0.26);
+            --tv-bg-gradient: linear-gradient(180deg, #070E1A 0%, #0B1528 100%);
+            --tv-surface: #0D182A;
+            --tv-card: #122139;
+            --tv-subtle: #10243F;
+            --tv-subtle-strong: #163254;
+            --tv-border: rgba(56, 189, 248, 0.28);
             --tv-border-strong: rgba(125, 211, 252, 0.56);
             --tv-text: #F0F9FF;
             --tv-muted: #94A3B8;
             --tv-sky: #38BDF8;
             --tv-sky-strong: #0EA5E9;
             --tv-sky-text: #7DD3FC;
-            --tv-shadow: 0 18px 42px -16px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(56, 189, 248, 0.12);
-            --tv-card-shadow: 0 6px 20px -6px rgba(2, 6, 23, 0.65), 0 0 14px -8px rgba(56, 189, 248, 0.28);
+            --tv-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.55);
+            --tv-card-shadow: 0 3px 10px -4px rgba(2, 6, 23, 0.5);
         }
 
         body {
@@ -61,26 +56,24 @@
             font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
             overflow: hidden;
             user-select: none;
-            transition: background-color 0.28s ease, color 0.25s ease;
+            transition: background-color 0.25s ease, color 0.2s ease;
         }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
         .tabular-nums { font-variant-numeric: tabular-nums; }
 
         .tv-header {
             background: var(--tv-surface);
-            backdrop-filter: blur(20px);
             border: 1px solid var(--tv-border);
             box-shadow: var(--tv-shadow);
-            transition: background-color 0.25s ease, border-color 0.25s ease;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
         .tv-bento-col {
             background: var(--tv-surface);
-            backdrop-filter: blur(20px);
             border: 1px solid var(--tv-border);
             border-radius: 20px;
             box-shadow: var(--tv-shadow);
-            transition: background-color 0.25s ease, border-color 0.25s ease, width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
         .tv-bento-card {
@@ -88,45 +81,31 @@
             border: 1px solid var(--tv-border);
             border-radius: 14px;
             box-shadow: var(--tv-card-shadow);
-            will-change: transform, opacity;
-            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.2s ease;
-        }
-        .tv-bento-card:hover {
-            transform: translateY(-2px);
-            border-color: var(--tv-border-strong);
+            transition: border-color 0.2s ease;
         }
 
         .tv-tech-row {
             background: var(--tv-surface);
-            backdrop-filter: blur(18px);
             border: 1px solid var(--tv-border);
             border-radius: 20px;
             box-shadow: var(--tv-shadow);
-            will-change: transform, opacity;
-            transition: border-color 0.25s ease, box-shadow 0.35s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: border-color 0.2s ease, box-shadow 0.25s ease;
         }
         .tv-tech-row.tech-spotlight {
             border-color: rgba(56, 189, 248, 0.9);
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.38), 0 18px 46px -10px rgba(56, 189, 248, 0.45);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.42);
         }
         .tv-tech-idle {
             background: var(--tv-surface);
-            backdrop-filter: blur(18px);
             border: 1px dashed var(--tv-border-strong);
             border-radius: 20px;
-            opacity: 0.85;
+            opacity: 0.9;
         }
         .tv-estufa-spotlight {
-            background: linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, rgba(56, 189, 248, 0.08) 100%);
+            background: rgba(14, 165, 233, 0.14);
             border: 1.5px solid rgba(56, 189, 248, 0.52);
             border-radius: 18px;
-            box-shadow: 0 10px 28px -10px rgba(14, 165, 233, 0.32);
-        }
-        .tv-footer-bar {
-            background: var(--tv-surface);
-            backdrop-filter: blur(18px);
-            border: 1px solid var(--tv-border);
-            box-shadow: var(--tv-shadow);
+            box-shadow: 0 4px 12px -6px rgba(14, 165, 233, 0.28);
         }
 
         .tv-pill-tile {
@@ -177,37 +156,37 @@
            - Mais de 1 dia e meio (>= 36h): Amarelo Forte */
         .tv-card-urgent,
         .urgent-glow {
-            background: linear-gradient(135deg, rgba(254, 226, 226, 0.96) 0%, rgba(254, 202, 202, 0.92) 100%) !important;
+            background: #FEE2E2 !important;
             border: 2px solid #EF4444 !important;
-            box-shadow: 0 0 26px rgba(239, 68, 68, 0.34), inset 0 0 0 1px rgba(239, 68, 68, 0.22) !important;
+            box-shadow: 0 3px 10px -3px rgba(239, 68, 68, 0.24) !important;
         }
         html.dark .tv-card-urgent,
         html.dark .urgent-glow {
-            background: linear-gradient(135deg, rgba(153, 27, 27, 0.58) 0%, rgba(69, 10, 10, 0.76) 100%) !important;
+            background: #3F1018 !important;
             border: 2px solid #EF4444 !important;
-            box-shadow: 0 0 28px rgba(239, 68, 68, 0.44), inset 0 0 0 1px rgba(248, 113, 113, 0.28) !important;
+            box-shadow: 0 3px 10px -3px rgba(239, 68, 68, 0.28) !important;
         }
 
         .tv-card-warranty {
-            background: linear-gradient(135deg, rgba(243, 232, 255, 0.96) 0%, rgba(233, 213, 255, 0.92) 100%) !important;
+            background: #F3E8FF !important;
             border: 2px solid #A855F7 !important;
-            box-shadow: 0 0 26px rgba(168, 85, 247, 0.34), inset 0 0 0 1px rgba(168, 85, 247, 0.22) !important;
+            box-shadow: 0 3px 10px -3px rgba(168, 85, 247, 0.22) !important;
         }
         html.dark .tv-card-warranty {
-            background: linear-gradient(135deg, rgba(107, 33, 168, 0.58) 0%, rgba(59, 7, 100, 0.76) 100%) !important;
+            background: #2C124A !important;
             border: 2px solid #A855F7 !important;
-            box-shadow: 0 0 28px rgba(168, 85, 247, 0.44), inset 0 0 0 1px rgba(192, 132, 252, 0.28) !important;
+            box-shadow: 0 3px 10px -3px rgba(168, 85, 247, 0.26) !important;
         }
 
         .tv-card-yellow-strong {
-            background: linear-gradient(135deg, rgba(254, 240, 138, 0.97) 0%, rgba(253, 224, 71, 0.90) 100%) !important;
+            background: #FEF08A !important;
             border: 2px solid #EAB308 !important;
-            box-shadow: 0 0 26px rgba(234, 179, 8, 0.38), inset 0 0 0 1px rgba(250, 204, 21, 0.35) !important;
+            box-shadow: 0 3px 10px -3px rgba(234, 179, 8, 0.24) !important;
         }
         html.dark .tv-card-yellow-strong {
-            background: linear-gradient(135deg, rgba(161, 98, 7, 0.58) 0%, rgba(113, 63, 18, 0.76) 100%) !important;
+            background: #422A08 !important;
             border: 2px solid #FACC15 !important;
-            box-shadow: 0 0 28px rgba(250, 204, 21, 0.42), inset 0 0 0 1px rgba(253, 224, 71, 0.30) !important;
+            box-shadow: 0 3px 10px -3px rgba(250, 204, 21, 0.26) !important;
         }
 
         .sla-alert:not(.tv-card-urgent):not(.tv-card-warranty):not(.tv-card-yellow-strong) {
@@ -252,15 +231,13 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 9999px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.6); }
 
-        /* Dropdown YouTube Studio Bento Glass - Sai de cima p/ baixo direto do botão ao lado da logo A5 */
+        /* Dropdown YouTube Studio Bento - Sai de cima p/ baixo direto do botão ao lado da logo A5 */
         #ytFloatingWidget {
             background: var(--tv-surface);
             border: 1.5px solid var(--tv-border-strong);
             color: var(--tv-text);
-            box-shadow: 0 28px 68px -14px rgba(2, 6, 23, 0.72), 0 0 38px -10px rgba(56, 189, 248, 0.36);
-            backdrop-filter: blur(26px);
+            box-shadow: 0 14px 32px -10px rgba(2, 6, 23, 0.55);
             transform-origin: var(--yt-origin-x, 50%) 0%;
-            will-change: transform, opacity;
         }
         #ytFloatingWidget .yt-header-bar {
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.20) 0%, rgba(14, 165, 233, 0.08) 100%);
@@ -302,10 +279,8 @@
             background: var(--tv-surface);
             border: 1.5px solid var(--tv-border-strong);
             color: var(--tv-text);
-            box-shadow: 0 16px 40px -10px rgba(14, 165, 233, 0.35);
-            backdrop-filter: blur(20px);
+            box-shadow: 0 8px 20px -8px rgba(14, 165, 233, 0.28);
             transform-origin: top center;
-            will-change: transform, opacity;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -336,7 +311,7 @@
                     TOLEDO PRIX
                 </span>
                 <span id="tvLiveBadge" class="inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold bg-sky-400/12 text-sky-600 dark:text-sky-300 border border-sky-400/35 px-2.5 py-1 rounded-full shrink-0">
-                    <span id="tvLiveDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span id="tvLiveDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                     <span>AO VIVO</span>
                 </span>
                 <div id="activeTimersBar" class="flex flex-wrap items-center gap-2 min-w-0"></div>
@@ -367,7 +342,7 @@
 
         <!-- CENTRO: MARCA A5 + PAINEL TV EM DESTAQUE -->
         <div class="flex items-center justify-center gap-3.5 justify-self-center shrink-0 px-2">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-11 xl:h-12 w-auto shrink-0 drop-shadow-[0_0_16px_rgba(56,189,248,0.42)]" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-11 xl:h-12 w-auto shrink-0" fill="none">
                 <defs>
                     <linearGradient id="tvA5Grad" x1="1" y1="3" x2="89" y2="59" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#7DD3FC"/>
@@ -419,31 +394,12 @@
     </header>
 
     <!-- COCKPIT BENTO 2 ZONAS NEON + MOTION (1920x1080) -->
-    <main id="tvBoard" class="flex-1 min-h-0 flex flex-col lg:flex-row items-stretch gap-3 px-3 pt-2.5 pb-1.5 overflow-hidden"></main>
-
-    <!-- FAIXA RODAPÉ DE STATUS EM TEMPO REAL -->
-    <footer id="tvFooterTicker" class="tv-footer-bar mx-3 mb-2 px-4 py-1.5 rounded-[14px] flex items-center justify-between gap-3 shrink-0 text-[11px] overflow-hidden">
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 font-black text-[10px] uppercase tracking-wider shrink-0">
-                <i data-lucide="package-check" class="w-3 h-3"></i>
-                <span>Prontas p/ Retirada</span>
-            </span>
-            <div id="tvFooterReadyList" class="flex items-center gap-2 overflow-hidden truncate font-bold text-slate-700 dark:text-sky-100/85">
-                <span class="opacity-65 font-medium">Nenhuma balança aguardando retirada no momento</span>
-            </div>
-        </div>
-        <div class="hidden md:flex items-center gap-2 shrink-0 pl-3 border-l border-sky-400/20">
-            <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
-            <span id="tvFooterLastEvent" class="font-mono text-[10.5px] font-bold text-sky-700 dark:text-sky-300 truncate max-w-[380px]">
-                Painel Cockpit ativo • Atualização em tempo real
-            </span>
-        </div>
-    </footer>
+    <main id="tvBoard" class="flex-1 min-h-0 flex flex-col lg:flex-row items-stretch gap-3 px-3 pt-2.5 pb-2.5 overflow-hidden"></main>
 
     <!-- MINI ALERTA DISCRETO NO TOPO (URGÊNCIA / GARANTIA) -->
-    <div id="tvMiniAlert" class="fixed top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-500 transform -translate-y-36 opacity-0 pointer-events-none max-w-xl w-[90%]">
-        <div id="tvMiniAlertInner" class="flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-white/25 text-white font-bold text-sm">
-            <div id="tvMiniAlertIconBox" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/20 text-xl shadow-sm animate-pulse">⚠️</div>
+    <div id="tvMiniAlert" class="fixed top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 transform -translate-y-36 opacity-0 pointer-events-none max-w-xl w-[90%]">
+        <div id="tvMiniAlertInner" class="flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl border border-white/25 text-white font-bold text-sm">
+            <div id="tvMiniAlertIconBox" class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/20 text-xl shadow-sm">⚠️</div>
             <div class="flex-1 min-w-0">
                 <div id="tvMiniAlertCategory" class="text-[10px] uppercase font-mono font-bold tracking-widest opacity-90 flex items-center gap-1.5">
                     <span>Atenção Oficina • Fila de Orçamentos</span>
@@ -456,8 +412,8 @@
     </div>
 
     <!-- POP-UP GIGANTE DE ANÚNCIO / VOZ -->
-    <div id="tvAnnouncementModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-xl hidden items-center justify-center z-50 p-6 md:p-12">
-        <div id="tvAnnouncementBox" class="ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 shadow-2xl overflow-hidden relative bg-[#0B1628]/95">
+    <div id="tvAnnouncementModal" class="fixed inset-0 bg-slate-950/88 hidden items-center justify-center z-50 p-6 md:p-12">
+        <div id="tvAnnouncementBox" class="ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 shadow-xl overflow-hidden relative bg-[#0B1628]">
             <div id="annIcon" class="mb-4 flex items-center justify-center">
                 <i data-lucide="bell" class="w-16 h-16 text-sky-400"></i>
             </div>
@@ -584,7 +540,7 @@
                 <div id="ytPlayerContainerWrap" class="shrink-0 yt-stagger">
                     <div id="ytVideoBox" class="w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-sky-400/35 relative shadow-lg shadow-sky-950/50">
                         <video id="ytNativeVideo" class="w-full h-full object-contain bg-slate-950" playsinline preload="auto"></video>
-                        <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[#071122]/90 backdrop-blur-md text-white z-10">
+                        <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[#071122]/95 text-white z-10">
                             <div class="w-9 h-9 border-3 border-sky-400 border-t-transparent rounded-full animate-spin mb-2"></div>
                             <span id="ytLoadingTitle" class="text-xs font-extrabold text-sky-300 line-clamp-2 px-3">Carregando música...</span>
                             <span class="text-[10px] text-sky-200/65 mt-1">Stream direto • Sem anúncios</span>
@@ -681,7 +637,7 @@
                     </label>
                     <button onclick="minimizeYtWidget()" class="text-sky-600 dark:text-sky-300 hover:underline text-[10.5px] font-extrabold cursor-pointer flex items-center gap-1">
                         <span>Minimizar</span>
-                        <kbd class="px-1 py-0.2 rounded bg-sky-400/15 border border-sky-400/35 font-mono text-[9px]">Y</kbd>
+                        <kbd class="px-1 py-0.5 rounded bg-sky-400/15 border border-sky-400/35 font-mono text-[9px]">Y</kbd>
                     </button>
                 </div>
             </div>
@@ -839,11 +795,65 @@
                     el,
                     [
                         { transform: "scale(1)" },
-                        { transform: "scale(1.22)", offset: 0.45 },
+                        { transform: "scale(1.18)", offset: 0.45 },
                         { transform: "scale(1)" }
                     ],
-                    { duration: 340, easing: MOTION_SPRING }
+                    { duration: 280, easing: MOTION_SPRING }
                 );
+            },
+            fadeIn(el, duration = 240) {
+                if (!el) return null;
+                if (el._fadeAnim) { try { el._fadeAnim.cancel(); } catch {} el._fadeAnim = null; }
+                const anim = this.animate(
+                    el,
+                    [{ opacity: 0 }, { opacity: 1 }],
+                    { duration, easing: MOTION_EASE }
+                );
+                el._fadeAnim = anim;
+                if (anim) anim.onfinish = () => { el._fadeAnim = null; el.style.opacity = ""; };
+                return anim;
+            },
+            fadeOut(el, onDone, duration = 200) {
+                if (!el) return onDone?.();
+                if (el._fadeAnim) { try { el._fadeAnim.cancel(); } catch {} el._fadeAnim = null; }
+                const anim = this.animate(
+                    el,
+                    [{ opacity: 1 }, { opacity: 0 }],
+                    { duration, easing: MOTION_EASE }
+                );
+                if (!anim) { onDone?.(); return null; }
+                el._fadeAnim = anim;
+                anim.onfinish = () => { el._fadeAnim = null; el.style.opacity = ""; onDone?.(); };
+                return anim;
+            },
+            fadeSwap(el, swapFn, outMs = 170, inMs = 230) {
+                if (!el) { swapFn?.(); return; }
+                if (el._fadeAnim) { try { el._fadeAnim.cancel(); } catch {} el._fadeAnim = null; }
+                const outAnim = this.animate(
+                    el,
+                    [{ opacity: 1 }, { opacity: 0 }],
+                    { duration: outMs, easing: MOTION_EASE }
+                );
+                if (!outAnim) {
+                    swapFn?.();
+                    return;
+                }
+                el._fadeAnim = outAnim;
+                outAnim.onfinish = () => {
+                    swapFn?.();
+                    const inAnim = this.animate(
+                        el,
+                        [{ opacity: 0 }, { opacity: 1 }],
+                        { duration: inMs, easing: MOTION_EASE }
+                    );
+                    el._fadeAnim = inAnim;
+                    if (inAnim) {
+                        inAnim.onfinish = () => { el._fadeAnim = null; el.style.opacity = ""; };
+                    } else {
+                        el._fadeAnim = null;
+                        el.style.opacity = "";
+                    }
+                };
             }
         };
 
@@ -896,7 +906,7 @@
 
         socket.on("connect", () => {
             const dot = document.getElementById("tvLiveDot");
-            if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse";
+            if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
         });
         socket.on("disconnect", () => {
             const dot = document.getElementById("tvLiveDot");
@@ -904,38 +914,54 @@
         });
 
         let manualScreensaverActive = false;
+        let screensaverShown = false;
+        let lastClockDateStr = "";
+
+        function showScreensaverOverlay() {
+            const ssEl = document.getElementById("screensaverOverlay");
+            if (!ssEl || screensaverShown) return;
+            screensaverShown = true;
+            ssEl.classList.remove("hidden");
+            ssEl.classList.add("flex");
+            A5Motion.fadeIn(ssEl, 280);
+        }
+
+        function hideScreensaverOverlay() {
+            const ssEl = document.getElementById("screensaverOverlay");
+            if (!ssEl || !screensaverShown) return;
+            screensaverShown = false;
+            A5Motion.fadeOut(ssEl, () => {
+                if (!screensaverShown) ssEl.classList.replace("flex", "hidden");
+            }, 220);
+        }
 
         function openScreensaverNow(evt) {
             if (evt) evt.stopPropagation();
             manualScreensaverActive = true;
-            const ssEl = document.getElementById("screensaverOverlay");
-            if (ssEl) {
-                ssEl.classList.remove("hidden");
-                ssEl.classList.add("flex");
-            }
+            showScreensaverOverlay();
         }
 
         function closeScreensaver() {
             manualScreensaverActive = false;
             lastActivityTime = Date.now();
-            const ssEl = document.getElementById("screensaverOverlay");
-            if (ssEl) {
-                ssEl.classList.replace("flex", "hidden");
-            }
+            hideScreensaverOverlay();
         }
 
         setInterval(() => {
             const now = new Date();
             document.getElementById("tvClock").textContent = now.toLocaleTimeString("pt-BR");
-            document.getElementById("ssClock").textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-            document.getElementById("tvDate").textContent = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+            const dateText = now.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+            if (dateText !== lastClockDateStr) {
+                lastClockDateStr = dateText;
+                document.getElementById("tvDate").textContent = dateText;
+            }
 
             const idleMs = Date.now() - lastActivityTime;
-            const ssEl = document.getElementById("screensaverOverlay");
             if (manualScreensaverActive || idleMs >= SCREENSAVER_TIMEOUT_MS) {
-                ssEl.classList.replace("hidden", "flex");
-            } else {
-                ssEl.classList.replace("flex", "hidden");
+                document.getElementById("ssClock").textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                showScreensaverOverlay();
+            } else if (screensaverShown) {
+                hideScreensaverOverlay();
             }
             updateActiveTimersUI();
         }, 1000);
@@ -943,7 +969,7 @@
         function registerActivity() {
             manualScreensaverActive = false;
             lastActivityTime = Date.now();
-            document.getElementById("screensaverOverlay").classList.replace("flex", "hidden");
+            hideScreensaverOverlay();
         }
 
         function animateTvScore(target) {
@@ -985,7 +1011,13 @@
         }
         function toggleTvTheme() {
             const cur = localStorage.getItem("a5_tv_theme") || "dark";
-            applyTvTheme(cur === "clean" ? "dark" : "clean");
+            const next = cur === "clean" ? "dark" : "clean";
+            const board = document.getElementById("tvBoard");
+            if (board) {
+                A5Motion.fadeSwap(board, () => applyTvTheme(next), 120, 200);
+            } else {
+                applyTvTheme(next);
+            }
         }
         applyTvTheme(localStorage.getItem("a5_tv_theme") || localStorage.getItem("a5_theme") || "dark");
 
@@ -1063,7 +1095,9 @@
         });
 
         function refreshLucide() {
-            if (window.lucide) { try { lucide.createIcons(); } catch (e) {} }
+            if (window.lucide && document.querySelector("i[data-lucide]")) {
+                try { lucide.createIcons(); } catch (e) {}
+            }
         }
 
         // Layout fixo em Opção 1 (Cockpit Minimalista 2 Zonas)
@@ -1071,8 +1105,6 @@
 
         function setFooterEvent(text) {
             tvLastEventLabel = text || tvLastEventLabel;
-            const el = document.getElementById("tvFooterLastEvent");
-            if (el) el.textContent = tvLastEventLabel;
         }
 
         // Estado da paginação automática das filas (sem esconder cards em scroll parado na TV)
@@ -1187,24 +1219,24 @@
             const isNaoAut = c.pipeline_phase === "NAO_AUTORIZADO" || (c.list_title && (c.list_title.toUpperCase().includes("NÃO AUTORIZAD") || c.list_title.toUpperCase().includes("NAO AUTORIZAD")));
             const isQuoting = c.pipeline_phase === "EM_ORCAMENTO";
             if (isNaoAut) {
-                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/18 border border-rose-500/45 text-rose-600 dark:text-rose-300 font-black text-[10px] uppercase"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>Fechar</span>`;
+                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/18 border border-rose-500/45 text-rose-600 dark:text-rose-300 font-black text-[10px] uppercase"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Fechar</span>`;
             }
             if (isFinishing) {
-                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/18 border border-emerald-500/45 text-emerald-700 dark:text-emerald-300 font-black text-[10px] uppercase shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>Finalizando</span>`;
+                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/18 border border-emerald-500/45 text-emerald-700 dark:text-emerald-300 font-black text-[10px] uppercase shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Finalizando</span>`;
             }
             if (isQuoting) {
-                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-400/18 border border-sky-400/45 text-sky-700 dark:text-sky-200 font-black text-[10px] uppercase shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>Orçamentando</span>`;
+                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-400/18 border border-sky-400/45 text-sky-700 dark:text-sky-200 font-black text-[10px] uppercase shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>Orçamentando</span>`;
             }
             return "";
         }
 
-        // Card de fila com cores semânticas (Vermelho=Urgente, Roxo=Garantia, Amarelo Forte=>1.5d) + Data de Entrada nos Orçamentos Pendentes
+        // Card de fila com cores semânticas (Vermelho=Urgente, Roxo=Garantia, Amarelo Forte=>1.5d) + Data de Entrada destacada
         function renderTvCardInnerHTML(c, variant = "queue") {
             const labelsArr = Array.isArray(c.labels) ? c.labels : [];
             const isUrg = isUrgentCard(c);
             const isGar = isWarrantyCard(c);
             const isOver36h = variant === "orc" && isOverOneAndHalfDays(c);
-            const entryInfo = variant === "orc" ? formatCardEntryDate(c) : null;
+            const entryInfo = variant !== "compact" ? formatCardEntryDate(c) : null;
 
             const hasUrgLabel = labelsArr.some(l => (l.name || "").toUpperCase().includes("URG"));
             const hasGarLabel = labelsArr.some(l => (l.name || "").toUpperCase().includes("GARANTIA"));
@@ -1222,27 +1254,27 @@
                 : "";
 
             const slaPill = isUrg && (c.sla_expired || isOverOneAndHalfDays(c))
-                ? `<span class="text-[10px] bg-red-950/60 text-red-100 border border-red-400/50 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
+                ? `<span class="text-[10px] bg-red-950/75 text-red-100 border border-red-400/50 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
                 : isGar && (c.sla_expired || isOverOneAndHalfDays(c))
-                ? `<span class="text-[10px] bg-purple-950/60 text-purple-100 border border-purple-400/50 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
+                ? `<span class="text-[10px] bg-purple-950/75 text-purple-100 border border-purple-400/50 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
                 : isOver36h
                 ? `<span class="text-[10px] bg-yellow-400 text-slate-950 border border-yellow-300 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums shadow-xs"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
                 : c.sla_expired
                 ? `<span class="text-[10px] bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-400/45 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || 24}h</span>`
                 : "";
 
-            // Selo de Data de Entrada nos cards de Orçamentos Pendentes
+            // Selo destacado com a data de entrada da balança (maior e bem legível na TV 55")
             const entryBadgeTone = isUrg
-                ? "bg-red-950/65 text-red-100 border-red-400/55"
+                ? "bg-red-700 text-white border-red-400/70"
                 : isGar
-                ? "bg-purple-950/65 text-purple-100 border-purple-400/55"
+                ? "bg-purple-700 text-white border-purple-400/70"
                 : isOver36h
-                ? "bg-yellow-950/70 text-yellow-100 border-yellow-400/65"
-                : "bg-sky-400/15 text-sky-700 dark:text-sky-200 border-sky-400/35";
+                ? "bg-amber-950/90 text-yellow-200 border-yellow-500/80"
+                : "bg-sky-400/20 text-sky-800 dark:text-sky-100 border-sky-400/50";
 
             const entryDateHTML = entryInfo
-                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-mono text-[10px] font-extrabold tabular-nums shrink-0 ${entryBadgeTone}" title="Data de entrada da O.S.">
-                       <i data-lucide="calendar-clock" class="w-3 h-3 shrink-0"></i>
+                ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg border font-mono text-xs xl:text-[14px] font-black tracking-tight tabular-nums shrink-0 ${entryBadgeTone}" title="Data de entrada da O.S.">
+                       <i data-lucide="calendar-clock" class="w-3.5 h-3.5 shrink-0"></i>
                        <span>Entrada: ${esc(entryInfo.dateStr)}</span>
                    </span>`
                 : "";
@@ -1274,9 +1306,12 @@
                     <div class="font-black text-lg xl:text-[21px] uppercase leading-tight mb-1.5 break-words tracking-tight">
                         ${esc(c.client_name)}
                     </div>
-                    <div class="text-[13px] xl:text-sm text-slate-700 dark:text-sky-100/90 truncate font-bold flex items-center gap-1.5 min-w-0">
-                        <i data-lucide="scale" class="w-4 h-4 text-sky-400 shrink-0"></i>
-                        <span class="truncate">${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}</span>
+                    <div class="flex items-center justify-between gap-2 min-w-0 flex-wrap">
+                        <div class="text-[13px] xl:text-sm text-slate-700 dark:text-sky-100/90 truncate font-bold flex items-center gap-1.5 min-w-0 flex-1">
+                            <i data-lucide="scale" class="w-4 h-4 text-sky-400 shrink-0"></i>
+                            <span class="truncate">${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}</span>
+                        </div>
+                        ${entryDateHTML}
                     </div>
                     ${timerHTML}
                 `;
@@ -1425,7 +1460,7 @@
             const container = document.getElementById("tvBoard");
             if (container.dataset.skeletonReady === "1") return;
             container.dataset.skeletonReady = "1";
-            container.className = "flex-1 min-h-0 flex flex-col lg:flex-row items-stretch gap-3 px-3 pt-2.5 pb-1.5 overflow-hidden";
+            container.className = "flex-1 min-h-0 flex flex-col lg:flex-row items-stretch gap-3 px-3 pt-2.5 pb-2.5 overflow-hidden";
 
             container.innerHTML = `
                 <!-- ZONA ESQUERDA (38%): FILAS DA OFICINA -->
@@ -1476,7 +1511,7 @@
                                 <span class="text-sm">🚫</span>
                                 <span class="font-black text-xs sm:text-sm tracking-wider uppercase text-rose-600 dark:text-rose-300 truncate">NÃO AUTORIZADOS • FECHAR</span>
                             </div>
-                            <span id="tvNaoAutCount" class="bg-rose-600 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 animate-pulse tabular-nums">0</span>
+                            <span id="tvNaoAutCount" class="bg-rose-600 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 tabular-nums">0</span>
                         </div>
                         <div id="tvNaoAutList" class="p-2 space-y-1.5 overflow-y-auto custom-scrollbar"></div>
                     </div>
@@ -1515,7 +1550,7 @@
                     <div id="tvEstufaSpotlight" class="hidden tv-estufa-spotlight px-3.5 py-2 shrink-0 flex flex-col gap-1.5">
                         <div class="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-200">
                             <span class="flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+                                <span class="w-2 h-2 rounded-full bg-sky-400"></span>
                                 <span>🔥 ESTUFA / TESTE EM ANDAMENTO</span>
                             </span>
                             <span id="tvEstufaCountLabel" class="font-mono text-[10.5px] px-2 py-0.5 rounded-full bg-sky-400/20">0 ativo(s)</span>
@@ -1542,10 +1577,10 @@
             const manCount = cards.filter(c => c.pipeline_phase === 'EM_MANUTENCAO').length;
             const orcCount = cards.length - manCount;
             if (manCount > 0 && orcCount === 0) {
-                return `<span class="bg-emerald-500 text-slate-950 font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm shadow-emerald-500/30"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>🔧 FINALIZANDO (${cards.length})</span>`;
+                return `<span class="bg-emerald-500 text-slate-950 font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm shadow-emerald-500/30"><span class="w-1.5 h-1.5 rounded-full bg-slate-950"></span>🔧 FINALIZANDO (${cards.length})</span>`;
             }
             if (orcCount > 0 && manCount === 0) {
-                return `<span class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm shadow-sky-500/30"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>🔬 ORÇAMENTANDO (${cards.length})</span>`;
+                return `<span class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm shadow-sky-500/30"><span class="w-1.5 h-1.5 rounded-full bg-white"></span>🔬 ORÇAMENTANDO (${cards.length})</span>`;
             }
             return `<span class="bg-gradient-to-r from-sky-400 to-sky-600 text-white font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 shadow-sm shadow-sky-500/30">🔬 ${orcCount} Orç. • 🔧 ${manCount} Fin.</span>`;
         }
@@ -1687,29 +1722,35 @@
                 aprProgEl?.classList.add("hidden");
             }
 
-            syncCardList(
-                document.getElementById("tvOrcList"),
-                orcPaged.slice,
-                false,
-                `<div class="h-36 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
+            const orcEmptyHTML = `<div class="h-36 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
                     <i data-lucide="clipboard-list" class="w-8 h-8 mb-2 opacity-45 text-sky-400"></i>
                     <span class="text-xs font-bold uppercase tracking-wider">Nenhum orçamento pendente</span>
                     <span class="text-[11px] opacity-80 mt-0.5">Novas O.S. entrarão aqui</span>
-                </div>`,
-                animateChanges
-            );
-
-            syncCardList(
-                document.getElementById("tvAprList"),
-                aprPaged.slice,
-                false,
-                `<div class="h-36 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
+                </div>`;
+            const aprEmptyHTML = `<div class="h-36 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
                     <i data-lucide="check-circle-2" class="w-8 h-8 mb-2 opacity-45 text-emerald-400"></i>
                     <span class="text-xs font-bold uppercase tracking-wider">Nenhuma O.S. aprovada</span>
                     <span class="text-[11px] opacity-80 mt-0.5">Aguardando aprovação comercial</span>
-                </div>`,
-                animateChanges
-            );
+                </div>`;
+
+            const syncQueuePanel = (listEl, paged, emptyHTML) => {
+                if (!listEl) return;
+                const nextPageStr = String(paged.page);
+                if (rotateOnly) {
+                    if (paged.totalPages <= 1 && listEl.dataset.renderedPage === nextPageStr) return;
+                    listEl.dataset.renderedPage = nextPageStr;
+                    A5Motion.fadeSwap(listEl, () => {
+                        syncCardList(listEl, paged.slice, false, emptyHTML, false);
+                        refreshLucide();
+                    });
+                } else {
+                    listEl.dataset.renderedPage = nextPageStr;
+                    syncCardList(listEl, paged.slice, false, emptyHTML, animateChanges);
+                }
+            };
+
+            syncQueuePanel(document.getElementById("tvOrcList"), orcPaged, orcEmptyHTML);
+            syncQueuePanel(document.getElementById("tvAprList"), aprPaged, aprEmptyHTML);
 
             // Coluna NÃO AUTORIZADOS condicional (só ocupa tela se > 0)
             if (!rotateOnly) {
@@ -1855,19 +1896,6 @@
                     idleBar.classList.add("hidden");
                     idleBar.classList.remove("flex");
                 }
-
-                // Atualiza Rodapé "Prontas p/ Retirada"
-                const footerReadyEl = document.getElementById("tvFooterReadyList");
-                if (prontaCards.length > 0) {
-                    footerReadyEl.innerHTML = prontaCards.slice(0, 6).map((c) => `
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/12 border border-emerald-500/30 text-[11px] font-extrabold shrink-0">
-                            <span class="font-mono text-emerald-700 dark:text-emerald-300">O.S. ${esc(c.os_number)}</span>
-                            <span class="truncate max-w-[160px] uppercase">${esc(c.client_name)}</span>
-                        </span>
-                    `).join("") + (prontaCards.length > 6 ? `<span class="text-[10.5px] font-black text-emerald-600 dark:text-emerald-300 shrink-0">+${prontaCards.length - 6} mais</span>` : "");
-                } else {
-                    footerReadyEl.innerHTML = `<span class="opacity-65 font-medium">Nenhuma balança aguardando retirada no momento</span>`;
-                }
             }
 
             tvBoardInitialized = true;
@@ -1890,12 +1918,20 @@
                     el.remove();
                 }
             });
+            if (spotList) {
+                Array.from(spotList.children).forEach((el) => {
+                    if (!activeKeys.has(el.dataset.spotOs)) {
+                        el.remove();
+                    }
+                });
+            }
 
-            const spotlightHtmlItems = [];
+            let validCount = 0;
 
             activeCards.forEach(c => {
                 const endMs = new Date(c.timer_end_at).getTime();
                 const diffSec = Math.floor((endMs - Date.now()) / 1000);
+                const osKey = String(c.os_number);
 
                 if (diffSec <= 0) {
                     socket.emit("timer_finished_alert", {
@@ -1904,9 +1940,12 @@
                         label: c.timer_label || "Estufa"
                     });
                     c.timer_end_at = null;
-                    const oldChip = bar.querySelector(`[data-timer-os="${CSS.escape(String(c.os_number))}"]`);
+                    const oldChip = bar.querySelector(`[data-timer-os="${CSS.escape(osKey)}"]`);
                     if (oldChip) oldChip.remove();
+                    const oldSpot = spotList?.querySelector(`[data-spot-os="${CSS.escape(osKey)}"]`);
+                    if (oldSpot) oldSpot.remove();
                 } else {
+                    validCount += 1;
                     if (!timerInitialMaxSec[c.os_number] || diffSec > timerInitialMaxSec[c.os_number]) {
                         timerInitialMaxSec[c.os_number] = Math.max(diffSec, 60);
                     }
@@ -1914,10 +1953,10 @@
                     const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
                     const secs = String(diffSec % 60).padStart(2, "0");
 
-                    let chip = bar.querySelector(`[data-timer-os="${CSS.escape(String(c.os_number))}"]`);
+                    let chip = bar.querySelector(`[data-timer-os="${CSS.escape(osKey)}"]`);
                     if (!chip) {
                         chip = document.createElement("div");
-                        chip.dataset.timerOs = String(c.os_number);
+                        chip.dataset.timerOs = osKey;
                         chip.className = "tv-pill-tile px-3 py-1 flex flex-col gap-0.5 min-w-[180px] border-sky-400/50 shadow-sm";
                         chip.innerHTML = `
                             <div class="flex items-center justify-between gap-2 text-[11px] font-extrabold">
@@ -1935,26 +1974,36 @@
                     chip.querySelector("[data-t-time]").textContent = `${mins}:${secs}`;
                     chip.querySelector("[data-t-bar]").style.width = `${pct}%`;
 
-                    spotlightHtmlItems.push(`
-                        <div class="px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-sky-400/35 flex flex-col gap-1">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="font-mono font-black text-xs text-sky-700 dark:text-sky-200">O.S. ${esc(c.os_number)}</span>
-                                <span class="font-mono font-black text-base tabular-nums text-sky-600 dark:text-sky-300">${mins}:${secs}</span>
-                            </div>
-                            <div class="font-extrabold text-[11px] uppercase truncate">${esc(c.client_name)} • ${esc(c.timer_label || 'Estufa')}</div>
-                            <div class="w-full h-1.5 ember-hatch rounded-full overflow-hidden">
-                                <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#0EA5E9]" style="width:${pct}%"></div>
-                            </div>
-                        </div>
-                    `);
+                    if (spotList) {
+                        let spotCard = spotList.querySelector(`[data-spot-os="${CSS.escape(osKey)}"]`);
+                        if (!spotCard) {
+                            spotCard = document.createElement("div");
+                            spotCard.dataset.spotOs = osKey;
+                            spotCard.className = "px-3 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-sky-400/35 flex flex-col gap-1";
+                            spotCard.innerHTML = `
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="font-mono font-black text-xs text-sky-700 dark:text-sky-200" data-spot-os-txt></span>
+                                    <span class="font-mono font-black text-base tabular-nums text-sky-600 dark:text-sky-300" data-spot-time></span>
+                                </div>
+                                <div class="font-extrabold text-[11px] uppercase truncate" data-spot-meta></div>
+                                <div class="w-full h-1.5 ember-hatch rounded-full overflow-hidden">
+                                    <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#0EA5E9]" data-spot-bar></div>
+                                </div>
+                            `;
+                            spotList.appendChild(spotCard);
+                        }
+                        spotCard.querySelector("[data-spot-os-txt]").textContent = `O.S. ${c.os_number}`;
+                        spotCard.querySelector("[data-spot-time]").textContent = `${mins}:${secs}`;
+                        spotCard.querySelector("[data-spot-meta]").textContent = `${c.client_name || ''} • ${c.timer_label || 'Estufa'}`;
+                        spotCard.querySelector("[data-spot-bar]").style.width = `${pct}%`;
+                    }
                 }
             });
 
             if (spotEl && spotList && spotLabel) {
-                if (spotlightHtmlItems.length > 0) {
+                if (validCount > 0) {
                     spotEl.classList.remove("hidden");
-                    spotLabel.textContent = `${spotlightHtmlItems.length} ativo(s)`;
-                    spotList.innerHTML = spotlightHtmlItems.join("");
+                    spotLabel.textContent = `${validCount} ativo(s)`;
                 } else {
                     spotEl.classList.add("hidden");
                 }
@@ -2457,7 +2506,27 @@
             osc.start(startTime); osc.stop(startTime + duration);
         }
 
+        let tvAnnouncementCloseTimer = null;
+
+        function closeTvAnnouncementModal() {
+            const modal = document.getElementById("tvAnnouncementModal");
+            if (tvAnnouncementCloseTimer) {
+                clearTimeout(tvAnnouncementCloseTimer);
+                tvAnnouncementCloseTimer = null;
+            }
+            activeAnnouncement = false;
+            checkEndAudioDucking();
+            if (!modal || modal.classList.contains("hidden")) return;
+            A5Motion.fadeOut(modal, () => {
+                if (!activeAnnouncement) modal.classList.replace("flex", "hidden");
+            }, 220);
+        }
+
         function triggerTvAnnouncement(payload) {
+            if (tvAnnouncementCloseTimer) {
+                clearTimeout(tvAnnouncementCloseTimer);
+                tvAnnouncementCloseTimer = null;
+            }
             activeAnnouncement = true;
             setAudioDucking(true);
             const isPriority = ["director_call", "call_alert", "support_alert"].includes(payload.type) || Boolean(payload.is_urgent);
@@ -2471,33 +2540,45 @@
             const extra = document.getElementById("annExtra");
 
             if (payload.type === "os_finished") {
-                box.className = "ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 border-emerald-400 bg-[#071525]/95 shadow-[0_0_80px_rgba(16,185,129,0.35)]";
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-emerald-500/20 border-2 border-emerald-400/45 flex items-center justify-center text-emerald-400 animate-bounce"><i data-lucide="trophy" class="w-12 h-12"></i></div>`;
-                badge.textContent = "EQUIPAMENTO PRONTO E LACRADO";
+                box.className = "ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 border-emerald-400 bg-[#071525] shadow-xl";
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-emerald-500/20 border-2 border-emerald-400/45 flex items-center justify-center text-emerald-400"><i data-lucide="trophy" class="w-12 h-12"></i></div>`;
+                badge.textContent = "EQUIPAMENTO PRONTO";
                 badge.className = "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest bg-emerald-400 text-slate-950";
-                title.textContent = `O.S. ${payload.os_number} FINALIZADA!`;
+                title.textContent = `O.S. ${payload.os_number} FINALIZADA`;
                 subtitle.textContent = payload.client_name;
                 subtitle.className = "text-2xl md:text-3xl font-extrabold text-emerald-300 uppercase mb-4 break-words";
                 extra.innerHTML = `<span class="px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/25 text-sm text-sky-100">Técnico: <strong>${esc(payload.tech_name || 'Oficina')}</strong> • Placar: <strong>${payload.finished_today}</strong></span>`;
                 playSynthesizedSound("victory", isPriority);
-                confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 } });
             } else if (payload.type === "director_call") {
                 const isUrg = payload.is_urgent;
-                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isUrg ? 'border-rose-500 shadow-[0_0_90px_rgba(244,63,94,0.5)]' : 'border-sky-400 shadow-[0_0_80px_rgba(56,189,248,0.38)]'} bg-[#071525]/95`;
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-rose-500/20 text-rose-400 animate-bounce' : 'bg-sky-400/20 text-sky-300 animate-pulse'} flex items-center justify-center"><i data-lucide="${isUrg ? 'alert-octagon' : 'volume-2'}" class="w-12 h-12"></i></div>`;
+                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isUrg ? 'border-rose-500' : 'border-sky-400'} bg-[#071525] shadow-xl`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isUrg ? 'bg-rose-500/20 text-rose-400' : 'bg-sky-400/20 text-sky-300'} flex items-center justify-center"><i data-lucide="${isUrg ? 'alert-octagon' : 'volume-2'}" class="w-12 h-12"></i></div>`;
                 badge.textContent = isUrg ? "🚨 CHAMADO URGENTE DO SR. JACSON" : "📢 MENSAGEM DO SR. JACSON";
                 badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-black uppercase tracking-widest ${isUrg ? 'bg-rose-500 text-white' : 'bg-sky-400 text-slate-950'}`;
                 title.textContent = payload.tech_name;
                 subtitle.textContent = payload.reason || "Comparecer à Sala do Sr. Jacson";
                 subtitle.className = `text-2xl md:text-3xl font-extrabold ${isUrg ? 'text-rose-400' : 'text-sky-300'} uppercase mb-4 break-words`;
                 extra.innerHTML = payload.is_voice_record
-                    ? `<span class="px-4 py-1.5 rounded-full bg-sky-400/20 border border-sky-400/40 text-sm font-bold text-sky-200 animate-pulse">🎙️ Reproduzindo áudio da Diretoria...</span>`
+                    ? `<span class="px-4 py-1.5 rounded-full bg-sky-400/20 border border-sky-400/40 text-sm font-bold text-sky-200">🎙️ Reproduzindo áudio da Diretoria...</span>`
                     : `<span class="px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/25 text-xs text-sky-100">${esc(payload.sender || 'Sr. Jacson')}</span>`;
                 playSynthesizedSound(isUrg ? "urgent" : "bell", true);
+            } else if (payload.type === "new_arrival") {
+                const stageLow = String(payload.stage || "").toLowerCase();
+                const isApr = stageLow.includes("aprovad");
+                const isNaoAut = stageLow.includes("não") || stageLow.includes("nao");
+                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isApr ? 'border-emerald-400' : isNaoAut ? 'border-rose-500' : 'border-sky-400'} bg-[#071525] shadow-xl`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl ${isApr ? 'bg-emerald-500/20 border-emerald-400/45 text-emerald-300' : isNaoAut ? 'bg-rose-500/20 border-rose-400/45 text-rose-300' : 'bg-sky-400/20 border-sky-400/40 text-sky-300'} border-2 flex items-center justify-center"><i data-lucide="${isApr ? 'check-circle-2' : 'bell'}" class="w-12 h-12"></i></div>`;
+                badge.textContent = isApr ? "✅ O.S. APROVADA" : isNaoAut ? "🚫 NÃO AUTORIZADA" : "📋 PARA ORÇAMENTO";
+                badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest ${isApr ? 'bg-emerald-400 text-slate-950' : isNaoAut ? 'bg-rose-500 text-white' : 'bg-sky-400 text-slate-950'}`;
+                title.textContent = isApr ? `O.S. ${payload.os_number} APROVADA` : isNaoAut ? `O.S. ${payload.os_number} NÃO AUTORIZADA` : `O.S. ${payload.os_number} P/ ORÇAMENTO`;
+                subtitle.textContent = payload.client_name || "";
+                subtitle.className = `text-2xl md:text-3xl font-extrabold ${isApr ? 'text-emerald-300' : 'text-sky-300'} uppercase mb-4 break-words`;
+                extra.innerHTML = payload.equipment_type ? `<span class="px-4 py-1.5 rounded-full bg-sky-950/80 border border-sky-400/25 text-sm text-sky-100">${esc(payload.equipment_type)}</span>` : "";
+                playSynthesizedSound(isPriority ? "urgent" : "bell", isPriority);
             } else {
                 const isCall = payload.type === "call_alert";
-                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isCall ? 'border-amber-400' : 'border-sky-400'} bg-[#071525]/95 shadow-[0_0_80px_rgba(56,189,248,0.35)]`;
-                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-sky-400/20 border-2 border-sky-400/40 flex items-center justify-center text-sky-300 animate-pulse"><i data-lucide="${isCall ? 'bell-ring' : 'bell'}" class="w-12 h-12"></i></div>`;
+                box.className = `ann-spring max-w-4xl w-full rounded-[28px] p-8 md:p-12 text-center border-2 ${isCall ? 'border-amber-400' : 'border-sky-400'} bg-[#071525] shadow-xl`;
+                icon.innerHTML = `<div class="w-20 h-20 mx-auto rounded-2xl bg-sky-400/20 border-2 border-sky-400/40 flex items-center justify-center text-sky-300"><i data-lucide="${isCall ? 'bell-ring' : 'bell'}" class="w-12 h-12"></i></div>`;
                 badge.textContent = isCall ? "🔔 CHAMADO NA RECEPÇÃO" : (payload.title || "ATUALIZAÇÃO NA ESTEIRA");
                 badge.className = `inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-widest ${isCall ? 'bg-amber-400 text-slate-950' : 'bg-sky-400 text-slate-950'}`;
                 title.textContent = payload.os_number ? `O.S. ${payload.os_number}` : payload.tech_name;
@@ -2508,31 +2589,33 @@
             }
 
             modal.classList.replace("hidden", "flex");
+            A5Motion.fadeIn(modal, 220);
             refreshLucide();
 
-            let autoCloseMs = 9500;
+            const isBriefEvent = ["new_arrival", "os_finished"].includes(payload.type);
+            let autoCloseMs = isBriefEvent ? 4800 : 7500;
+            const scheduleClose = (ms) => {
+                if (tvAnnouncementCloseTimer) clearTimeout(tvAnnouncementCloseTimer);
+                tvAnnouncementCloseTimer = setTimeout(closeTvAnnouncementModal, ms);
+            };
+
             if (payload.audio_base64) {
                 try {
                     if (window.currentVoiceAudio) { try { window.currentVoiceAudio.pause(); } catch {} }
                     const voiceAudio = new Audio(payload.audio_base64);
                     window.currentVoiceAudio = voiceAudio;
-                    voiceAudio.onloadedmetadata = () => { autoCloseMs = Math.max(9500, (voiceAudio.duration || 4) * 1000 + 2000); };
-                    voiceAudio.onended = () => {
-                        setTimeout(() => {
-                            modal.classList.replace("flex", "hidden");
-                            activeAnnouncement = false;
-                            checkEndAudioDucking();
-                        }, 1000);
+                    voiceAudio.onloadedmetadata = () => {
+                        const targetMs = Math.max(autoCloseMs, (voiceAudio.duration || 3) * 1000 + 1600);
+                        scheduleClose(targetMs);
                     };
-                    setTimeout(() => voiceAudio.play().catch(() => {}), 450);
+                    voiceAudio.onended = () => {
+                        scheduleClose(700);
+                    };
+                    setTimeout(() => voiceAudio.play().catch(() => {}), 350);
                 } catch {}
             }
 
-            setTimeout(() => {
-                modal.classList.replace("flex", "hidden");
-                activeAnnouncement = false;
-                checkEndAudioDucking();
-            }, autoCloseMs);
+            scheduleClose(autoCloseMs);
         }
 
         refreshLucide();

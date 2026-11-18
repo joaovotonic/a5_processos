@@ -383,7 +383,7 @@ def adm_aprovar(os_number: str) -> Dict[str, Any]:
             "equipment_type": card.get("equipment_model") or card.get("equipment_type"),
             "is_urgent": True,
             "is_warranty": False
-        }, "conserto aprovado pelo cliente", intro="Atenção oficina!")
+        }, "APROVADA")
 
     realtime.broadcast_board()
     return {"success": True, "message": f"O.S. {clean_os} APROVADA! Anúncio despachado para a TV e QR Code liberado.", "phase": "APROVADOS"}
@@ -439,7 +439,7 @@ def adm_nao_autorizar(os_number: str, reason: str = "") -> Dict[str, Any]:
             "equipment_type": card.get("equipment_model") or card.get("equipment_type"),
             "is_urgent": True,
             "is_warranty": False
-        }, "fechamento (orçamento não autorizado)", intro="Atenção oficina!")
+        }, "NÃO AUTORIZADA")
 
     realtime.broadcast_board()
     return {

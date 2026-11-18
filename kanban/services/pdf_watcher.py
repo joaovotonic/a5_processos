@@ -249,7 +249,7 @@ def process_pdf_file(pdf_path: str) -> bool:
                 "is_urgent": False,
                 "is_warranty": False
             }
-            realtime.announce_arrival(card_mock, "orçamento inicial da esteira", intro="Atenção oficina! Nova O.S. importada do Teorema.")
+            realtime.announce_arrival(card_mock, "ORÇAMENTO")
         except Exception as e:
             logger.warning(f"Erro ao emitir notificações de tempo real para O.S. {os_number}: {e}")
 

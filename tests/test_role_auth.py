@@ -284,6 +284,43 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
                 conn.execute("DELETE FROM card_history WHERE os_number = ?", (test_os,))
                 conn.execute("DELETE FROM cards WHERE os_number = ?", (test_os,))
 
+    def test_08_tv_lite_optimization_fade_and_brief_notifications(self):
+        """TV sem confete/blur/rodapé prontas, com esmaecer, data entrada maior e avisos breves."""
+        from unittest.mock import patch
+        from kanban import realtime
+
+        anon = self.app.test_client()
+        tv_html = anon.get("/tv").get_data(as_text=True)
+
+        # Removidos por performance / solicitação
+        self.assertNotIn("canvas-confetti", tv_html)
+        self.assertNotIn("confetti(", tv_html)
+        self.assertNotIn("backdrop-filter: blur", tv_html)
+        self.assertNotIn("backdrop-blur-", tv_html)
+        self.assertNotIn("tvFooterTicker", tv_html)
+        self.assertNotIn("Prontas p/ Retirada", tv_html)
+
+        # Recursos adicionados: esmaecer + data de entrada maior
+        self.assertIn("fadeSwap(", tv_html)
+        self.assertIn("fadeIn(", tv_html)
+        self.assertIn("fadeOut(", tv_html)
+        self.assertIn("Entrada: ${esc(entryInfo.dateStr)}", tv_html)
+        self.assertIn("xl:text-[14px]", tv_html)
+
+        # Notificações TTS breves
+        captured = []
+        with patch("kanban.realtime.get_neural_audio_base64", return_value=None), patch("kanban.realtime._emit_safe", side_effect=lambda ev, pl: captured.append((ev, pl))):
+            realtime.announce_arrival({"os_number": "77123", "client_name": "CLIENTE A", "equipment_type": "Balança"}, "ORÇAMENTO")
+            realtime.announce_arrival({"os_number": "77123", "client_name": "CLIENTE A", "equipment_type": "Balança"}, "APROVADA")
+            realtime.announce_finished_mobile("77123", "CLIENTE A", "TEC. GUILHERME", "123", 1)
+            realtime.announce_finished_on_board({"os_number": "77124", "client_name": "CLIENTE B", "tech_name": "TEC. ENZO"}, "Priscila", 2)
+
+        tts_list = [pl["tts_text"] for ev, pl in captured if ev == "tv_announcement"]
+        self.assertEqual(tts_list[0], "O.S. 77123 para orçamento.")
+        self.assertEqual(tts_list[1], "O.S. 77123 aprovada.")
+        self.assertEqual(tts_list[2], "O.S. 77123 finalizada pelo técnico Guilherme.")
+        self.assertEqual(tts_list[3], "O.S. 77124 finalizada pelo técnico Enzo.")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

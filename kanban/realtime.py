@@ -40,27 +40,55 @@ def _announce(payload, voice=None):
     _emit_safe("tv_announcement", payload)
 
 
-def announce_arrival(card, stage, intro="Atenção oficina."):
+def announce_arrival(card, stage, intro=""):
+    os_num = str(card.get("os_number") or "").strip()
+    stage_low = str(stage or "").strip().lower()
+    if "aprovad" in stage_low:
+        tts_text = f"O.S. {os_num} aprovada."
+    elif "não autorizado" in stage_low or "nao autorizado" in stage_low or "fechamento" in stage_low:
+        tts_text = f"O.S. {os_num} não autorizada."
+    elif "orçamento" in stage_low or "orcamento" in stage_low:
+        tts_text = f"O.S. {os_num} para orçamento."
+    else:
+        tts_text = f"O.S. {os_num} para {stage}."
+
     _announce({
         "type": "new_arrival",
-        "os_number": card["os_number"],
-        "client_name": card["client_name"],
-        "equipment_type": card["equipment_type"],
+        "os_number": os_num,
+        "client_name": card.get("client_name") or "",
+        "equipment_type": card.get("equipment_type") or "",
         "stage": stage,
-        "is_urgent": card["is_urgent"] or card["is_warranty"],
-        "tts_text": f"{intro} A O.S. {card['os_number']}, do cliente {card['client_name']}, chegou para {stage}."
+        "is_urgent": bool(card.get("is_urgent") or card.get("is_warranty")),
+        "tts_text": tts_text,
     })
+
+
+def _clean_tech_speech_name(tech_name):
+    """Extrai o nome limpo do técnico (sem prefixos repetidos) para locução breve."""
+    raw = str(tech_name or "").strip()
+    clean = re.sub(r"^(?:TEC\.?|TÉC\.?|SR\.?|ADM\.?)\s+", "", raw, flags=re.IGNORECASE).strip()
+    clean = re.sub(r"\s*\([^)]*\)", "", clean).strip()
+    return clean.title() if clean else ""
+
+
+def _finished_tts_text(os_number, tech_name):
+    clean_tech = _clean_tech_speech_name(tech_name)
+    if not clean_tech or clean_tech.lower() in ("oficina", "recepção", "recepcao", "sistema", "priscila"):
+        return f"O.S. {os_number} finalizada."
+    return f"O.S. {os_number} finalizada pelo técnico {clean_tech}."
 
 
 def announce_finished_on_board(card, actor, finished_today):
     """O.S. arrastada para FINALIZADAS pela recepção."""
+    os_num = str(card.get("os_number") or "").strip()
+    tech_display = card.get("tech_name") or actor
     _announce({
         "type": "os_finished",
-        "os_number": card["os_number"],
-        "client_name": card["client_name"],
-        "tech_name": card["tech_name"] or actor,
+        "os_number": os_num,
+        "client_name": card.get("client_name") or "",
+        "tech_name": tech_display,
         "finished_today": finished_today,
-        "tts_text": f"Excelente trabalho! O.S. {card['os_number']} do cliente {card['client_name']} foi finalizada por {card['tech_name'] or 'oficina'}!"
+        "tts_text": _finished_tts_text(os_num, card.get("tech_name")),
     })
 
 
@@ -73,7 +101,7 @@ def announce_finished_mobile(os_number, client_name, tech_name, inmetro_seal, fi
         "tech_name": tech_name,
         "inmetro_seal": inmetro_seal,
         "finished_today": finished_today,
-        "tts_text": f"Serviço concluído! O técnico {tech_name} finalizou a O.S. {os_number} do cliente {client_name}."
+        "tts_text": _finished_tts_text(os_number, tech_name),
     })
 
 
