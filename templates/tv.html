@@ -17,41 +17,41 @@
         :root {
             --tv-bg: #EFF7FF;
             --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(125, 211, 252, 0.34), transparent 44%),
-                              radial-gradient(circle at 90% 100%, rgba(56, 189, 248, 0.22), transparent 48%),
+                              radial-gradient(circle at 90% 100%, rgba(56, 189, 248, 0.24), transparent 48%),
                               linear-gradient(180deg, #F4FAFF 0%, #EAF4FF 100%);
             --tv-surface: rgba(255, 255, 255, 0.90);
             --tv-card: rgba(255, 255, 255, 0.98);
             --tv-subtle: rgba(224, 242, 254, 0.72);
             --tv-subtle-strong: #E0F2FE;
-            --tv-border: rgba(56, 189, 248, 0.28);
-            --tv-border-strong: rgba(14, 165, 233, 0.48);
+            --tv-border: rgba(56, 189, 248, 0.32);
+            --tv-border-strong: rgba(14, 165, 233, 0.54);
             --tv-text: #0F172A;
             --tv-muted: #475569;
             --tv-sky: #38BDF8;
             --tv-sky-strong: #0EA5E9;
             --tv-sky-text: #0284C7;
-            --tv-shadow: 0 12px 30px -12px rgba(14, 165, 233, 0.16);
-            --tv-card-shadow: 0 3px 10px -4px rgba(14, 165, 233, 0.12);
+            --tv-shadow: 0 12px 30px -12px rgba(14, 165, 233, 0.18);
+            --tv-card-shadow: 0 4px 12px -4px rgba(14, 165, 233, 0.14);
         }
 
         html.dark {
             --tv-bg: #070E1A;
-            --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.16), transparent 44%),
-                              radial-gradient(circle at 88% 100%, rgba(125, 211, 252, 0.10), transparent 46%),
+            --tv-bg-gradient: radial-gradient(circle at 12% 0%, rgba(56, 189, 248, 0.20), transparent 44%),
+                              radial-gradient(circle at 88% 100%, rgba(16, 185, 129, 0.12), transparent 46%),
                               linear-gradient(180deg, #070E1A 0%, #0A1426 100%);
             --tv-surface: rgba(13, 24, 42, 0.86);
             --tv-card: rgba(17, 31, 54, 0.95);
-            --tv-subtle: rgba(56, 189, 248, 0.10);
-            --tv-subtle-strong: rgba(56, 189, 248, 0.18);
-            --tv-border: rgba(56, 189, 248, 0.22);
-            --tv-border-strong: rgba(125, 211, 252, 0.50);
+            --tv-subtle: rgba(56, 189, 248, 0.11);
+            --tv-subtle-strong: rgba(56, 189, 248, 0.20);
+            --tv-border: rgba(56, 189, 248, 0.26);
+            --tv-border-strong: rgba(125, 211, 252, 0.56);
             --tv-text: #F0F9FF;
             --tv-muted: #94A3B8;
             --tv-sky: #38BDF8;
             --tv-sky-strong: #0EA5E9;
             --tv-sky-text: #7DD3FC;
-            --tv-shadow: 0 18px 42px -16px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(56, 189, 248, 0.08);
-            --tv-card-shadow: 0 6px 18px -6px rgba(2, 6, 23, 0.65);
+            --tv-shadow: 0 18px 42px -16px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(56, 189, 248, 0.12);
+            --tv-card-shadow: 0 6px 20px -6px rgba(2, 6, 23, 0.65), 0 0 14px -8px rgba(56, 189, 248, 0.28);
         }
 
         body {
@@ -78,7 +78,7 @@
             background: var(--tv-surface);
             backdrop-filter: blur(20px);
             border: 1px solid var(--tv-border);
-            border-radius: 18px;
+            border-radius: 20px;
             box-shadow: var(--tv-shadow);
             transition: background-color 0.25s ease, border-color 0.25s ease, width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
         }
@@ -89,7 +89,7 @@
             border-radius: 14px;
             box-shadow: var(--tv-card-shadow);
             will-change: transform, opacity;
-            transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.2s ease;
         }
         .tv-bento-card:hover {
             transform: translateY(-2px);
@@ -100,14 +100,33 @@
             background: var(--tv-surface);
             backdrop-filter: blur(18px);
             border: 1px solid var(--tv-border);
-            border-radius: 18px;
+            border-radius: 20px;
             box-shadow: var(--tv-shadow);
             will-change: transform, opacity;
-            transition: border-color 0.25s ease, box-shadow 0.35s ease;
+            transition: border-color 0.25s ease, box-shadow 0.35s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
         }
         .tv-tech-row.tech-spotlight {
-            border-color: rgba(56, 189, 248, 0.85);
-            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), 0 18px 42px -12px rgba(56, 189, 248, 0.38);
+            border-color: rgba(56, 189, 248, 0.9);
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.38), 0 18px 46px -10px rgba(56, 189, 248, 0.45);
+        }
+        .tv-tech-idle {
+            background: var(--tv-surface);
+            backdrop-filter: blur(18px);
+            border: 1px dashed var(--tv-border-strong);
+            border-radius: 20px;
+            opacity: 0.85;
+        }
+        .tv-estufa-spotlight {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.16) 0%, rgba(56, 189, 248, 0.08) 100%);
+            border: 1.5px solid rgba(56, 189, 248, 0.52);
+            border-radius: 18px;
+            box-shadow: 0 10px 28px -10px rgba(14, 165, 233, 0.32);
+        }
+        .tv-footer-bar {
+            background: var(--tv-surface);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--tv-border);
+            box-shadow: var(--tv-shadow);
         }
 
         .tv-pill-tile {
@@ -119,12 +138,12 @@
         .sky-grad-btn {
             background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%);
             color: #FFFFFF;
-            box-shadow: 0 8px 20px -6px rgba(14, 165, 233, 0.55);
+            box-shadow: 0 8px 22px -6px rgba(14, 165, 233, 0.58);
             transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), filter 0.18s ease, box-shadow 0.18s ease;
         }
         .sky-grad-btn:hover {
-            filter: brightness(1.06);
-            box-shadow: 0 12px 26px -6px rgba(56, 189, 248, 0.65);
+            filter: brightness(1.07);
+            box-shadow: 0 12px 28px -6px rgba(56, 189, 248, 0.68);
         }
         .sky-grad-btn:active {
             transform: scale(0.97);
@@ -135,8 +154,8 @@
             background-color: rgba(56, 189, 248, 0.14);
             background-image: repeating-linear-gradient(
                 -45deg,
-                rgba(56, 189, 248, 0.22),
-                rgba(56, 189, 248, 0.22) 5px,
+                rgba(56, 189, 248, 0.24),
+                rgba(56, 189, 248, 0.24) 5px,
                 transparent 5px,
                 transparent 10px
             );
@@ -145,19 +164,63 @@
             background-color: rgba(56, 189, 248, 0.12);
             background-image: repeating-linear-gradient(
                 -45deg,
-                rgba(125, 211, 252, 0.22),
-                rgba(125, 211, 252, 0.22) 5px,
+                rgba(125, 211, 252, 0.24),
+                rgba(125, 211, 252, 0.24) 5px,
                 transparent 5px,
                 transparent 10px
             );
         }
 
+        /* Cores de prioridade e tempo nos cards do Painel TV:
+           - Urgente: Vermelho
+           - Garantia: Roxo
+           - Mais de 1 dia e meio (>= 36h): Amarelo Forte */
+        .tv-card-urgent,
         .urgent-glow {
-            border: 1.5px solid #F59E0B !important;
-            box-shadow: 0 0 18px rgba(245, 158, 11, 0.24) !important;
+            background: linear-gradient(135deg, rgba(254, 226, 226, 0.96) 0%, rgba(254, 202, 202, 0.92) 100%) !important;
+            border: 2px solid #EF4444 !important;
+            box-shadow: 0 0 26px rgba(239, 68, 68, 0.34), inset 0 0 0 1px rgba(239, 68, 68, 0.22) !important;
         }
-        .sla-alert {
+        html.dark .tv-card-urgent,
+        html.dark .urgent-glow {
+            background: linear-gradient(135deg, rgba(153, 27, 27, 0.58) 0%, rgba(69, 10, 10, 0.76) 100%) !important;
+            border: 2px solid #EF4444 !important;
+            box-shadow: 0 0 28px rgba(239, 68, 68, 0.44), inset 0 0 0 1px rgba(248, 113, 113, 0.28) !important;
+        }
+
+        .tv-card-warranty {
+            background: linear-gradient(135deg, rgba(243, 232, 255, 0.96) 0%, rgba(233, 213, 255, 0.92) 100%) !important;
+            border: 2px solid #A855F7 !important;
+            box-shadow: 0 0 26px rgba(168, 85, 247, 0.34), inset 0 0 0 1px rgba(168, 85, 247, 0.22) !important;
+        }
+        html.dark .tv-card-warranty {
+            background: linear-gradient(135deg, rgba(107, 33, 168, 0.58) 0%, rgba(59, 7, 100, 0.76) 100%) !important;
+            border: 2px solid #A855F7 !important;
+            box-shadow: 0 0 28px rgba(168, 85, 247, 0.44), inset 0 0 0 1px rgba(192, 132, 252, 0.28) !important;
+        }
+
+        .tv-card-yellow-strong {
+            background: linear-gradient(135deg, rgba(254, 240, 138, 0.97) 0%, rgba(253, 224, 71, 0.90) 100%) !important;
+            border: 2px solid #EAB308 !important;
+            box-shadow: 0 0 26px rgba(234, 179, 8, 0.38), inset 0 0 0 1px rgba(250, 204, 21, 0.35) !important;
+        }
+        html.dark .tv-card-yellow-strong {
+            background: linear-gradient(135deg, rgba(161, 98, 7, 0.58) 0%, rgba(113, 63, 18, 0.76) 100%) !important;
+            border: 2px solid #FACC15 !important;
+            box-shadow: 0 0 28px rgba(250, 204, 21, 0.42), inset 0 0 0 1px rgba(253, 224, 71, 0.30) !important;
+        }
+
+        .sla-alert:not(.tv-card-urgent):not(.tv-card-warranty):not(.tv-card-yellow-strong) {
             border-left: 4px solid #38BDF8 !important;
+        }
+
+        @keyframes tvRotateProgress {
+            from { transform: scaleX(0); }
+            to   { transform: scaleX(1); }
+        }
+        .tv-page-bar {
+            transform-origin: left;
+            animation: tvRotateProgress 8.5s linear infinite;
         }
 
         @keyframes modalSpringIn {
@@ -189,18 +252,18 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.35); border-radius: 9999px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.6); }
 
-        /* Popout YouTube Bento Glass - Identidade Azul Claro nos modos Clean & Dark */
+        /* Dropdown YouTube Studio Bento Glass - Sai de cima p/ baixo direto do botão ao lado da logo A5 */
         #ytFloatingWidget {
             background: var(--tv-surface);
             border: 1.5px solid var(--tv-border-strong);
             color: var(--tv-text);
-            box-shadow: 0 24px 60px -15px rgba(14, 165, 233, 0.28), var(--tv-shadow);
-            backdrop-filter: blur(24px);
-            transform-origin: bottom right;
+            box-shadow: 0 28px 68px -14px rgba(2, 6, 23, 0.72), 0 0 38px -10px rgba(56, 189, 248, 0.36);
+            backdrop-filter: blur(26px);
+            transform-origin: var(--yt-origin-x, 50%) 0%;
             will-change: transform, opacity;
         }
         #ytFloatingWidget .yt-header-bar {
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16) 0%, rgba(14, 165, 233, 0.08) 100%);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.20) 0%, rgba(14, 165, 233, 0.08) 100%);
             border-bottom: 1px solid var(--tv-border);
         }
         #ytFloatingWidget .yt-ducking-bar {
@@ -226,9 +289,14 @@
         #ytFloatingWidget .yt-search-item:hover {
             border-color: var(--tv-sky-strong);
             background: var(--tv-subtle-strong);
+            transform: translateY(-1px);
         }
         #ytFloatingWidget .yt-muted {
             color: var(--tv-muted);
+        }
+        #ytToggleBtn.yt-btn-open {
+            border-color: #38BDF8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.32), 0 10px 26px -6px rgba(14, 165, 233, 0.45);
         }
         #ytMiniPill {
             background: var(--tv-surface);
@@ -236,7 +304,7 @@
             color: var(--tv-text);
             box-shadow: 0 16px 40px -10px rgba(14, 165, 233, 0.35);
             backdrop-filter: blur(20px);
-            transform-origin: bottom right;
+            transform-origin: top center;
             will-change: transform, opacity;
         }
 
@@ -258,11 +326,48 @@
         <span>CLIQUE EM QUALQUER LUGAR PARA ATIVAR A LOCUÇÃO (EDGE-TTS) E ALARMES SONOROS DA TV</span>
     </div>
 
-    <!-- TOP BAR BENTO COMPACTA (OTIMIZADA PARA 1920x1080) -->
-    <header class="tv-header mx-3 mt-2 px-3.5 py-1.5 rounded-[18px] flex items-center justify-between gap-3 shrink-0">
-        <div class="flex items-center gap-2.5 shrink-0">
-            <!-- Monograma A5 Vetorial Azul Claro -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-8 w-auto shrink-0 drop-shadow-sm" fill="none">
+    <!-- TOP BAR BENTO NEON (A5 + PAINEL TV CENTRALIZADOS E YOUTUBE À ESQUERDA DA LOGO A5) -->
+    <header class="tv-header mx-3 mt-2 px-4 py-2 rounded-[20px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 shrink-0 relative z-30">
+        <!-- ESQUERDA: SELOS + CRONÔMETROS DE ESTUFA + BOTÃO YOUTUBE AO LADO ESQUERDO DA LOGO A5 -->
+        <div class="flex items-center justify-between gap-2 min-w-0 w-full pr-1 xl:pr-3">
+            <div class="flex flex-wrap items-center gap-2 min-w-0">
+                <span class="inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold bg-sky-400/15 text-sky-600 dark:text-sky-300 border border-sky-400/35 px-2.5 py-1 rounded-full shrink-0">
+                    <i data-lucide="shield-check" class="w-3 h-3"></i>
+                    TOLEDO PRIX
+                </span>
+                <span id="tvLiveBadge" class="inline-flex items-center gap-1.5 text-[10px] font-mono font-extrabold bg-sky-400/12 text-sky-600 dark:text-sky-300 border border-sky-400/35 px-2.5 py-1 rounded-full shrink-0">
+                    <span id="tvLiveDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>AO VIVO</span>
+                </span>
+                <div id="activeTimersBar" class="flex flex-wrap items-center gap-2 min-w-0"></div>
+            </div>
+
+            <!-- BOTÃO SOM DA OFICINA / YOUTUBE (À ESQUERDA DA LOGO A5 • ATALHO TECLA Y) -->
+            <div id="ytHeaderAnchor" class="relative shrink-0 ml-auto">
+                <button onclick="toggleYtPlayerModal()" id="ytToggleBtn"
+                        class="group bg-gradient-to-r from-sky-500/15 via-sky-400/10 to-sky-500/15 hover:from-sky-500/25 hover:to-sky-400/25 border border-sky-400/45 text-sky-700 dark:text-sky-100 px-3 py-1.5 rounded-2xl transition-all duration-200 flex items-center gap-2.5 cursor-pointer shadow-sm"
+                        title="Abrir / Minimizar Som da Oficina (Atalho: Tecla Y)">
+                    <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/35 shrink-0">
+                        <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div class="text-left leading-tight">
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-black text-[11px] uppercase tracking-wider">Som da Oficina</span>
+                            <span id="ytBadgeDot" class="w-2 h-2 rounded-full bg-slate-400 dark:bg-sky-800 transition-colors"></span>
+                        </div>
+                        <div id="ytBtnSublabel" class="text-[9.5px] font-bold text-sky-600/80 dark:text-sky-300/75 truncate max-w-[135px]">
+                            YouTube • Sem Anúncios
+                        </div>
+                    </div>
+                    <kbd class="px-1.5 py-0.5 rounded-md bg-sky-400/20 border border-sky-400/45 text-[10px] font-mono font-black text-sky-700 dark:text-sky-200 leading-none shadow-2xs" title="Tecla de atalho Y">Y</kbd>
+                    <i id="ytBtnChevron" data-lucide="chevron-down" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-300 transition-transform duration-300"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- CENTRO: MARCA A5 + PAINEL TV EM DESTAQUE -->
+        <div class="flex items-center justify-center gap-3.5 justify-self-center shrink-0 px-2">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" class="h-11 xl:h-12 w-auto shrink-0 drop-shadow-[0_0_16px_rgba(56,189,248,0.42)]" fill="none">
                 <defs>
                     <linearGradient id="tvA5Grad" x1="1" y1="3" x2="89" y2="59" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stop-color="#7DD3FC"/>
@@ -271,39 +376,26 @@
                     </linearGradient>
                 </defs>
                 <rect x="1" y="3" width="88" height="56" rx="14" fill="url(#tvA5Grad)"/>
-                <rect x="1.5" y="3.5" width="87" height="55" rx="13.5" stroke="#ffffff" stroke-opacity="0.35"/>
+                <rect x="1.5" y="3.5" width="87" height="55" rx="13.5" stroke="#ffffff" stroke-opacity="0.4"/>
                 <path d="M 27.1 8.2 L 29.8 8.2 L 46.7 48.3 C 47.6 50.4 49.1 51.3 52.6 51.6 L 52.6 53.7 L 30.5 53.7 L 30.5 51.6 C 34.6 51.3 36.2 50.5 35.4 48.2 L 32.0 38.2 L 18.7 38.2 L 15.5 48.2 C 14.8 50.5 16.4 51.3 20.8 51.6 L 20.8 53.7 L 4.2 53.7 L 4.2 51.6 C 7.6 51.3 9.3 50.4 10.3 48.0 Z M 25.3 20.8 L 20.1 34.5 L 30.6 34.5 Z M 60.1 9.6 L 74.8 9.6 C 76.8 9.6 78.3 9.1 79.5 8.3 L 80.3 8.3 L 77.7 17.2 L 62.6 17.2 L 61.8 26.2 C 64.2 25.1 66.9 24.6 69.8 24.6 C 77.4 24.6 82.4 29.8 82.4 38.0 C 82.4 47.8 75.3 54.8 65.1 54.8 C 58.4 54.8 54.1 52.1 54.1 49.0 C 54.1 46.7 55.8 45.3 58.0 45.3 C 60.1 45.3 61.4 46.5 62.7 48.6 C 63.9 50.6 65.3 51.5 67.2 51.5 C 72.3 51.5 75.6 47.6 75.6 41.7 C 75.6 35.9 72.0 32.8 66.2 32.8 C 63.5 32.8 61.1 33.6 59.5 35.3 L 58.5 34.6 Z" fill="#ffffff" fill-rule="evenodd"/>
             </svg>
-            <div>
-                <div class="flex items-center gap-1.5">
-                    <h1 class="text-sm font-extrabold tracking-tight leading-none">Painel TV</h1>
-                    <span class="inline-flex items-center gap-1 text-[9.5px] font-mono font-extrabold bg-sky-400/15 text-sky-600 dark:text-sky-300 border border-sky-400/35 px-2 py-0.5 rounded-full">
-                        <i data-lucide="shield-check" class="w-2.5 h-2.5"></i>
-                        TOLEDO PRIX
-                    </span>
-                    <span id="tvLiveBadge" class="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold bg-sky-400/12 text-sky-600 dark:text-sky-300 border border-sky-400/30 px-2 py-0.5 rounded-full">
-                        <span id="tvLiveDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span>AO VIVO</span>
-                    </span>
-                </div>
-                <p class="text-[10px] font-semibold text-sky-600 dark:text-sky-300/85 mt-0.5 leading-none">
+            <div class="text-left">
+                <h1 class="text-xl xl:text-2xl font-black tracking-tight leading-none uppercase">Painel TV</h1>
+                <p class="text-xs xl:text-[13px] font-extrabold tracking-wide text-sky-600 dark:text-sky-300 mt-0.5 leading-none uppercase">
                     A5 Tecnologia • Esteira em Tempo Real
                 </p>
             </div>
         </div>
 
-        <!-- CRONÔMETROS DE ESTUFA / TESTE ATIVOS -->
-        <div id="activeTimersBar" class="flex flex-wrap items-center justify-center gap-2 flex-1 min-w-0"></div>
-
-        <!-- PLACAR DE PRODUTIVIDADE + RELÓGIO + YOUTUBE + TEMA -->
-        <div class="flex items-center gap-2 shrink-0">
+        <!-- DIREITA: PLACAR DE PRODUTIVIDADE + RELÓGIO + TEMA -->
+        <div class="flex items-center gap-2 shrink-0 justify-self-end">
             <div id="duckingIndicator" class="hidden bg-amber-500/15 border border-amber-400/40 text-amber-600 dark:text-amber-300 px-2.5 py-1 rounded-full text-[11px] font-black animate-pulse flex items-center gap-1.5">
                 <i data-lucide="volume-x" class="w-3.5 h-3.5"></i>
                 <span>SOM PAUSADO P/ ALERTA</span>
             </div>
 
             <div class="tv-pill-tile px-3 py-1 flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/25">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/30">
                     <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
                 </div>
                 <div>
@@ -317,14 +409,6 @@
                 <div id="tvDate" class="text-[9.5px] font-mono text-slate-500 dark:text-sky-300/70 uppercase font-bold mt-0.5 leading-none">--/--/----</div>
             </div>
 
-            <button onclick="toggleYtPlayerModal()" id="ytToggleBtn"
-                    class="bg-sky-400/15 hover:bg-sky-400/25 border border-sky-400/40 text-sky-700 dark:text-sky-200 font-extrabold text-[11px] px-3 py-2 rounded-full transition flex items-center gap-1.5 cursor-pointer shadow-xs"
-                    title="Música da Oficina (YouTube com Silenciamento Automático nos Alertas)">
-                <i data-lucide="radio" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-300"></i>
-                <span>Som Oficina</span>
-                <span id="ytBadgeDot" class="w-2 h-2 rounded-full bg-slate-400 dark:bg-sky-800 transition-colors"></span>
-            </button>
-
             <button onclick="toggleTvTheme()" id="tvThemeBtn"
                     class="tv-pill-tile px-3 py-2 text-[11px] font-extrabold transition flex items-center gap-1.5 cursor-pointer hover:border-sky-400"
                     title="Alternar Modo Claro / Escuro na TV">
@@ -334,8 +418,27 @@
         </div>
     </header>
 
-    <!-- QUADRO KANBAN COMPACTO DA OFICINA (1920x1080) -->
-    <main id="tvBoard" class="flex-1 flex items-stretch gap-2.5 p-2.5 overflow-hidden"></main>
+    <!-- COCKPIT BENTO 2 ZONAS NEON + MOTION (1920x1080) -->
+    <main id="tvBoard" class="flex-1 min-h-0 flex flex-col lg:flex-row items-stretch gap-3 px-3 pt-2.5 pb-1.5 overflow-hidden"></main>
+
+    <!-- FAIXA RODAPÉ DE STATUS EM TEMPO REAL -->
+    <footer id="tvFooterTicker" class="tv-footer-bar mx-3 mb-2 px-4 py-1.5 rounded-[14px] flex items-center justify-between gap-3 shrink-0 text-[11px] overflow-hidden">
+        <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 font-black text-[10px] uppercase tracking-wider shrink-0">
+                <i data-lucide="package-check" class="w-3 h-3"></i>
+                <span>Prontas p/ Retirada</span>
+            </span>
+            <div id="tvFooterReadyList" class="flex items-center gap-2 overflow-hidden truncate font-bold text-slate-700 dark:text-sky-100/85">
+                <span class="opacity-65 font-medium">Nenhuma balança aguardando retirada no momento</span>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-2 shrink-0 pl-3 border-l border-sky-400/20">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+            <span id="tvFooterLastEvent" class="font-mono text-[10.5px] font-bold text-sky-700 dark:text-sky-300 truncate max-w-[380px]">
+                Painel Cockpit ativo • Atualização em tempo real
+            </span>
+        </div>
+    </footer>
 
     <!-- MINI ALERTA DISCRETO NO TOPO (URGÊNCIA / GARANTIA) -->
     <div id="tvMiniAlert" class="fixed top-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-500 transform -translate-y-36 opacity-0 pointer-events-none max-w-xl w-[90%]">
@@ -373,202 +476,223 @@
         </div>
     </div>
 
-    <!-- PROTEÇÃO DE TELA (20 MINUTOS DE INATIVIDADE) -->
-    <div id="screensaverOverlay" class="fixed inset-0 bg-[#060D1A] hidden flex-col items-center justify-center z-40">
-        <div class="screensaver-float text-center space-y-6">
-            <div class="flex items-center justify-center gap-6">
-                <span class="bg-gradient-to-br from-[#7DD3FC] via-[#38BDF8] to-[#0284C7] text-white font-black px-7 py-3.5 rounded-3xl text-5xl shadow-2xl shadow-sky-500/35">A5 TECNOLOGIA</span>
+    <!-- PROTEÇÃO DE TELA / MODO DE ESPERA -->
+    <div id="screensaverOverlay" onclick="closeScreensaver()" class="fixed inset-0 bg-[#050B16] hidden flex-col items-center justify-center z-40 p-6 cursor-pointer select-none">
+        <div class="screensaver-float text-center space-y-6 w-full max-w-5xl">
+            <div class="flex flex-wrap items-center justify-center gap-5">
+                <span class="bg-gradient-to-br from-[#7DD3FC] via-[#38BDF8] to-[#0284C7] text-white font-black px-7 py-3 rounded-3xl text-4xl xl:text-5xl shadow-2xl shadow-sky-500/35">A5 TECNOLOGIA</span>
                 <span class="text-4xl font-light text-sky-400/50">×</span>
-                <span class="border-2 border-sky-400/50 text-sky-300 font-black px-6 py-3.5 rounded-3xl text-4xl bg-sky-400/5">TOLEDO PRIX</span>
+                <span class="border-2 border-sky-400/50 text-sky-300 font-black px-6 py-3 rounded-3xl text-3xl xl:text-4xl bg-sky-400/5">TOLEDO PRIX</span>
             </div>
-            <div id="ssClock" class="text-9xl font-black tracking-tighter text-sky-50 tabular-nums drop-shadow-lg">00:00</div>
-            <p class="text-xl text-sky-200/70 uppercase tracking-widest">Assistência Técnica Autorizada • Monitoramento em Tempo Real</p>
+            <div id="ssClock" class="text-8xl xl:text-9xl font-black font-mono tracking-tighter text-sky-50 tabular-nums drop-shadow-lg leading-none">00:00</div>
+            <p class="text-base xl:text-lg text-sky-200/70 uppercase tracking-widest font-semibold">Assistência Técnica Autorizada • Monitoramento em Tempo Real</p>
         </div>
     </div>
 
-    <!-- POPOUT FLUTUANTE DO YOUTUBE DA OFICINA (AZUL CLARO BENTO GLASS - MOTION RISE) -->
-    <div id="ytFloatingWidget" class="fixed bottom-3.5 right-3.5 z-40 hidden flex-col w-[395px] max-w-[95vw] max-h-[88vh] rounded-[24px] overflow-hidden">
-        <!-- Cabeçalho -->
-        <div class="yt-header-bar px-3.5 py-2.5 flex items-center justify-between gap-2 shrink-0">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/30 shrink-0">
-                    <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="font-extrabold text-xs uppercase tracking-wider block truncate">Som da Oficina</span>
-                    <span class="yt-muted text-[9.5px] font-semibold block leading-none mt-0.5">YouTube Direto • Sem Anúncios</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-1 shrink-0">
-                <button type="button" onclick="toggleYtAccountPanel()" id="ytAccountHeaderBtn"
-                        class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-sky-400/15 border border-sky-400/35 text-sky-600 dark:text-sky-300 hover:bg-sky-400/25 transition flex items-center gap-1 cursor-pointer"
-                        title="Configurar Conta YouTube Premium">
-                    <i data-lucide="crown" class="w-3 h-3"></i>
-                    <span>Conta</span>
-                </button>
-                <span id="ytStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/30">Pronto</span>
-                <button onclick="minimizeYtWidget()" class="p-1 rounded-full hover:bg-sky-400/15 yt-muted hover:text-sky-500 transition cursor-pointer" title="Minimizar">
-                    <i data-lucide="minus" class="w-3.5 h-3.5"></i>
-                </button>
-                <button onclick="toggleYtPlayerModal()" class="p-1 rounded-full hover:bg-sky-400/15 yt-muted hover:text-sky-500 transition cursor-pointer" title="Fechar">
-                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
-                </button>
-            </div>
-        </div>
+    <!-- DROPDOWN STUDIO DO YOUTUBE DA OFICINA (SAI DE CIMA P/ BAIXO DIRETO DO BOTÃO À ESQUERDA DA LOGO A5) -->
+    <div id="ytFloatingWidget" class="fixed top-[72px] left-[320px] z-40 hidden flex-col w-[430px] max-w-[94vw] max-h-[86vh] rounded-[26px] overflow-visible">
+        <!-- Setinha de conexão direta com o botão acima -->
+        <div id="ytDropdownCaret" class="w-4 h-4 rotate-45 bg-[#0D182A] border-l-[1.5px] border-t-[1.5px] border-sky-400/70 absolute -top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none"></div>
 
-        <!-- Painel opcional de conta -->
-        <div id="ytAccountPanel" class="hidden m-2.5 mb-0 rounded-2xl p-2.5 space-y-2 text-xs shrink-0">
-            <div class="flex items-center justify-between">
-                <span class="font-extrabold text-sky-600 dark:text-sky-300 uppercase flex items-center gap-1.5 text-[11px]">
-                    <i data-lucide="crown" class="w-3.5 h-3.5"></i>
-                    <span>Integração YouTube</span>
-                </span>
-                <span id="ytAccountActiveBadge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">✓ Stream Direto</span>
-            </div>
-            <p class="yt-muted text-[10.5px] leading-relaxed">
-                O player reproduz direto da fonte sem anúncios. Vincule uma conta se quiser playlists privadas:
-            </p>
-            <div class="grid grid-cols-2 gap-1.5">
-                <button type="button" onclick="openYouTubeLoginPopup()" class="col-span-2 sky-grad-btn font-extrabold py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-center gap-1.5 cursor-pointer">
-                    <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-                    <span>1. Abrir Login do YouTube</span>
-                </button>
-                <button type="button" onclick="syncYouTubeBrowserAccount('firefox')" class="yt-soft-btn hover:border-sky-400 font-bold py-1.5 px-2 rounded-xl text-[10.5px] cursor-pointer transition">🦊 Firefox</button>
-                <button type="button" onclick="syncYouTubeBrowserAccount('chrome')" class="yt-soft-btn hover:border-sky-400 font-bold py-1.5 px-2 rounded-xl text-[10.5px] cursor-pointer transition">🌐 Chrome / Edge</button>
-            </div>
-            <div id="ytAccountStatusMsg" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold text-center hidden"></div>
-        </div>
+        <!-- Container interno arredondado -->
+        <div class="flex flex-col w-full h-full rounded-[25px] overflow-hidden">
+            <!-- Faixa luminosa superior -->
+            <div class="h-1 w-full bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400 shrink-0"></div>
 
-        <!-- Faixa Silenciamento Automático -->
-        <div class="yt-ducking-bar px-3.5 py-1 flex items-center justify-between text-[10.5px] font-bold shrink-0">
-            <span class="flex items-center gap-1.5">
-                <i data-lucide="volume-2" class="w-3 h-3"></i>
-                <span>Silenciamento Automático:</span>
-            </span>
-            <span class="text-emerald-600 dark:text-emerald-400 font-black tracking-wide">ATIVO NOS ALERTAS</span>
-        </div>
-
-        <!-- Viewport do Vídeo -->
-        <div id="ytPlayerContainerWrap" class="px-3 pt-2.5 shrink-0 yt-stagger">
-            <div id="ytVideoBox" class="w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-sky-400/25 relative shadow-inner">
-                <video id="ytNativeVideo" class="w-full h-full object-contain bg-slate-950" playsinline preload="auto"></video>
-                <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[#071122]/90 backdrop-blur-md text-white z-10">
-                    <div class="w-8 h-8 border-3 border-sky-400 border-t-transparent rounded-full animate-spin mb-2"></div>
-                    <span id="ytLoadingTitle" class="text-xs font-extrabold text-sky-300 line-clamp-2 px-3">Carregando música...</span>
-                    <span class="text-[10px] text-sky-200/65 mt-1">Stream direto • Sem anúncios</span>
-                </div>
-                <div id="ytPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-3 bg-gradient-to-br from-[#0A182E] via-[#0D213F] to-[#081326] text-sky-100">
-                    <div class="w-12 h-12 rounded-2xl bg-sky-400/15 border border-sky-400/35 flex items-center justify-center text-sky-300 mb-2 shadow-lg shadow-sky-500/15">
-                        <i data-lucide="disc-3" class="w-6 h-6"></i>
+            <!-- Cabeçalho Studio -->
+            <div class="yt-header-bar px-4 py-3 flex items-center justify-between gap-2 shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 via-sky-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-sky-500/35 shrink-0">
+                        <i data-lucide="music-2" class="w-4 h-4"></i>
                     </div>
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-200">Pronto para tocar</span>
-                    <span class="text-[10px] text-sky-300/70 mt-0.5">Toque em Tocar, escolha uma rádio ou busque abaixo</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tocando Agora -->
-        <div id="ytNowPlayingBox" class="mx-3 mt-2 px-3 py-2 rounded-2xl flex items-center justify-between gap-2 shrink-0 yt-stagger">
-            <div class="flex items-center gap-2 min-w-0 flex-1">
-                <div id="ytEqBars" class="flex items-end gap-0.5 h-3.5 shrink-0 px-0.5">
-                    <span class="eq-bar eq-bar-paused w-1 h-2 rounded-full bg-sky-400" style="animation-delay:0ms"></span>
-                    <span class="eq-bar eq-bar-paused w-1 h-3.5 rounded-full bg-sky-500" style="animation-delay:180ms"></span>
-                    <span class="eq-bar eq-bar-paused w-1 h-2.5 rounded-full bg-sky-300" style="animation-delay:340ms"></span>
-                </div>
-                <div class="min-w-0 flex-1">
-                    <div id="ytNowPlayingTitle" class="text-[11.5px] font-extrabold truncate">🎤 Kamisa 10 (Ao Vivo)</div>
-                    <div id="ytNowPlayingChannel" class="yt-muted text-[10px] truncate font-medium">Toque em Tocar ou pesquise uma música</div>
-                </div>
-            </div>
-            <button type="button" onclick="playNextYtTrack()" title="Próxima música"
-                    class="px-2.5 py-1 rounded-full bg-sky-400/18 hover:bg-sky-400/30 border border-sky-400/35 text-sky-700 dark:text-sky-200 text-[10.5px] font-extrabold shrink-0 transition inline-flex items-center gap-1 cursor-pointer">
-                <i data-lucide="skip-forward" class="w-3 h-3"></i>
-                <span>Próx.</span>
-            </button>
-        </div>
-
-        <!-- Corpo Scrollável do Popout -->
-        <div class="p-3 space-y-2.5 overflow-y-auto custom-scrollbar yt-stagger">
-            <!-- Tocar / Pausar + Volume -->
-            <div class="flex items-center justify-between gap-2">
-                <button id="ytPlayPauseBtn" onclick="toggleYtPlayPause()"
-                        class="flex-1 sky-grad-btn font-black py-2 px-3.5 rounded-full text-xs flex items-center justify-center gap-1.5 cursor-pointer">
-                    <span>▶️ Tocar</span>
-                </button>
-                <div class="yt-soft-btn flex items-center gap-2 flex-1 px-2.5 py-1.5 rounded-full">
-                    <i data-lucide="volume-2" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-300 shrink-0"></i>
-                    <input type="range" id="ytVolumeSlider" min="0" max="100" value="80" oninput="changeYtVolume(this.value)"
-                           class="w-full h-1.5 accent-sky-400 bg-sky-200 dark:bg-sky-950 rounded-lg cursor-pointer">
-                    <span id="ytVolVal" class="text-[10.5px] font-mono font-extrabold text-sky-600 dark:text-sky-300 w-8 text-right tabular-nums">80%</span>
-                </div>
-            </div>
-
-            <!-- Pesquisar -->
-            <div>
-                <div class="flex gap-1.5">
-                    <div class="relative flex-1 min-w-0">
-                        <i data-lucide="search" class="w-3.5 h-3.5 text-sky-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                        <input type="text" id="ytSearchInput"
-                               placeholder="Pesquisar no YouTube ou colar link..."
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();searchYouTubeMusic();}"
-                               class="yt-input w-full rounded-full pl-8 pr-3 py-1.5 text-xs font-medium focus:outline-none focus:border-sky-400 transition">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-black text-xs uppercase tracking-wider truncate">Som da Oficina</span>
+                            <span id="ytStatusBadge" class="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/35">Pronto</span>
+                        </div>
+                        <span class="yt-muted text-[10px] font-semibold flex items-center gap-1 leading-none mt-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span>Stream Direto • Silencia nos Alertas</span>
+                        </span>
                     </div>
-                    <button type="button" id="ytSearchBtn" onclick="searchYouTubeMusic()"
-                            class="sky-grad-btn font-black px-3.5 py-1.5 rounded-full text-xs shrink-0 cursor-pointer">
-                        Buscar
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="toggleYtAccountPanel()" id="ytAccountHeaderBtn"
+                            class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl bg-sky-400/15 border border-sky-400/35 text-sky-600 dark:text-sky-300 hover:bg-sky-400/25 transition flex items-center gap-1 cursor-pointer"
+                            title="Configurar Conta YouTube Premium">
+                        <i data-lucide="crown" class="w-3 h-3"></i>
+                        <span>Conta</span>
+                    </button>
+                    <button onclick="minimizeYtWidget()" class="px-2 py-1 rounded-xl bg-sky-400/10 hover:bg-sky-400/20 border border-sky-400/30 yt-muted hover:text-sky-400 transition flex items-center gap-1 cursor-pointer" title="Minimizar para o botão (Tecla Y)">
+                        <kbd class="text-[9.5px] font-mono font-black text-sky-500 dark:text-sky-300">Y</kbd>
+                        <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
+            </div>
 
-                <div id="ytSearchResultsWrap" class="hidden mt-2 space-y-1 max-h-40 overflow-y-auto custom-scrollbar pr-1 rounded-2xl p-1.5">
-                    <div class="flex items-center justify-between px-1 pb-1 border-b border-sky-400/20">
-                        <span class="text-[9.5px] font-black uppercase text-sky-600 dark:text-sky-300">Resultados (clique p/ tocar)</span>
-                        <button type="button" onclick="closeYtSearchResults()" class="yt-muted text-[9.5px] hover:text-sky-500 font-bold cursor-pointer">✕ Fechar</button>
-                    </div>
-                    <div id="ytSearchResultsList" class="space-y-1"></div>
+            <!-- Painel opcional de conta -->
+            <div id="ytAccountPanel" class="hidden m-3 mb-0 rounded-2xl p-3 space-y-2 text-xs shrink-0">
+                <div class="flex items-center justify-between">
+                    <span class="font-extrabold text-sky-600 dark:text-sky-300 uppercase flex items-center gap-1.5 text-[11px]">
+                        <i data-lucide="crown" class="w-3.5 h-3.5"></i>
+                        <span>Integração YouTube</span>
+                    </span>
+                    <span id="ytAccountActiveBadge" class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30">✓ Stream Direto</span>
                 </div>
+                <p class="yt-muted text-[10.5px] leading-relaxed">
+                    O player reproduz direto da fonte sem anúncios. Vincule uma conta se quiser playlists privadas:
+                </p>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button type="button" onclick="openYouTubeLoginPopup()" class="col-span-2 sky-grad-btn font-extrabold py-1.5 px-3 rounded-xl text-[11px] flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                        <span>1. Abrir Login do YouTube</span>
+                    </button>
+                    <button type="button" onclick="syncYouTubeBrowserAccount('firefox')" class="yt-soft-btn hover:border-sky-400 font-bold py-1.5 px-2 rounded-xl text-[10.5px] cursor-pointer transition">🦊 Firefox</button>
+                    <button type="button" onclick="syncYouTubeBrowserAccount('chrome')" class="yt-soft-btn hover:border-sky-400 font-bold py-1.5 px-2 rounded-xl text-[10.5px] cursor-pointer transition">🌐 Chrome / Edge</button>
+                </div>
+                <div id="ytAccountStatusMsg" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold text-center hidden"></div>
             </div>
 
-            <!-- Presets Rápidos -->
-            <div class="grid grid-cols-2 gap-1.5">
-                <button type="button" onclick="playYtPreset('kamisa10')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
-                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">🎤</span>
-                    <span class="truncate">Kamisa 10</span>
-                </button>
-                <button type="button" onclick="playYtPreset('rock')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
-                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">🎸</span>
-                    <span class="truncate">Rock Clássico</span>
-                </button>
-                <button type="button" onclick="playYtPreset('lofi')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
-                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">☕</span>
-                    <span class="truncate">Lo-Fi Oficina</span>
-                </button>
-                <button type="button" onclick="playYtPreset('flashback')" class="yt-preset-btn px-2.5 py-1.5 rounded-xl text-[10.5px] font-extrabold text-left truncate transition flex items-center gap-1.5 cursor-pointer">
-                    <span class="w-5 h-5 rounded-md bg-sky-400/15 text-sky-500 flex items-center justify-center shrink-0">📻</span>
-                    <span class="truncate">Flashback 80/90</span>
-                </button>
-            </div>
+            <!-- Corpo do Studio Player -->
+            <div class="p-3.5 space-y-3 overflow-y-auto custom-scrollbar">
+                <!-- Pesquisar no topo para acesso rápido -->
+                <div class="yt-stagger">
+                    <div class="flex gap-1.5">
+                        <div class="relative flex-1 min-w-0">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-sky-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                            <input type="text" id="ytSearchInput"
+                                   placeholder="Buscar música, artista ou colar link do YouTube..."
+                                   onkeydown="if(event.key==='Enter'){event.preventDefault();searchYouTubeMusic();}"
+                                   class="yt-input w-full rounded-xl pl-9 pr-3 py-2 text-xs font-semibold focus:outline-none focus:border-sky-400 transition">
+                        </div>
+                        <button type="button" id="ytSearchBtn" onclick="searchYouTubeMusic()"
+                                class="sky-grad-btn font-black px-4 py-2 rounded-xl text-xs shrink-0 cursor-pointer">
+                            Buscar
+                        </button>
+                    </div>
 
-            <!-- Rodapé -->
-            <div class="pt-1.5 flex items-center justify-between text-[10.5px] yt-muted border-t border-sky-400/20">
-                <label class="flex items-center gap-1.5 cursor-pointer font-semibold">
-                    <input type="checkbox" id="ytHideVideoChk" onchange="toggleYtVideoVisibility(this.checked)" class="accent-sky-500 rounded cursor-pointer">
-                    <span>Ocultar vídeo (Apenas som)</span>
-                </label>
-                <button onclick="minimizeYtWidget()" class="text-sky-600 dark:text-sky-300 hover:underline text-[10.5px] font-extrabold cursor-pointer">Minimizar</button>
+                    <div id="ytSearchResultsWrap" class="hidden mt-2 space-y-1 max-h-44 overflow-y-auto custom-scrollbar pr-1 rounded-2xl p-2">
+                        <div class="flex items-center justify-between px-1 pb-1 border-b border-sky-400/20">
+                            <span class="text-[9.5px] font-black uppercase text-sky-600 dark:text-sky-300">Resultados (clique p/ tocar)</span>
+                            <button type="button" onclick="closeYtSearchResults()" class="yt-muted text-[9.5px] hover:text-sky-500 font-bold cursor-pointer">✕ Fechar</button>
+                        </div>
+                        <div id="ytSearchResultsList" class="space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- Viewport Cinema 16:9 -->
+                <div id="ytPlayerContainerWrap" class="shrink-0 yt-stagger">
+                    <div id="ytVideoBox" class="w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-sky-400/35 relative shadow-lg shadow-sky-950/50">
+                        <video id="ytNativeVideo" class="w-full h-full object-contain bg-slate-950" playsinline preload="auto"></video>
+                        <div id="ytLoadingOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-[#071122]/90 backdrop-blur-md text-white z-10">
+                            <div class="w-9 h-9 border-3 border-sky-400 border-t-transparent rounded-full animate-spin mb-2"></div>
+                            <span id="ytLoadingTitle" class="text-xs font-extrabold text-sky-300 line-clamp-2 px-3">Carregando música...</span>
+                            <span class="text-[10px] text-sky-200/65 mt-1">Stream direto • Sem anúncios</span>
+                        </div>
+                        <div id="ytPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-gradient-to-br from-[#071326] via-[#0C2140] to-[#061020] text-sky-100">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-400/15 border border-sky-400/40 flex items-center justify-center text-sky-300 mb-2 shadow-lg shadow-sky-500/20">
+                                <i data-lucide="disc-3" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-black uppercase tracking-wider text-sky-100">Som da Oficina Pronto</span>
+                            <span class="text-[10.5px] text-sky-300/75 mt-0.5">Toque em Tocar ou escolha uma estação abaixo</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deck Integrado: Tocando Agora + Controles + Volume -->
+                <div id="ytNowPlayingBox" class="p-3 rounded-2xl space-y-2.5 shrink-0 yt-stagger">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div id="ytEqBars" class="flex items-end gap-0.5 h-4 shrink-0 px-1">
+                                <span class="eq-bar eq-bar-paused w-1 h-2 rounded-full bg-sky-400" style="animation-delay:0ms"></span>
+                                <span class="eq-bar eq-bar-paused w-1 h-4 rounded-full bg-cyan-300" style="animation-delay:160ms"></span>
+                                <span class="eq-bar eq-bar-paused w-1 h-3 rounded-full bg-sky-500" style="animation-delay:320ms"></span>
+                                <span class="eq-bar eq-bar-paused w-1 h-3.5 rounded-full bg-emerald-400" style="animation-delay:240ms"></span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div id="ytNowPlayingTitle" class="text-xs font-black truncate">🎤 Kamisa 10 (Ao Vivo)</div>
+                                <div id="ytNowPlayingChannel" class="yt-muted text-[10px] truncate font-semibold mt-0.5">Toque em Tocar ou escolha uma estação</div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="playNextYtTrack()" title="Próxima faixa"
+                                class="px-2.5 py-1.5 rounded-xl bg-sky-400/15 hover:bg-sky-400/28 border border-sky-400/35 text-sky-700 dark:text-sky-200 text-[10.5px] font-extrabold shrink-0 transition inline-flex items-center gap-1 cursor-pointer">
+                            <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
+                            <span>Próx.</span>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2 pt-1 border-t border-sky-400/15">
+                        <button id="ytPlayPauseBtn" onclick="toggleYtPlayPause()"
+                                class="sky-grad-btn font-black py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0 min-w-[118px]">
+                            <span>▶️ Tocar</span>
+                        </button>
+                        <div class="yt-soft-btn flex items-center gap-2 flex-1 px-3 py-1.5 rounded-xl">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-sky-500 dark:text-sky-300 shrink-0"></i>
+                            <input type="range" id="ytVolumeSlider" min="0" max="100" value="80" oninput="changeYtVolume(this.value)"
+                                   class="w-full h-1.5 accent-sky-400 bg-sky-200 dark:bg-sky-950 rounded-lg cursor-pointer">
+                            <span id="ytVolVal" class="text-[10.5px] font-mono font-extrabold text-sky-600 dark:text-sky-300 w-8 text-right tabular-nums">80%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estações Rápidas da Oficina -->
+                <div class="space-y-1.5 yt-stagger">
+                    <div class="flex items-center justify-between px-0.5">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-300/90">Estações da Oficina</span>
+                        <span class="text-[9.5px] font-mono yt-muted">1 clique p/ iniciar</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button type="button" onclick="playYtPreset('kamisa10')" class="yt-preset-btn p-2 rounded-xl text-left transition flex items-center gap-2 cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-sky-400/15 border border-sky-400/30 text-sm flex items-center justify-center shrink-0">🎤</span>
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-black truncate leading-tight">Kamisa 10</div>
+                                <div class="yt-muted text-[9px] font-semibold truncate">Pagode Ao Vivo</div>
+                            </div>
+                        </button>
+                        <button type="button" onclick="playYtPreset('rock')" class="yt-preset-btn p-2 rounded-xl text-left transition flex items-center gap-2 cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-sky-400/15 border border-sky-400/30 text-sm flex items-center justify-center shrink-0">🎸</span>
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-black truncate leading-tight">Rock Clássico</div>
+                                <div class="yt-muted text-[9px] font-semibold truncate">Clássicos 70/80</div>
+                            </div>
+                        </button>
+                        <button type="button" onclick="playYtPreset('lofi')" class="yt-preset-btn p-2 rounded-xl text-left transition flex items-center gap-2 cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-sky-400/15 border border-sky-400/30 text-sm flex items-center justify-center shrink-0">☕</span>
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-black truncate leading-tight">Lo-Fi Oficina</div>
+                                <div class="yt-muted text-[9px] font-semibold truncate">Foco & Bancada</div>
+                            </div>
+                        </button>
+                        <button type="button" onclick="playYtPreset('flashback')" class="yt-preset-btn p-2 rounded-xl text-left transition flex items-center gap-2 cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-sky-400/15 border border-sky-400/30 text-sm flex items-center justify-center shrink-0">📻</span>
+                            <div class="min-w-0">
+                                <div class="text-[11px] font-black truncate leading-tight">Flashback 80/90</div>
+                                <div class="yt-muted text-[9px] font-semibold truncate">Hits Antena</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rodapé enxuto -->
+                <div class="pt-2 flex items-center justify-between text-[10.5px] yt-muted border-t border-sky-400/20 yt-stagger">
+                    <label class="flex items-center gap-1.5 cursor-pointer font-semibold hover:text-sky-400 transition">
+                        <input type="checkbox" id="ytHideVideoChk" onchange="toggleYtVideoVisibility(this.checked)" class="accent-sky-500 rounded cursor-pointer">
+                        <span>Ocultar vídeo (apenas áudio)</span>
+                    </label>
+                    <button onclick="minimizeYtWidget()" class="text-sky-600 dark:text-sky-300 hover:underline text-[10.5px] font-extrabold cursor-pointer flex items-center gap-1">
+                        <span>Minimizar</span>
+                        <kbd class="px-1 py-0.2 rounded bg-sky-400/15 border border-sky-400/35 font-mono text-[9px]">Y</kbd>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- PÍLULA MINIMIZADA DO YOUTUBE (AZUL CLARO CLEAN & DARK) -->
-    <div id="ytMiniPill" onclick="restoreYtWidget()"
-         class="fixed bottom-3.5 right-3.5 z-40 hidden cursor-pointer items-center gap-2 px-3.5 py-2 rounded-full text-xs font-extrabold hover:scale-105 transition">
-        <span class="w-6 h-6 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shrink-0">
-            <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
-        </span>
-        <span id="ytMiniStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="ytMiniTitle" class="truncate max-w-[150px]">Som da Oficina</span>
-        <span class="opacity-40">|</span>
-        <span id="ytMiniVol" class="text-sky-600 dark:text-sky-300 font-mono tabular-nums">80%</span>
+    <!-- PÍLULA AUXILIAR DE ESTADO (SINCRONIZADA COM O BOTÃO DO TOPO) -->
+    <div id="ytMiniPill" onclick="restoreYtWidget()" class="hidden">
+        <span id="ytMiniStatusDot"></span>
+        <span id="ytMiniTitle">Som da Oficina</span>
+        <span id="ytMiniVol">80%</span>
     </div>
 
     <script>
@@ -779,6 +903,27 @@
             if (dot) dot.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
         });
 
+        let manualScreensaverActive = false;
+
+        function openScreensaverNow(evt) {
+            if (evt) evt.stopPropagation();
+            manualScreensaverActive = true;
+            const ssEl = document.getElementById("screensaverOverlay");
+            if (ssEl) {
+                ssEl.classList.remove("hidden");
+                ssEl.classList.add("flex");
+            }
+        }
+
+        function closeScreensaver() {
+            manualScreensaverActive = false;
+            lastActivityTime = Date.now();
+            const ssEl = document.getElementById("screensaverOverlay");
+            if (ssEl) {
+                ssEl.classList.replace("flex", "hidden");
+            }
+        }
+
         setInterval(() => {
             const now = new Date();
             document.getElementById("tvClock").textContent = now.toLocaleTimeString("pt-BR");
@@ -787,7 +932,7 @@
 
             const idleMs = Date.now() - lastActivityTime;
             const ssEl = document.getElementById("screensaverOverlay");
-            if (idleMs >= SCREENSAVER_TIMEOUT_MS) {
+            if (manualScreensaverActive || idleMs >= SCREENSAVER_TIMEOUT_MS) {
                 ssEl.classList.replace("hidden", "flex");
             } else {
                 ssEl.classList.replace("flex", "hidden");
@@ -796,6 +941,7 @@
         }, 1000);
 
         function registerActivity() {
+            manualScreensaverActive = false;
             lastActivityTime = Date.now();
             document.getElementById("screensaverOverlay").classList.replace("flex", "hidden");
         }
@@ -822,7 +968,7 @@
             requestAnimationFrame(tick);
         }
 
-        // Alternância Claro <-> Escuro preservando identidade Azul Claro nos dois modos
+        // Alternância Claro <-> Escuro preservando identidade Azul Claro Neon nos dois modos
         function applyTvTheme(theme) {
             const isClean = theme === "clean";
             document.documentElement.classList.toggle("dark", !isClean);
@@ -855,6 +1001,7 @@
             registerActivity();
             boardData = data;
             tvMuted = boardData.settings?.tv_muted === "1";
+            setFooterEvent(`Esteira sincronizada às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`);
             renderTvBoard();
         });
 
@@ -865,12 +1012,20 @@
 
         socket.on("tv_announcement", (payload) => {
             registerActivity();
+            if (payload?.os_number) {
+                setFooterEvent(`Último aviso: O.S. ${payload.os_number} • ${payload.client_name || payload.tech_name || ''}`);
+            } else if (payload?.tech_name) {
+                setFooterEvent(`Chamado TV: ${payload.tech_name}`);
+            }
             triggerTvAnnouncement(payload);
         });
 
         let tvMiniAlertTimer = null;
         socket.on("tv_mini_alert", (payload) => {
             registerActivity();
+            if (payload?.os_number) {
+                setFooterEvent(`Alerta ${payload.label_name || 'Fila'}: O.S. ${payload.os_number} (${payload.client_name || ''})`);
+            }
             const alertEl = document.getElementById("tvMiniAlert");
             const innerEl = document.getElementById("tvMiniAlertInner");
             const iconBox = document.getElementById("tvMiniAlertIconBox");
@@ -911,7 +1066,78 @@
             if (window.lucide) { try { lucide.createIcons(); } catch (e) {} }
         }
 
-        function cardSignature(c, isHorizontal) {
+        // Layout fixo em Opção 1 (Cockpit Minimalista 2 Zonas)
+        const tvLayoutMode = "option1";
+
+        function setFooterEvent(text) {
+            tvLastEventLabel = text || tvLastEventLabel;
+            const el = document.getElementById("tvFooterLastEvent");
+            if (el) el.textContent = tvLastEventLabel;
+        }
+
+        // Estado da paginação automática das filas (sem esconder cards em scroll parado na TV)
+        const TV_PAGE_INTERVAL_MS = 8500;
+        const tvQueuePages = { orc: 0, apr: 0 };
+        let tvLastPageRotateMs = Date.now();
+        let tvLastEventLabel = "Cockpit ativo • Atualização em tempo real";
+        setFooterEvent(tvLastEventLabel);
+
+        function isUrgentCard(c) {
+            const labelsArr = Array.isArray(c?.labels) ? c.labels : [];
+            return Boolean(c?.is_urgent || labelsArr.some(l => (l.name || "").toUpperCase().includes("URG")));
+        }
+
+        function isWarrantyCard(c) {
+            const labelsArr = Array.isArray(c?.labels) ? c.labels : [];
+            return Boolean(c?.is_warranty || labelsArr.some(l => (l.name || "").toUpperCase().includes("GARANTIA")));
+        }
+
+        function getCardEntryHours(c) {
+            const rawDate = c?.created_at || c?.moved_at;
+            if (rawDate) {
+                const ts = new Date(rawDate).getTime();
+                if (!Number.isNaN(ts)) {
+                    return Math.max(0, (Date.now() - ts) / 3600000);
+                }
+            }
+            return Number(c?.hours_in_stage || 0);
+        }
+
+        // Mais de 1 dia e meio (>= 36 horas) desde a entrada ou na etapa
+        function isOverOneAndHalfDays(c) {
+            return getCardEntryHours(c) >= 36 || Number(c?.hours_in_stage || 0) >= 36;
+        }
+
+        function getTvCardToneClass(c, variant = "queue") {
+            if (isUrgentCard(c)) return "tv-card-urgent urgent-glow";
+            if (isWarrantyCard(c)) return "tv-card-warranty";
+            if (variant === "orc" && isOverOneAndHalfDays(c)) return "tv-card-yellow-strong";
+            if (c?.sla_expired) return "sla-alert";
+            return "";
+        }
+
+        function formatCardEntryDate(c) {
+            const rawDate = c?.created_at || c?.moved_at;
+            if (!rawDate) return null;
+            const dt = new Date(rawDate);
+            if (Number.isNaN(dt.getTime())) return null;
+            const d = String(dt.getDate()).padStart(2, "0");
+            const m = String(dt.getMonth() + 1).padStart(2, "0");
+            const y = dt.getFullYear();
+            const hh = String(dt.getHours()).padStart(2, "0");
+            const mm = String(dt.getMinutes()).padStart(2, "0");
+            const hours = Math.max(0, (Date.now() - dt.getTime()) / 3600000);
+            const days = Math.floor(hours / 24);
+            const ageText = days >= 1 ? `há ${days}d` : `há ${Math.max(1, Math.round(hours))}h`;
+            return {
+                dateStr: `${d}/${m}/${y}`,
+                shortDateTime: `${d}/${m} às ${hh}:${mm}`,
+                ageText,
+                hours
+            };
+        }
+
+        function cardSignature(c, variant) {
             return JSON.stringify([
                 c.id,
                 c.os_number,
@@ -920,98 +1146,191 @@
                 c.equipment_model,
                 c.pipeline_phase,
                 c.list_title,
+                c.created_at,
                 c.is_urgent,
                 c.is_warranty,
                 c.sla_expired,
+                c.hours_in_stage,
+                getTvCardToneClass(c, variant || "queue"),
                 c.timer_end_at,
                 c.timer_label,
-                isHorizontal ? 1 : 0,
+                variant || "queue",
                 (c.labels || []).map(l => `${l.name}:${l.color}`)
             ]);
         }
 
-        function renderTvCardInnerHTML(c, isHorizontal = false) {
-            const labelsHTML = (c.labels || []).map(l => `
-                <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide shadow-2xs" style="background:${esc(l.color)}; color:${esc(l.text_color || '#fff')}">
+        function buildTimerBlockHTML(c, compact = false) {
+            if (!c.timer_end_at) return "";
+            const endMs = new Date(c.timer_end_at).getTime();
+            const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
+            if (!timerInitialMaxSec[c.os_number] || diffSec > timerInitialMaxSec[c.os_number]) {
+                timerInitialMaxSec[c.os_number] = Math.max(diffSec, 60);
+            }
+            const pct = Math.max(5, Math.min(100, Math.round((diffSec / timerInitialMaxSec[c.os_number]) * 100)));
+            const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
+            const secs = String(diffSec % 60).padStart(2, "0");
+            return `
+                <div class="${compact ? 'mt-1.5 p-1.5' : 'mt-2 p-2'} rounded-xl bg-sky-400/12 border border-sky-400/35 space-y-1">
+                    <div class="text-sky-700 dark:text-sky-200 font-mono text-[11px] font-bold flex items-center justify-between gap-2">
+                        <span class="flex items-center gap-1.5 truncate"><i data-lucide="timer" class="w-3.5 h-3.5 text-sky-500 shrink-0"></i> <span class="truncate">${esc(c.timer_label || 'Estufa')}</span></span>
+                        <span class="text-xs font-black tabular-nums px-2 py-0.5 rounded-md bg-sky-400/25 text-sky-700 dark:text-sky-100">${mins}:${secs}</span>
+                    </div>
+                    <div class="w-full h-1.5 ember-hatch rounded-full overflow-hidden">
+                        <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#0EA5E9] transition-all duration-500" style="width:${pct}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildPhaseTagHTML(c) {
+            const isFinishing = c.pipeline_phase === "EM_MANUTENCAO";
+            const isNaoAut = c.pipeline_phase === "NAO_AUTORIZADO" || (c.list_title && (c.list_title.toUpperCase().includes("NÃO AUTORIZAD") || c.list_title.toUpperCase().includes("NAO AUTORIZAD")));
+            const isQuoting = c.pipeline_phase === "EM_ORCAMENTO";
+            if (isNaoAut) {
+                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/18 border border-rose-500/45 text-rose-600 dark:text-rose-300 font-black text-[10px] uppercase"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>Fechar</span>`;
+            }
+            if (isFinishing) {
+                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/18 border border-emerald-500/45 text-emerald-700 dark:text-emerald-300 font-black text-[10px] uppercase shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>Finalizando</span>`;
+            }
+            if (isQuoting) {
+                return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-400/18 border border-sky-400/45 text-sky-700 dark:text-sky-200 font-black text-[10px] uppercase shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>Orçamentando</span>`;
+            }
+            return "";
+        }
+
+        // Card de fila com cores semânticas (Vermelho=Urgente, Roxo=Garantia, Amarelo Forte=>1.5d) + Data de Entrada nos Orçamentos Pendentes
+        function renderTvCardInnerHTML(c, variant = "queue") {
+            const labelsArr = Array.isArray(c.labels) ? c.labels : [];
+            const isUrg = isUrgentCard(c);
+            const isGar = isWarrantyCard(c);
+            const isOver36h = variant === "orc" && isOverOneAndHalfDays(c);
+            const entryInfo = variant === "orc" ? formatCardEntryDate(c) : null;
+
+            const hasUrgLabel = labelsArr.some(l => (l.name || "").toUpperCase().includes("URG"));
+            const hasGarLabel = labelsArr.some(l => (l.name || "").toUpperCase().includes("GARANTIA"));
+
+            const labelsHTML = labelsArr.map(l => `
+                <span class="px-2 py-0.5 rounded-full text-[9.5px] font-extrabold uppercase tracking-wide shadow-xs" style="background:${esc(l.color)}; color:${esc(l.text_color || '#fff')}">
                     ${esc(l.name)}
                 </span>
             `).join("");
 
-            let timerHTML = "";
-            if (c.timer_end_at) {
-                const endMs = new Date(c.timer_end_at).getTime();
-                const diffSec = Math.max(0, Math.floor((endMs - Date.now()) / 1000));
-                if (!timerInitialMaxSec[c.os_number] || diffSec > timerInitialMaxSec[c.os_number]) {
-                    timerInitialMaxSec[c.os_number] = Math.max(diffSec, 60);
-                }
-                const pct = Math.max(5, Math.min(100, Math.round((diffSec / timerInitialMaxSec[c.os_number]) * 100)));
-                const mins = String(Math.floor(diffSec / 60)).padStart(2, "0");
-                const secs = String(diffSec % 60).padStart(2, "0");
-                timerHTML = `
-                    <div class="mt-1.5 p-1.5 rounded-lg bg-sky-400/12 border border-sky-400/35 space-y-1">
-                        <div class="text-sky-700 dark:text-sky-200 font-mono text-[10px] font-bold flex items-center justify-between gap-1.5">
-                            <span class="flex items-center gap-1 truncate"><i data-lucide="timer" class="w-3 h-3 text-sky-500 shrink-0"></i> <span class="truncate">${esc(c.timer_label || 'Estufa')}</span></span>
-                            <span class="text-[11px] font-black tabular-nums px-1.5 py-0.5 rounded bg-sky-400/20 text-sky-700 dark:text-sky-200">${mins}:${secs}</span>
+            const urgentPill = isUrg && !hasUrgLabel
+                ? `<span class="px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase bg-red-600 text-white shadow-xs">URGENTE</span>`
+                : isGar && !hasGarLabel
+                ? `<span class="px-2 py-0.5 rounded-full text-[9.5px] font-black uppercase bg-purple-600 text-white shadow-xs">GARANTIA</span>`
+                : "";
+
+            const slaPill = isUrg && (c.sla_expired || isOverOneAndHalfDays(c))
+                ? `<span class="text-[10px] bg-red-950/60 text-red-100 border border-red-400/50 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
+                : isGar && (c.sla_expired || isOverOneAndHalfDays(c))
+                ? `<span class="text-[10px] bg-purple-950/60 text-purple-100 border border-purple-400/50 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
+                : isOver36h
+                ? `<span class="text-[10px] bg-yellow-400 text-slate-950 border border-yellow-300 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums shadow-xs"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || Math.round(entryInfo?.hours || 36)}h</span>`
+                : c.sla_expired
+                ? `<span class="text-[10px] bg-amber-400/20 text-amber-700 dark:text-amber-300 border border-amber-400/45 font-black px-2 py-0.5 rounded-full flex items-center gap-1 font-mono tabular-nums"><i data-lucide="clock" class="w-3 h-3"></i> +${c.hours_in_stage || 24}h</span>`
+                : "";
+
+            // Selo de Data de Entrada nos cards de Orçamentos Pendentes
+            const entryBadgeTone = isUrg
+                ? "bg-red-950/65 text-red-100 border-red-400/55"
+                : isGar
+                ? "bg-purple-950/65 text-purple-100 border-purple-400/55"
+                : isOver36h
+                ? "bg-yellow-950/70 text-yellow-100 border-yellow-400/65"
+                : "bg-sky-400/15 text-sky-700 dark:text-sky-200 border-sky-400/35";
+
+            const entryDateHTML = entryInfo
+                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border font-mono text-[10px] font-extrabold tabular-nums shrink-0 ${entryBadgeTone}" title="Data de entrada da O.S.">
+                       <i data-lucide="calendar-clock" class="w-3 h-3 shrink-0"></i>
+                       <span>Entrada: ${esc(entryInfo.dateStr)}</span>
+                   </span>`
+                : "";
+
+            const osBadgeTone = isUrg
+                ? "bg-red-600 text-white border-red-400"
+                : isGar
+                ? "bg-purple-600 text-white border-purple-400"
+                : isOver36h
+                ? "bg-yellow-400 text-slate-950 border-yellow-300"
+                : "bg-sky-400/18 text-sky-700 dark:text-sky-100 border-sky-400/40";
+
+            const timerHTML = buildTimerBlockHTML(c, variant === "compact");
+
+            if (variant === "hero") {
+                const phaseTag = buildPhaseTagHTML(c);
+                return `
+                    <div class="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="${osBadgeTone} border font-mono font-black text-lg xl:text-xl px-3.5 py-0.5 rounded-xl tracking-tight tabular-nums shadow-xs">
+                                O.S. ${esc(c.os_number)}
+                            </span>
+                            ${urgentPill}
+                            ${slaPill}
+                            ${labelsHTML}
                         </div>
-                        <div class="w-full h-1.5 ember-hatch rounded-full overflow-hidden">
-                            <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#0EA5E9] transition-all duration-500" style="width:${pct}%"></div>
-                        </div>
+                        ${phaseTag}
                     </div>
+                    <div class="font-black text-lg xl:text-[21px] uppercase leading-tight mb-1.5 break-words tracking-tight">
+                        ${esc(c.client_name)}
+                    </div>
+                    <div class="text-[13px] xl:text-sm text-slate-700 dark:text-sky-100/90 truncate font-bold flex items-center gap-1.5 min-w-0">
+                        <i data-lucide="scale" class="w-4 h-4 text-sky-400 shrink-0"></i>
+                        <span class="truncate">${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}</span>
+                    </div>
+                    ${timerHTML}
                 `;
             }
 
-            let phaseBannerHTML = "";
-            const isFinishing = c.pipeline_phase === "EM_MANUTENCAO";
-            const isNaoAut = c.pipeline_phase === "NAO_AUTORIZADO" || (c.list_title && (c.list_title.toUpperCase().includes("NÃO AUTORIZAD") || c.list_title.toUpperCase().includes("NAO AUTORIZAD")));
-            const isQuoting = c.pipeline_phase === "EM_ORCAMENTO" || (isHorizontal && !isFinishing && !isNaoAut);
-
-            if (isNaoAut) {
-                phaseBannerHTML = `
-                    <div class="mb-1.5 px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-500/35 text-rose-600 dark:text-rose-300 font-black text-[10.5px] flex items-center justify-between">
-                        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>🚫 NÃO AUTORIZADO</span>
-                        <span class="text-[8.5px] uppercase px-1.5 py-0.5 rounded-full bg-rose-500/20">Fechar</span>
-                    </div>`;
-            } else if (isFinishing) {
-                phaseBannerHTML = `
-                    <div class="mb-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 font-black text-[10.5px] flex items-center justify-between">
-                        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>🔧 FINALIZANDO</span>
-                        <span class="text-[8.5px] uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/20">Manutenção</span>
-                    </div>`;
-            } else if (isQuoting) {
-                phaseBannerHTML = `
-                    <div class="mb-1.5 px-2.5 py-1 rounded-lg bg-sky-400/15 border border-sky-400/35 text-sky-700 dark:text-sky-200 font-black text-[10.5px] flex items-center justify-between">
-                        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>🔬 ORÇAMENTANDO</span>
-                        <span class="text-[8.5px] uppercase px-1.5 py-0.5 rounded-full bg-sky-400/20">Diagnóstico</span>
-                    </div>`;
+            if (variant === "compact") {
+                return `
+                    <div class="flex items-center justify-between gap-1.5 mb-0.5">
+                        <span class="font-mono font-black text-xs text-sky-700 dark:text-sky-100 tabular-nums">O.S. ${esc(c.os_number)}</span>
+                        ${urgentPill || buildPhaseTagHTML(c)}
+                    </div>
+                    <div class="font-extrabold text-[11.5px] uppercase truncate">${esc(c.client_name)}</div>
+                    <div class="text-[10px] text-slate-600 dark:text-sky-200/80 truncate font-semibold">${esc(c.equipment_model || c.equipment_type || '')}</div>
+                    ${timerHTML}
+                `;
             }
 
+            // Variant padrão: orc / queue (Orçamentos Pendentes e Aprovados na esquerda)
             return `
-                ${labelsHTML ? `<div class="flex flex-wrap gap-1 mb-1.5">${labelsHTML}</div>` : ''}
-                ${phaseBannerHTML}
-                <div class="flex items-center justify-between gap-1 mb-1">
-                    <span class="bg-sky-400/18 text-sky-700 dark:text-sky-200 border border-sky-400/35 font-mono font-extrabold text-[11px] px-2 py-0.5 rounded-full">
-                        O.S. ${esc(c.os_number)}
-                    </span>
-                    ${c.sla_expired ? `<span class="text-[9px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 font-mono"><i data-lucide="clock" class="w-2.5 h-2.5"></i> +24H</span>` : ''}
+                <div class="flex items-center justify-between gap-2 mb-1">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <span class="${osBadgeTone} border font-mono font-black text-sm xl:text-[15px] px-2.5 py-0.5 rounded-lg tabular-nums shrink-0 shadow-2xs">
+                            O.S. ${esc(c.os_number)}
+                        </span>
+                        ${urgentPill}
+                        ${labelsHTML}
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${slaPill}
+                    </div>
                 </div>
-                <div class="font-extrabold text-[13px] uppercase leading-tight mb-0.5 break-words tracking-tight">
+                <div class="font-black text-base xl:text-[17px] uppercase leading-snug mb-1 truncate tracking-tight">
                     ${esc(c.client_name)}
                 </div>
-                <div class="text-[11px] text-slate-600 dark:text-sky-200/75 truncate font-semibold flex items-center gap-1">
-                    <i data-lucide="scale" class="w-3 h-3 text-sky-500 shrink-0"></i>
-                    <span class="truncate">${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}</span>
+                <div class="flex items-center justify-between gap-2">
+                    <div class="text-xs text-slate-700 dark:text-sky-100/85 truncate font-semibold flex items-center gap-1.5 min-w-0 flex-1">
+                        <i data-lucide="scale" class="w-3.5 h-3.5 text-sky-400 shrink-0"></i>
+                        <span class="truncate">${esc(c.equipment_type)}${c.equipment_model ? ' • ' + esc(c.equipment_model) : ''}</span>
+                    </div>
+                    ${entryDateHTML}
                 </div>
                 ${timerHTML}
             `;
         }
 
-        function createCardElement(c, isHorizontal) {
+        function createCardElement(c, isHorizontal, variantOverride) {
             const el = document.createElement("div");
             const widthClass = isHorizontal ? "w-[248px] shrink-0" : "w-full";
+            const variant = variantOverride || (isHorizontal ? "compact" : "queue");
+            const toneClass = getTvCardToneClass(c, variant);
             el.dataset.cardKey = String(c.id || c.os_number);
-            el.dataset.cardSig = cardSignature(c, isHorizontal);
-            el.className = `tv-bento-card p-2.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''}`;
-            el.innerHTML = renderTvCardInnerHTML(c, isHorizontal);
+            el.dataset.cardSig = cardSignature(c, variant);
+            el.className = `tv-bento-card ${isHorizontal ? 'p-2' : 'p-2.5 px-3'} overflow-hidden ${widthClass} ${toneClass}`;
+            el.innerHTML = renderTvCardInnerHTML(c, variant);
             return el;
         }
 
@@ -1034,7 +1353,7 @@
                     emp.dataset.emptyState = "1";
                     emp.innerHTML = emptyHTML;
                     container.appendChild(emp);
-                    if (animateChanges) A5Motion.enterCard(emp, 60);
+                    if (animateChanges) A5Motion.enterCard(emp, 40);
                 }
                 return;
             }
@@ -1060,9 +1379,11 @@
 
             // Reaproveita/atualiza existentes e entra novos com Motion
             const widthClass = isHorizontal ? "w-[248px] shrink-0" : "w-full";
+            const variant = isHorizontal ? "compact" : (container.id === "tvOrcList" ? "orc" : "queue");
             cards.forEach((c, idx) => {
                 const key = String(c.id || c.os_number);
-                const sig = cardSignature(c, isHorizontal);
+                const sig = cardSignature(c, variant);
+                const toneClass = getTvCardToneClass(c, variant);
                 let el = container.querySelector(`[data-card-key="${CSS.escape(key)}"]`);
 
                 if (el) {
@@ -1075,17 +1396,16 @@
                     }
                     if (el.dataset.cardSig !== sig) {
                         el.dataset.cardSig = sig;
-                        el.className = `tv-bento-card p-2.5 overflow-hidden ${widthClass} ${c.is_urgent || c.is_warranty ? 'urgent-glow' : ''} ${c.sla_expired ? 'sla-alert' : ''}`;
-                        el.innerHTML = renderTvCardInnerHTML(c, isHorizontal);
+                        el.className = `tv-bento-card ${isHorizontal ? 'p-2' : 'p-2.5 px-3'} overflow-hidden ${widthClass} ${toneClass}`;
+                        el.innerHTML = renderTvCardInnerHTML(c, variant);
                         if (animateChanges) A5Motion.pulseCard(el);
                     }
                     container.appendChild(el);
                 } else {
-                    el = createCardElement(c, isHorizontal);
+                    el = createCardElement(c, isHorizontal, variant);
                     container.appendChild(el);
-                    if (animateChanges) {
-                        A5Motion.enterCard(el, Math.min(idx * 25, 160));
-                    }
+                    // Anima com stagger tanto na abertura inicial quanto ao paginar ou chegar card novo
+                    A5Motion.enterCard(el, Math.min(idx * 45, 220));
                 }
             });
         }
@@ -1105,60 +1425,116 @@
             const container = document.getElementById("tvBoard");
             if (container.dataset.skeletonReady === "1") return;
             container.dataset.skeletonReady = "1";
+            container.className = "flex-1 min-h-0 flex flex-col lg:flex-row items-stretch gap-3 px-3 pt-2.5 pb-1.5 overflow-hidden";
+
             container.innerHTML = `
-                <div id="tvOrcCol" class="tv-bento-col flex flex-col h-full overflow-hidden">
-                    <div class="h-1 w-full bg-gradient-to-r from-sky-300 via-sky-400 to-cyan-400 shrink-0"></div>
-                    <div class="px-3.5 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
-                        <div class="flex items-center gap-2 truncate">
-                            <span class="w-6 h-6 rounded-lg bg-sky-400/18 text-sky-600 dark:text-sky-300 border border-sky-400/30 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-3.5 h-3.5"></i></span>
-                            <span class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-sky-700 dark:text-sky-200 truncate">ORÇAMENTOS</span>
+                <!-- ZONA ESQUERDA (38%): FILAS DA OFICINA -->
+                <section id="tvQueuesZone" class="w-full lg:w-[39%] xl:w-[37.5%] shrink-0 flex flex-col gap-3 h-full min-h-0">
+                    <!-- ORÇAMENTOS PENDENTES -->
+                    <div id="tvOrcCol" class="tv-bento-col flex-1 min-h-0 flex flex-col overflow-hidden relative">
+                        <div class="h-1.5 w-full bg-gradient-to-r from-sky-300 via-sky-400 to-cyan-400 shrink-0"></div>
+                        <div class="px-4 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="w-7 h-7 rounded-xl bg-sky-400/18 text-sky-600 dark:text-sky-300 border border-sky-400/35 flex items-center justify-center shrink-0">
+                                    <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                                </span>
+                                <span class="font-black text-xs sm:text-sm tracking-wider uppercase text-sky-700 dark:text-sky-100 truncate leading-tight">ORÇAMENTOS PENDENTES</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span id="tvOrcPageBadge" class="hidden font-mono text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/35">1/1</span>
+                                <span id="tvOrcCount" class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-mono font-black text-xs px-3 py-0.5 rounded-full shadow-sm shadow-sky-500/30 tabular-nums">0</span>
+                            </div>
                         </div>
-                        <span id="tvOrcCount" class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-sm">0</span>
+                        <div id="tvOrcList" class="p-2.5 space-y-2 overflow-hidden flex-1"></div>
+                        <div id="tvOrcProgress" class="hidden h-0.5 w-full bg-sky-400/20 overflow-hidden shrink-0"><div class="h-full bg-gradient-to-r from-sky-400 to-cyan-300 tv-page-bar"></div></div>
                     </div>
-                    <div id="tvOrcList" class="p-2 space-y-2 overflow-y-auto flex-1 custom-scrollbar"></div>
-                </div>
 
-                <div id="tvAprCol" class="tv-bento-col flex flex-col h-full overflow-hidden">
-                    <div class="h-1 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 shrink-0"></div>
-                    <div class="px-3.5 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
-                        <div class="flex items-center gap-2 truncate">
-                            <span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 flex items-center justify-center"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></span>
-                            <span id="tvAprTitle" class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-emerald-700 dark:text-emerald-300 truncate">APROVADOS</span>
+                    <!-- APROVADOS PARA REPARO -->
+                    <div id="tvAprCol" class="tv-bento-col flex-1 min-h-0 flex flex-col overflow-hidden relative">
+                        <div class="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 shrink-0"></div>
+                        <div class="px-4 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                </span>
+                                <span id="tvAprTitle" class="font-black text-xs sm:text-sm tracking-wider uppercase text-emerald-700 dark:text-emerald-300 truncate leading-tight">APROVADOS P/ REPARO</span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span id="tvAprPageBadge" class="hidden font-mono text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35">1/1</span>
+                                <span id="tvAprCount" class="bg-emerald-500 text-slate-950 font-mono font-black text-xs px-3 py-0.5 rounded-full shadow-sm shadow-emerald-500/30 tabular-nums">0</span>
+                            </div>
                         </div>
-                        <span id="tvAprCount" class="bg-emerald-500 text-slate-950 font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 shadow-sm">0</span>
+                        <div id="tvAprList" class="p-2.5 space-y-2 overflow-hidden flex-1"></div>
+                        <div id="tvAprProgress" class="hidden h-0.5 w-full bg-emerald-500/20 overflow-hidden shrink-0"><div class="h-full bg-gradient-to-r from-emerald-400 to-sky-400 tv-page-bar"></div></div>
                     </div>
-                    <div id="tvAprList" class="p-2 space-y-2 overflow-y-auto flex-1 custom-scrollbar"></div>
-                </div>
 
-                <div id="tvNaoAutCol" class="tv-bento-col hidden flex-col h-full overflow-hidden border-2 border-rose-500/50">
-                    <div class="h-1 w-full bg-rose-500 shrink-0"></div>
-                    <div class="px-3.5 py-2 bg-rose-500/10 border-b border-rose-500/30 flex items-center justify-between gap-2 shrink-0">
-                        <div class="flex items-center gap-2 truncate">
-                            <span class="text-sm">🚫</span>
-                            <span class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-rose-600 dark:text-rose-300 truncate">NÃO AUTORIZADOS</span>
+                    <!-- NÃO AUTORIZADOS (só aparece se houver cards > 0) -->
+                    <div id="tvNaoAutCol" class="tv-bento-col hidden max-h-[28%] shrink-0 flex-col overflow-hidden border-2 border-rose-500/55">
+                        <div class="h-1 w-full bg-gradient-to-r from-rose-500 to-orange-400 shrink-0"></div>
+                        <div class="px-4 py-1.5 bg-rose-500/12 border-b border-rose-500/30 flex items-center justify-between gap-2 shrink-0">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-sm">🚫</span>
+                                <span class="font-black text-xs sm:text-sm tracking-wider uppercase text-rose-600 dark:text-rose-300 truncate">NÃO AUTORIZADOS • FECHAR</span>
+                            </div>
+                            <span id="tvNaoAutCount" class="bg-rose-600 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 animate-pulse tabular-nums">0</span>
                         </div>
-                        <span id="tvNaoAutCount" class="bg-rose-600 text-white font-mono font-black text-xs px-2.5 py-0.5 rounded-full shrink-0 animate-pulse">0</span>
+                        <div id="tvNaoAutList" class="p-2 space-y-1.5 overflow-y-auto custom-scrollbar"></div>
                     </div>
-                    <div id="tvNaoAutList" class="p-2 space-y-2 overflow-y-auto flex-1 custom-scrollbar"></div>
-                </div>
+                </section>
 
-                <div id="tvTechSection" class="flex-1 min-w-0 hidden flex-col h-full overflow-hidden">
-                    <div class="tv-bento-col mb-2 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                        <div class="flex items-center gap-2">
-                            <span class="w-6 h-6 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-sm"><i data-lucide="cpu" class="w-3.5 h-3.5"></i></span>
-                            <span class="font-extrabold text-xs sm:text-[13px] tracking-wider uppercase text-sky-700 dark:text-sky-200">BANCADAS EM ATENDIMENTO</span>
+                <!-- ZONA DIREITA (62%): PALCO DAS BANCADAS EM ATENDIMENTO -->
+                <section id="tvTechSection" class="flex-1 min-w-0 flex flex-col gap-3 h-full min-h-0 overflow-hidden">
+                    <div class="tv-bento-col px-4 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-500/30">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                            </span>
+                            <div>
+                                <span class="font-black text-sm xl:text-[15px] tracking-wider uppercase text-sky-700 dark:text-sky-100 block leading-tight">
+                                    BANCADAS EM ATENDIMENTO AGORA
+                                </span>
+                                <span class="text-[10.5px] font-semibold text-slate-500 dark:text-sky-300/80 block leading-none mt-0.5">
+                                    Visão de Balcão e Bancada em Tempo Real
+                                </span>
+                            </div>
                         </div>
-                        <div class="flex items-center gap-2 text-[11px] font-bold">
-                            <span id="tvTechCardsSummary" class="px-2.5 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/35 font-black">
+                        <div class="flex items-center gap-2 text-xs font-bold">
+                            <span id="tvTechCardsSummary" class="px-3 py-1 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/35 font-black tabular-nums">
                                 📊 0 balança(s)
                             </span>
-                            <span id="tvTechCountSummary" class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-bold">
-                                👨‍🔧 0 técnicos
+                            <span id="tvTechCountSummary" class="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-extrabold tabular-nums">
+                                👨‍🔧 0 ativa(s)
+                            </span>
+                            <span id="tvReadyTopSummary" class="hidden px-3 py-1 rounded-full bg-emerald-500 text-slate-950 font-black tabular-nums shadow-xs">
+                                ✅ 0 pronta(s)
                             </span>
                         </div>
                     </div>
-                    <div id="tvTechRowsList" class="flex-1 overflow-y-auto space-y-2.5 pr-1 custom-scrollbar"></div>
-                </div>
+
+                    <!-- FAIXA ESTUFA / TESTE EM DESTAQUE (SÓ APARECE COM TIMERS ATIVOS) -->
+                    <div id="tvEstufaSpotlight" class="hidden tv-estufa-spotlight px-3.5 py-2 shrink-0 flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between text-[11px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-200">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+                                <span>🔥 ESTUFA / TESTE EM ANDAMENTO</span>
+                            </span>
+                            <span id="tvEstufaCountLabel" class="font-mono text-[10.5px] px-2 py-0.5 rounded-full bg-sky-400/20">0 ativo(s)</span>
+                        </div>
+                        <div id="tvEstufaSpotlightList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2"></div>
+                    </div>
+
+                    <!-- GRID DAS BANCADAS -->
+                    <div id="tvTechRowsList" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-3 content-start pr-0.5"></div>
+
+                    <!-- FAIXA DE BANCADAS LIVRES COM NEON SUAVE -->
+                    <div id="tvIdleBenchesBar" class="hidden shrink-0 px-3.5 py-2.5 rounded-2xl tv-pill-tile flex-col gap-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10.5px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-200">Bancadas Disponíveis</span>
+                            <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-300">Prontas para assumir próxima O.S.</span>
+                        </div>
+                        <div id="tvIdleBenchesList" class="grid grid-cols-[repeat(auto-fit,minmax(175px,1fr))] gap-2"></div>
+                    </div>
+                </section>
             `;
         }
 
@@ -1166,21 +1542,72 @@
             const manCount = cards.filter(c => c.pipeline_phase === 'EM_MANUTENCAO').length;
             const orcCount = cards.length - manCount;
             if (manCount > 0 && orcCount === 0) {
-                return `<span class="bg-emerald-500 text-slate-950 font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>🔧 FINALIZANDO (${cards.length})</span>`;
+                return `<span class="bg-emerald-500 text-slate-950 font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm shadow-emerald-500/30"><span class="w-1.5 h-1.5 rounded-full bg-slate-950 animate-ping"></span>🔧 FINALIZANDO (${cards.length})</span>`;
             }
             if (orcCount > 0 && manCount === 0) {
-                return `<span class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-xs"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>🔬 ORÇAMENTANDO (${cards.length})</span>`;
+                return `<span class="bg-gradient-to-r from-sky-400 to-sky-500 text-white font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 flex items-center gap-1.5 shadow-sm shadow-sky-500/30"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>🔬 ORÇAMENTANDO (${cards.length})</span>`;
             }
-            return `<span class="bg-gradient-to-r from-sky-400 to-sky-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shrink-0 shadow-xs">🔬 ${orcCount} Orç. • 🔧 ${manCount} Fin.</span>`;
+            return `<span class="bg-gradient-to-r from-sky-400 to-sky-600 text-white font-black text-[11px] px-3 py-0.5 rounded-full shrink-0 shadow-sm shadow-sky-500/30">🔬 ${orcCount} Orç. • 🔧 ${manCount} Fin.</span>`;
         }
 
-        function renderTvBoard() {
+        function getPaginatedSlice(cards, queueKey, perPage) {
+            if (!cards || cards.length <= perPage) {
+                tvQueuePages[queueKey] = 0;
+                return { slice: cards || [], page: 1, totalPages: 1 };
+            }
+            const totalPages = Math.ceil(cards.length / perPage);
+            const curPage = tvQueuePages[queueKey] % totalPages;
+            const start = curPage * perPage;
+            return {
+                slice: cards.slice(start, start + perPage),
+                page: curPage + 1,
+                totalPages,
+            };
+        }
+
+        function renderTechBenchCardContent(rowEl, tech, cards, animateChanges) {
+            const hero = cards[0];
+            const rest = cards.slice(1);
+            const benchSig = JSON.stringify([
+                tech.title,
+                cards.map(c => cardSignature(c, "bench"))
+            ]);
+
+            rowEl.querySelector("[data-tech-initials]").textContent = getInitials(tech.title);
+            rowEl.querySelector("[data-tech-title]").textContent = tech.title;
+            rowEl.querySelector("[data-tech-badge]").innerHTML = getTechHeaderBadgeHTML(cards);
+
+            if (rowEl.dataset.benchSig !== benchSig) {
+                const changed = Boolean(rowEl.dataset.benchSig);
+                rowEl.dataset.benchSig = benchSig;
+
+                const heroWrap = rowEl.querySelector("[data-tech-hero]");
+                heroWrap.className = `tv-bento-card p-3 overflow-hidden ${getTvCardToneClass(hero)}`;
+                heroWrap.innerHTML = renderTvCardInnerHTML(hero, "hero");
+
+                const extraWrap = rowEl.querySelector("[data-tech-extra-wrap]");
+                const extraCardsContainer = rowEl.querySelector("[data-tech-cards]");
+                if (rest.length > 0) {
+                    extraWrap.classList.remove("hidden");
+                    rowEl.querySelector("[data-tech-extra-label]").textContent = `+${rest.length} na fila da bancada`;
+                    syncCardList(extraCardsContainer, rest, true, null, animateChanges && changed);
+                } else {
+                    extraWrap.classList.add("hidden");
+                    extraCardsContainer.innerHTML = "";
+                }
+
+                if (animateChanges && changed) {
+                    A5Motion.pulseCard(rowEl);
+                }
+            }
+        }
+
+        function renderTvBoard(rotateOnly = false) {
             animateTvScore(boardData.stats?.finished_today || 0);
             if (!boardData.lists || !boardData.lists.length) return;
 
             ensureBoardSkeleton();
             const animateChanges = tvBoardInitialized;
-            const container = document.getElementById("tvBoard");
 
             const orcList = boardData.lists.find(l =>
                 (l.role && l.role.toLowerCase() === "orcamento") ||
@@ -1197,45 +1624,74 @@
                 (l.title && (l.title.toUpperCase().includes("NÃO AUTORIZAD") || l.title.toUpperCase().includes("NAO AUTORIZAD")))
             ) || { title: "NÃO AUTORIZADOS", cards: [] };
 
+            const prontaList = boardData.lists.find(l =>
+                (l.role && l.role.toLowerCase() === "pronta") ||
+                (l.title && (l.title.toUpperCase().includes("PRONTA") || l.title.toUpperCase().includes("RETIRADA")))
+            ) || { title: "PRONTAS", cards: [] };
+
             const techLists = boardData.lists.filter(l =>
                 l.is_tech === 1 || l.role === "tech" || l.title.toUpperCase().startsWith("TEC.") || l.title.toUpperCase().startsWith("SR.")
             );
             const activeTechLists = techLists.filter(l => l.cards && l.cards.length > 0);
+            const idleTechLists = techLists.filter(l => !l.cards || l.cards.length === 0);
             const hasActiveTechs = activeTechLists.length > 0;
 
             const sortCards = (cards) => [...(cards || [])].sort((a, b) => {
-                const prioA = (a.is_urgent ? 2 : 0) + (a.is_warranty ? 1 : 0);
-                const prioB = (b.is_urgent ? 2 : 0) + (b.is_warranty ? 1 : 0);
-                return prioB - prioA;
+                const prioA = (isUrgentCard(a) ? 2 : 0) + (isWarrantyCard(a) ? 1 : 0);
+                const prioB = (isUrgentCard(b) ? 2 : 0) + (isWarrantyCard(b) ? 1 : 0);
+                if (prioB !== prioA) return prioB - prioA;
+                const tsA = new Date(a.created_at || a.moved_at || 0).getTime() || 0;
+                const tsB = new Date(b.created_at || b.moved_at || 0).getTime() || 0;
+                if (tsA !== tsB) return tsA - tsB;
+                return (b.sla_expired ? 1 : 0) - (a.sla_expired ? 1 : 0);
             });
 
             const orcCards = sortCards(orcList.cards);
             const aprCards = sortCards(aprList.cards);
             const naoAutCards = sortCards(naoAutList.cards || []);
+            const prontaCards = sortCards(prontaList.cards || []);
             const hasNaoAut = naoAutCards.length > 0;
 
-            const hasSidePanels = hasActiveTechs || hasNaoAut;
-            const colWidthClass = hasSidePanels ? "w-[258px] xl:w-[270px] shrink-0" : "flex-1 max-w-2xl";
-            container.className = `flex-1 flex items-stretch gap-2.5 p-2.5 overflow-hidden ${hasSidePanels ? '' : 'justify-center max-w-6xl mx-auto w-full'}`;
+            // Capacidade confortável de leitura à distância em 1080p sem cortar card inferior
+            const perQueuePage = hasNaoAut ? 2 : 3;
+            const orcPaged = getPaginatedSlice(orcCards, "orc", perQueuePage);
+            const aprPaged = getPaginatedSlice(aprCards, "apr", perQueuePage);
 
-            const orcColEl = document.getElementById("tvOrcCol");
-            const aprColEl = document.getElementById("tvAprCol");
             const naoAutColEl = document.getElementById("tvNaoAutCol");
-            const techSectionEl = document.getElementById("tvTechSection");
+            const techRowsContainer = document.getElementById("tvTechRowsList");
 
-            orcColEl.className = `tv-bento-col ${colWidthClass} flex flex-col h-full overflow-hidden`;
-            aprColEl.className = `tv-bento-col ${colWidthClass} flex flex-col h-full overflow-hidden`;
-            document.getElementById("tvAprTitle").textContent = aprList.title || "APROVADOS";
-
+            document.getElementById("tvAprTitle").textContent = aprList.title || "APROVADOS P/ REPARO";
             updateCounterBadge(document.getElementById("tvOrcCount"), orcCards.length, animateChanges);
             updateCounterBadge(document.getElementById("tvAprCount"), aprCards.length, animateChanges);
             updateCounterBadge(document.getElementById("tvNaoAutCount"), naoAutCards.length, animateChanges);
 
+            const orcPageEl = document.getElementById("tvOrcPageBadge");
+            const orcProgEl = document.getElementById("tvOrcProgress");
+            if (orcPaged.totalPages > 1) {
+                orcPageEl.textContent = `Pág. ${orcPaged.page}/${orcPaged.totalPages}`;
+                orcPageEl.classList.remove("hidden");
+                orcProgEl?.classList.remove("hidden");
+            } else {
+                orcPageEl.classList.add("hidden");
+                orcProgEl?.classList.add("hidden");
+            }
+
+            const aprPageEl = document.getElementById("tvAprPageBadge");
+            const aprProgEl = document.getElementById("tvAprProgress");
+            if (aprPaged.totalPages > 1) {
+                aprPageEl.textContent = `Pág. ${aprPaged.page}/${aprPaged.totalPages}`;
+                aprPageEl.classList.remove("hidden");
+                aprProgEl?.classList.remove("hidden");
+            } else {
+                aprPageEl.classList.add("hidden");
+                aprProgEl?.classList.add("hidden");
+            }
+
             syncCardList(
                 document.getElementById("tvOrcList"),
-                orcCards,
+                orcPaged.slice,
                 false,
-                `<div class="h-44 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
+                `<div class="h-36 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
                     <i data-lucide="clipboard-list" class="w-8 h-8 mb-2 opacity-45 text-sky-400"></i>
                     <span class="text-xs font-bold uppercase tracking-wider">Nenhum orçamento pendente</span>
                     <span class="text-[11px] opacity-80 mt-0.5">Novas O.S. entrarão aqui</span>
@@ -1245,9 +1701,9 @@
 
             syncCardList(
                 document.getElementById("tvAprList"),
-                aprCards,
+                aprPaged.slice,
                 false,
-                `<div class="h-44 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
+                `<div class="h-36 flex flex-col items-center justify-center text-center p-4 text-slate-400 dark:text-sky-200/50">
                     <i data-lucide="check-circle-2" class="w-8 h-8 mb-2 opacity-45 text-emerald-400"></i>
                     <span class="text-xs font-bold uppercase tracking-wider">Nenhuma O.S. aprovada</span>
                     <span class="text-[11px] opacity-80 mt-0.5">Aguardando aprovação comercial</span>
@@ -1255,137 +1711,163 @@
                 animateChanges
             );
 
-            // Coluna NÃO AUTORIZADOS com Motion Enter/Exit
-            if (hasNaoAut) {
-                const wasHidden = naoAutColEl.classList.contains("hidden");
-                naoAutColEl.className = `tv-bento-col ${colWidthClass} flex flex-col h-full overflow-hidden border-2 border-rose-500/50`;
-                syncCardList(document.getElementById("tvNaoAutList"), naoAutCards, false, null, animateChanges);
-                if (wasHidden && animateChanges) {
-                    A5Motion.animate(
-                        naoAutColEl,
-                        [{ opacity: 0, transform: "translateX(28px) scale(0.96)" }, { opacity: 1, transform: "translateX(0) scale(1)" }],
-                        { duration: 340, easing: MOTION_EASE }
-                    );
-                }
-            } else if (!naoAutColEl.classList.contains("hidden")) {
-                if (animateChanges) {
-                    const anim = A5Motion.animate(
-                        naoAutColEl,
-                        [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "translateX(20px) scale(0.95)" }],
-                        { duration: 220, easing: MOTION_EASE }
-                    );
-                    if (anim) anim.onfinish = () => naoAutColEl.classList.add("hidden");
-                    else naoAutColEl.classList.add("hidden");
-                } else {
-                    naoAutColEl.classList.add("hidden");
-                }
-            }
-
-            // BANCADAS EM ATENDIMENTO: Enter/Exit em Motion ao puxar ou sair técnico da tela
-            const techRowsContainer = document.getElementById("tvTechRowsList");
-            const totalInTech = activeTechLists.reduce((acc, l) => acc + (l.cards ? l.cards.length : 0), 0);
-            document.getElementById("tvTechCardsSummary").textContent = `📊 ${totalInTech} balança(s)`;
-            document.getElementById("tvTechCountSummary").textContent = `👨‍🔧 ${activeTechLists.length} ${activeTechLists.length === 1 ? 'técnico' : 'técnicos'}`;
-
-            if (hasActiveTechs) {
-                const sectionWasHidden = techSectionEl.classList.contains("hidden");
-                if (techSectionEl._sectionExitAnim) {
-                    try { techSectionEl._sectionExitAnim.cancel(); } catch {}
-                    techSectionEl._sectionExitAnim = null;
-                }
-                techSectionEl.classList.remove("hidden");
-                techSectionEl.classList.add("flex");
-                if (sectionWasHidden && animateChanges) {
-                    A5Motion.animate(
-                        techSectionEl,
-                        [{ opacity: 0, transform: "translateX(36px) scale(0.98)" }, { opacity: 1, transform: "translateX(0) scale(1)" }],
-                        { duration: 380, easing: MOTION_EASE }
-                    );
-                }
-            } else if (!techSectionEl.classList.contains("hidden")) {
-                // Anima saída dos técnicos restantes e recolhe a área de bancadas
-                const rowsLeft = Array.from(techRowsContainer.children);
-                if (animateChanges && rowsLeft.length > 0) {
-                    rowsLeft.forEach((row) => A5Motion.exitTechRow(row, () => row.remove()));
-                    const sAnim = A5Motion.animate(
-                        techSectionEl,
-                        [{ opacity: 1, transform: "translateX(0)" }, { opacity: 0, transform: "translateX(36px)" }],
-                        { duration: 360, easing: MOTION_EASE }
-                    );
-                    techSectionEl._sectionExitAnim = sAnim;
-                    if (sAnim) {
-                        sAnim.onfinish = () => {
-                            techSectionEl._sectionExitAnim = null;
-                            techSectionEl.classList.add("hidden");
-                            techSectionEl.classList.remove("flex");
-                        };
+            // Coluna NÃO AUTORIZADOS condicional (só ocupa tela se > 0)
+            if (!rotateOnly) {
+                if (hasNaoAut) {
+                    const wasHidden = naoAutColEl.classList.contains("hidden");
+                    naoAutColEl.className = "tv-bento-col flex max-h-[28%] shrink-0 flex-col overflow-hidden border-2 border-rose-500/55";
+                    syncCardList(document.getElementById("tvNaoAutList"), naoAutCards, false, null, animateChanges);
+                    if (wasHidden && animateChanges) {
+                        A5Motion.animate(
+                            naoAutColEl,
+                            [{ opacity: 0, transform: "translateY(16px) scale(0.97)" }, { opacity: 1, transform: "translateY(0) scale(1)" }],
+                            { duration: 340, easing: MOTION_EASE }
+                        );
+                    }
+                } else if (!naoAutColEl.classList.contains("hidden")) {
+                    if (animateChanges) {
+                        const anim = A5Motion.animate(
+                            naoAutColEl,
+                            [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "translateY(12px) scale(0.96)" }],
+                            { duration: 220, easing: MOTION_EASE }
+                        );
+                        if (anim) anim.onfinish = () => naoAutColEl.classList.add("hidden");
+                        else naoAutColEl.classList.add("hidden");
                     } else {
-                        techSectionEl.classList.add("hidden");
-                        techSectionEl.classList.remove("flex");
+                        naoAutColEl.classList.add("hidden");
                     }
-                } else {
-                    techRowsContainer.innerHTML = "";
-                    techSectionEl.classList.add("hidden");
-                    techSectionEl.classList.remove("flex");
                 }
-            }
 
-            if (hasActiveTechs) {
-                const activeTechKeys = new Set(activeTechLists.map(t => String(t.id || t.title)));
+                // ZONA DIREITA: BANCADAS EM ATENDIMENTO
+                const totalInTech = activeTechLists.reduce((acc, l) => acc + (l.cards ? l.cards.length : 0), 0);
+                document.getElementById("tvTechCardsSummary").textContent = `📊 ${totalInTech} balança(s)`;
+                document.getElementById("tvTechCountSummary").textContent = `👨‍🔧 ${activeTechLists.length} ativa(s) • ${idleTechLists.length} livre(s)`;
 
-                // 1. Saída animada do técnico quando suas balanças chegam a 0
-                Array.from(techRowsContainer.children).forEach((rowEl) => {
-                    const tKey = rowEl.dataset.techKey;
-                    if (!tKey) return;
-                    if (!activeTechKeys.has(tKey) && rowEl.dataset.exiting !== "1") {
-                        if (animateChanges) {
-                            A5Motion.exitTechRow(rowEl, () => rowEl.remove());
-                        } else {
-                            rowEl.remove();
+                const readyTopEl = document.getElementById("tvReadyTopSummary");
+                if (prontaCards.length > 0) {
+                    readyTopEl.textContent = `✅ ${prontaCards.length} pronta(s)`;
+                    readyTopEl.classList.remove("hidden");
+                } else {
+                    readyTopEl.classList.add("hidden");
+                }
+
+                techRowsContainer.className = activeTechLists.length >= 5
+                    ? "flex-1 min-h-0 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-stretch content-start pr-0.5"
+                    : "flex-1 min-h-0 overflow-y-auto custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch content-start pr-0.5";
+
+                if (hasActiveTechs) {
+                    const emptyBenchState = techRowsContainer.querySelector('[data-benches-empty="1"]');
+                    if (emptyBenchState) emptyBenchState.remove();
+
+                    const activeTechKeys = new Set(activeTechLists.map(t => String(t.id || t.title)));
+                    Array.from(techRowsContainer.children).forEach((rowEl) => {
+                        const tKey = rowEl.dataset.techKey;
+                        if (!tKey) return;
+                        if (!activeTechKeys.has(tKey) && rowEl.dataset.exiting !== "1") {
+                            if (animateChanges) {
+                                A5Motion.exitTechRow(rowEl, () => rowEl.remove());
+                            } else {
+                                rowEl.remove();
+                            }
                         }
-                    }
-                });
+                    });
 
-                // 2. Entrada animada (ou atualização) de cada técnico ativo
-                activeTechLists.forEach((tech) => {
-                    const tKey = String(tech.id || tech.title);
-                    const cards = sortCards(tech.cards);
-                    let rowEl = techRowsContainer.querySelector(`[data-tech-key="${CSS.escape(tKey)}"]`);
+                    activeTechLists.forEach((tech, benchIdx) => {
+                        const tKey = String(tech.id || tech.title);
+                        const cards = sortCards(tech.cards);
+                        let rowEl = techRowsContainer.querySelector(`[data-tech-key="${CSS.escape(tKey)}"]`);
 
-                    if (!rowEl) {
-                        rowEl = document.createElement("div");
-                        rowEl.dataset.techKey = tKey;
-                        rowEl.className = "tv-tech-row overflow-hidden";
-                        rowEl.innerHTML = `
-                            <div class="px-3.5 py-2 border-b border-sky-400/20 flex items-center justify-between gap-2">
-                                <div class="flex items-center gap-2.5 truncate">
-                                    <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 text-white font-black text-[11px] flex items-center justify-center shadow-sm shadow-sky-500/25 shrink-0" data-tech-initials></span>
-                                    <span class="font-black text-sm tracking-wide uppercase truncate" data-tech-title></span>
+                        if (!rowEl) {
+                            rowEl = document.createElement("div");
+                            rowEl.dataset.techKey = tKey;
+                            rowEl.className = "tv-tech-row overflow-hidden flex flex-col";
+                            rowEl.innerHTML = `
+                                <div class="px-4 py-2.5 border-b border-sky-400/20 flex items-center justify-between gap-2 shrink-0">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-sky-400 to-sky-600 text-white font-black text-xs flex items-center justify-center shadow-sm shadow-sky-500/30 shrink-0" data-tech-initials></span>
+                                        <span class="font-black text-sm xl:text-base tracking-wide uppercase truncate" data-tech-title></span>
+                                    </div>
+                                    <div data-tech-badge></div>
                                 </div>
-                                <div data-tech-badge></div>
+                                <div class="p-3 space-y-2.5 flex-1 flex flex-col justify-between">
+                                    <div data-tech-hero></div>
+                                    <div data-tech-extra-wrap class="hidden pt-2 border-t border-sky-400/15">
+                                        <div class="text-[10px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-300/80 mb-1.5" data-tech-extra-label></div>
+                                        <div class="flex flex-row gap-2 overflow-x-auto pb-0.5 items-stretch custom-scrollbar" data-tech-cards></div>
+                                    </div>
+                                </div>
+                            `;
+                            techRowsContainer.appendChild(rowEl);
+                            renderTechBenchCardContent(rowEl, tech, cards, false);
+                            // Entra com Motion escalonado na primeira carga e spotlight quando muda ao vivo
+                            if (animateChanges) {
+                                A5Motion.enterTechRow(rowEl, true);
+                            } else {
+                                A5Motion.enterCard(rowEl, benchIdx * 70);
+                            }
+                        } else {
+                            const wasExiting = rowEl.dataset.exiting === "1";
+                            techRowsContainer.appendChild(rowEl);
+                            renderTechBenchCardContent(rowEl, tech, cards, animateChanges);
+                            if (wasExiting && animateChanges) {
+                                A5Motion.enterTechRow(rowEl, true);
+                            }
+                        }
+                    });
+                } else {
+                    Array.from(techRowsContainer.children).forEach((el) => {
+                        if (el.dataset.benchesEmpty !== "1") el.remove();
+                    });
+                    if (!techRowsContainer.querySelector('[data-benches-empty="1"]')) {
+                        const emp = document.createElement("div");
+                        emp.dataset.benchesEmpty = "1";
+                        emp.className = "col-span-full tv-tech-idle p-8 flex flex-col items-center justify-center text-center";
+                        emp.innerHTML = `
+                            <div class="w-14 h-14 rounded-2xl bg-sky-400/15 text-sky-500 border border-sky-400/35 flex items-center justify-center mb-3">
+                                <i data-lucide="wrench" class="w-7 h-7"></i>
                             </div>
-                            <div class="p-2 flex flex-row gap-2.5 overflow-x-auto items-stretch custom-scrollbar" data-tech-cards></div>
+                            <h3 class="text-base font-black uppercase tracking-wide">Bancadas Disponíveis no Momento</h3>
+                            <p class="text-xs opacity-75 mt-1 max-w-md">Quando um técnico assumir uma O.S. pelo QR Code ou Kanban, o card da bancada aparece aqui em destaque.</p>
                         `;
-                        rowEl.querySelector("[data-tech-initials]").textContent = getInitials(tech.title);
-                        rowEl.querySelector("[data-tech-title]").textContent = tech.title;
-                        rowEl.querySelector("[data-tech-badge]").innerHTML = getTechHeaderBadgeHTML(cards);
-                        techRowsContainer.appendChild(rowEl);
-                        syncCardList(rowEl.querySelector("[data-tech-cards]"), cards, true, null, false);
-                        if (animateChanges) {
-                            A5Motion.enterTechRow(rowEl, true);
-                        }
-                    } else {
-                        const wasExiting = rowEl.dataset.exiting === "1";
-                        rowEl.querySelector("[data-tech-initials]").textContent = getInitials(tech.title);
-                        rowEl.querySelector("[data-tech-title]").textContent = tech.title;
-                        rowEl.querySelector("[data-tech-badge]").innerHTML = getTechHeaderBadgeHTML(cards);
-                        techRowsContainer.appendChild(rowEl);
-                        if (wasExiting && animateChanges) {
-                            A5Motion.enterTechRow(rowEl, true);
-                        }
-                        syncCardList(rowEl.querySelector("[data-tech-cards]"), cards, true, null, animateChanges);
+                        techRowsContainer.appendChild(emp);
                     }
-                });
+                }
+
+                // Faixa/Grid das bancadas livres no momento (Neon Sky & Emerald + largura 100%)
+                const idleBar = document.getElementById("tvIdleBenchesBar");
+                const idleListEl = document.getElementById("tvIdleBenchesList");
+                if (idleTechLists.length > 0) {
+                    idleBar.classList.remove("hidden");
+                    idleBar.classList.add("flex");
+                    idleListEl.innerHTML = idleTechLists.map((t) => {
+                        const cleanName = String(t.title || "").replace(/^(TEC\.|SR\.)\s*/i, "").trim();
+                        return `<div class="px-3 py-2 rounded-xl bg-white/70 dark:bg-slate-900/65 border border-sky-400/30 flex items-center justify-between gap-2 shadow-2xs">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400/25 to-sky-400/20 border border-emerald-400/35 text-emerald-700 dark:text-emerald-300 font-black text-[10px] flex items-center justify-center shrink-0">${esc(getInitials(cleanName))}</span>
+                                <span class="font-extrabold text-xs uppercase truncate">${esc(cleanName)}</span>
+                            </div>
+                            <span class="inline-flex items-center gap-1 text-[9.5px] font-black uppercase text-emerald-600 dark:text-emerald-300 shrink-0">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Livre
+                            </span>
+                        </div>`;
+                    }).join("");
+                } else {
+                    idleBar.classList.add("hidden");
+                    idleBar.classList.remove("flex");
+                }
+
+                // Atualiza Rodapé "Prontas p/ Retirada"
+                const footerReadyEl = document.getElementById("tvFooterReadyList");
+                if (prontaCards.length > 0) {
+                    footerReadyEl.innerHTML = prontaCards.slice(0, 6).map((c) => `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/12 border border-emerald-500/30 text-[11px] font-extrabold shrink-0">
+                            <span class="font-mono text-emerald-700 dark:text-emerald-300">O.S. ${esc(c.os_number)}</span>
+                            <span class="truncate max-w-[160px] uppercase">${esc(c.client_name)}</span>
+                        </span>
+                    `).join("") + (prontaCards.length > 6 ? `<span class="text-[10.5px] font-black text-emerald-600 dark:text-emerald-300 shrink-0">+${prontaCards.length - 6} mais</span>` : "");
+                } else {
+                    footerReadyEl.innerHTML = `<span class="opacity-65 font-medium">Nenhuma balança aguardando retirada no momento</span>`;
+                }
             }
 
             tvBoardInitialized = true;
@@ -1394,6 +1876,9 @@
 
         function updateActiveTimersUI() {
             const bar = document.getElementById("activeTimersBar");
+            const spotEl = document.getElementById("tvEstufaSpotlight");
+            const spotList = document.getElementById("tvEstufaSpotlightList");
+            const spotLabel = document.getElementById("tvEstufaCountLabel");
             if (!boardData.lists) return;
 
             const activeCards = [];
@@ -1405,6 +1890,8 @@
                     el.remove();
                 }
             });
+
+            const spotlightHtmlItems = [];
 
             activeCards.forEach(c => {
                 const endMs = new Date(c.timer_end_at).getTime();
@@ -1447,8 +1934,39 @@
                     chip.querySelector("[data-t-label]").textContent = `⏱️ O.S. ${c.os_number} (${c.timer_label || 'Estufa'})`;
                     chip.querySelector("[data-t-time]").textContent = `${mins}:${secs}`;
                     chip.querySelector("[data-t-bar]").style.width = `${pct}%`;
+
+                    spotlightHtmlItems.push(`
+                        <div class="px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-sky-400/35 flex flex-col gap-1">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-mono font-black text-xs text-sky-700 dark:text-sky-200">O.S. ${esc(c.os_number)}</span>
+                                <span class="font-mono font-black text-base tabular-nums text-sky-600 dark:text-sky-300">${mins}:${secs}</span>
+                            </div>
+                            <div class="font-extrabold text-[11px] uppercase truncate">${esc(c.client_name)} • ${esc(c.timer_label || 'Estufa')}</div>
+                            <div class="w-full h-1.5 ember-hatch rounded-full overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-[#7DD3FC] via-[#38BDF8] to-[#0EA5E9]" style="width:${pct}%"></div>
+                            </div>
+                        </div>
+                    `);
                 }
             });
+
+            if (spotEl && spotList && spotLabel) {
+                if (spotlightHtmlItems.length > 0) {
+                    spotEl.classList.remove("hidden");
+                    spotLabel.textContent = `${spotlightHtmlItems.length} ativo(s)`;
+                    spotList.innerHTML = spotlightHtmlItems.join("");
+                } else {
+                    spotEl.classList.add("hidden");
+                }
+            }
+
+            // Auto-paginação suave das filas a cada TV_PAGE_INTERVAL_MS
+            if (boardData.lists && Date.now() - tvLastPageRotateMs >= TV_PAGE_INTERVAL_MS) {
+                tvLastPageRotateMs = Date.now();
+                tvQueuePages.orc += 1;
+                tvQueuePages.apr += 1;
+                renderTvBoard(true);
+            }
         }
 
         // =====================================================================
@@ -1602,30 +2120,36 @@
             const badgeDot = document.getElementById("ytBadgeDot");
             const statusBadge = document.getElementById("ytStatusBadge");
             const miniStatusDot = document.getElementById("ytMiniStatusDot");
+            const btnSublabel = document.getElementById("ytBtnSublabel");
+            const nowTitle = document.getElementById("ytNowPlayingTitle");
             if (!video) return;
 
             if (isAudioDucked) {
                 setEqBarsPlaying(false);
                 if (playBtn) playBtn.innerHTML = "<span>🔇 Silenciado</span>";
                 if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
-                if (statusBadge) { statusBadge.textContent = "Silenciado"; statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-400/35 animate-pulse"; }
+                if (statusBadge) { statusBadge.textContent = "Silenciado"; statusBadge.className = "text-[9.5px] font-black px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-400/35 animate-pulse"; }
                 if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                if (btnSublabel) btnSublabel.textContent = "Pausado p/ Alerta";
             } else if (isYtLoading) {
                 setEqBarsPlaying(false);
                 if (playBtn) playBtn.innerHTML = "<span>⏳ Abrindo...</span>";
-                if (statusBadge) { statusBadge.textContent = "Carregando"; statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-600 dark:text-sky-300 border border-sky-400/35 animate-pulse"; }
+                if (statusBadge) { statusBadge.textContent = "Carregando"; statusBadge.className = "text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-600 dark:text-sky-300 border border-sky-400/35 animate-pulse"; }
+                if (btnSublabel) btnSublabel.textContent = "Carregando faixa...";
             } else if (!video.paused && !video.ended && video.readyState >= 2) {
                 setEqBarsPlaying(true);
                 if (playBtn) playBtn.innerHTML = "<span>⏸️ Pausar</span>";
-                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
-                if (statusBadge) { statusBadge.textContent = "Tocando"; statusBadge.className = "text-[10px] font-black px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-700 dark:text-sky-200 border border-sky-400/40"; }
-                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
+                if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                if (statusBadge) { statusBadge.textContent = "Tocando"; statusBadge.className = "text-[9.5px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-400/40"; }
+                if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                if (btnSublabel) btnSublabel.textContent = nowTitle?.textContent || `Tocando • ${ytSavedVolume}%`;
             } else {
                 setEqBarsPlaying(false);
                 if (playBtn) playBtn.innerHTML = "<span>▶️ Tocar</span>";
                 if (badgeDot) badgeDot.className = "w-2 h-2 rounded-full bg-slate-400 dark:bg-sky-800";
-                if (statusBadge) { statusBadge.textContent = video.src ? "Pausado" : "Pronto"; statusBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/30"; }
+                if (statusBadge) { statusBadge.textContent = video.src ? "Pausado" : "Pronto"; statusBadge.className = "text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-sky-400/15 text-sky-700 dark:text-sky-200 border border-sky-400/30"; }
                 if (miniStatusDot) miniStatusDot.className = "w-2 h-2 rounded-full bg-slate-400";
+                if (btnSublabel) btnSublabel.textContent = video.src ? `Pausado • ${ytSavedVolume}%` : "YouTube • Sem Anúncios";
             }
         }
 
@@ -1737,43 +2261,108 @@
             localStorage.setItem("a5_yt_hide_video", hideVideo ? "1" : "0");
         }
 
+        function positionYtDropdown() {
+            const btn = document.getElementById("ytToggleBtn");
+            const widget = document.getElementById("ytFloatingWidget");
+            const caret = document.getElementById("ytDropdownCaret");
+            if (!btn || !widget) return;
+
+            const rect = btn.getBoundingClientRect();
+            const widgetW = Math.min(430, window.innerWidth * 0.94);
+            const btnCenterX = rect.left + rect.width / 2;
+            const left = Math.max(12, Math.min(window.innerWidth - widgetW - 12, Math.round(btnCenterX - widgetW / 2)));
+            const top = Math.max(54, Math.round(rect.bottom + 10));
+            const originX = Math.max(28, Math.min(widgetW - 28, Math.round(btnCenterX - left)));
+
+            widget.style.top = `${top}px`;
+            widget.style.left = `${left}px`;
+            widget.style.setProperty("--yt-origin-x", `${originX}px`);
+            if (caret) {
+                caret.style.left = `${originX}px`;
+            }
+        }
+
+        window.addEventListener("resize", () => {
+            const widget = document.getElementById("ytFloatingWidget");
+            if (widget && !widget.classList.contains("hidden")) {
+                positionYtDropdown();
+            }
+        });
+
         function openYtWidgetMotion() {
             const widget = document.getElementById("ytFloatingWidget");
-            const pill = document.getElementById("ytMiniPill");
+            const btn = document.getElementById("ytToggleBtn");
+            const chev = document.getElementById("ytBtnChevron");
             if (!widget) return;
-            if (pill && !pill.classList.contains("hidden")) {
-                A5Motion.sinkDown(pill, 16, () => {
-                    pill.classList.add("hidden");
-                    pill.classList.remove("flex");
-                });
+
+            if (widget._ytAnim) {
+                try { widget._ytAnim.cancel(); } catch {}
+                widget._ytAnim = null;
             }
+
             widget.classList.remove("hidden");
             widget.classList.add("flex");
+            positionYtDropdown();
+
+            if (btn) btn.classList.add("yt-btn-open");
+            if (chev) chev.style.transform = "rotate(180deg)";
             refreshLucide();
-            A5Motion.riseUp(widget, 42);
+
+            // Animação saindo de cima para baixo, direto do botão
+            const anim = A5Motion.animate(
+                widget,
+                [
+                    { opacity: 0, transform: "translateY(-22px) scaleX(0.88) scaleY(0.68)" },
+                    { opacity: 1, transform: "translateY(3px) scaleX(1.01) scaleY(1.015)", offset: 0.74 },
+                    { opacity: 1, transform: "translateY(0) scaleX(1) scaleY(1)" }
+                ],
+                { duration: 360, easing: MOTION_EASE }
+            );
+            widget._ytAnim = anim;
+            if (anim) anim.onfinish = () => { widget._ytAnim = null; };
+
             widget.querySelectorAll(".yt-stagger").forEach((sec, idx) => {
                 A5Motion.animate(
                     sec,
-                    [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }],
-                    { duration: 300, delay: 70 + idx * 45, easing: MOTION_EASE }
+                    [{ opacity: 0, transform: "translateY(-10px)" }, { opacity: 1, transform: "translateY(0)" }],
+                    { duration: 280, delay: 55 + idx * 40, easing: MOTION_EASE }
                 );
             });
         }
 
-        function closeYtWidgetMotion(showMiniPill) {
+        function closeYtWidgetMotion() {
             const widget = document.getElementById("ytFloatingWidget");
-            const pill = document.getElementById("ytMiniPill");
+            const btn = document.getElementById("ytToggleBtn");
+            const chev = document.getElementById("ytBtnChevron");
             if (!widget) return;
-            A5Motion.sinkDown(widget, 30, () => {
+
+            if (btn) btn.classList.remove("yt-btn-open");
+            if (chev) chev.style.transform = "rotate(0deg)";
+
+            if (widget._ytAnim) {
+                try { widget._ytAnim.cancel(); } catch {}
+                widget._ytAnim = null;
+            }
+
+            const anim = A5Motion.animate(
+                widget,
+                [
+                    { opacity: 1, transform: "translateY(0) scaleX(1) scaleY(1)" },
+                    { opacity: 0, transform: "translateY(-20px) scaleX(0.88) scaleY(0.68)" }
+                ],
+                { duration: 220, easing: MOTION_EASE }
+            );
+            if (!anim) {
                 widget.classList.add("hidden");
                 widget.classList.remove("flex");
-                if (showMiniPill && pill) {
-                    pill.classList.remove("hidden");
-                    pill.classList.add("flex");
-                    refreshLucide();
-                    A5Motion.riseUp(pill, 18);
-                }
-            });
+                return;
+            }
+            widget._ytAnim = anim;
+            anim.onfinish = () => {
+                widget._ytAnim = null;
+                widget.classList.add("hidden");
+                widget.classList.remove("flex");
+            };
         }
 
         function toggleYtPlayerModal() {
@@ -1782,8 +2371,7 @@
             if (widget.classList.contains("hidden")) {
                 openYtWidgetMotion();
             } else {
-                const v = getYtNativeVideo();
-                closeYtWidgetMotion(Boolean(v && !v.paused));
+                closeYtWidgetMotion(true);
             }
         }
         function minimizeYtWidget() {
@@ -1792,6 +2380,19 @@
         function restoreYtWidget() {
             openYtWidgetMotion();
         }
+
+        // Atalho de teclado: Tecla Y para abrir e minimizar o YouTube da Oficina
+        window.addEventListener("keydown", (e) => {
+            const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : "";
+            const isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || Boolean(e.target && e.target.isContentEditable);
+            if (isTyping) return;
+            if (e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
+            if (e.key === "y" || e.key === "Y" || e.code === "KeyY") {
+                e.preventDefault();
+                toggleYtPlayerModal();
+            }
+        });
+
         if (localStorage.getItem("a5_yt_hide_video") === "1") {
             const chk = document.getElementById("ytHideVideoChk");
             if (chk) chk.checked = true;
