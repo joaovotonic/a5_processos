@@ -7,12 +7,22 @@ set "A5_TUNNEL_MODE=1"
 set "A5_TUNNEL_PUBLIC_HOSTNAME=kanban.a5painel.cloud"
 set "A5_SOCKETIO_ASYNC_MODE=gevent"
 set "A5_PORT=5000"
-set "A5_TUNNEL_HOME=%LOCALAPPDATA%\A5Processos\Cloudflare"
+set "A5_STATE_HOME=%LOCALAPPDATA%\A5Processos"
+set "A5_TUNNEL_HOME=%A5_STATE_HOME%\Cloudflare"
+set "A5_LOG_DIR=%A5_STATE_HOME%\logs"
 set "A5_TUNNEL_TOKEN_FILE=%A5_TUNNEL_HOME%\producao-token.txt"
 set "A5_SECRET_FILE=%A5_TUNNEL_HOME%\session.key"
+set "A5_SERVER_LOG=%A5_LOG_DIR%\servidor.log"
+set "A5_TUNNEL_LOG=%A5_LOG_DIR%\tunnel.log"
+set "A5_SERVER_PID_FILE=%A5_STATE_HOME%\server.pid"
+set "A5_TUNNEL_PID_FILE=%A5_STATE_HOME%\tunnel.pid"
+set "A5_ROOT=%CD%"
+set "A5_SELF=%~f0"
 
 if /I "%~1"=="--server" goto server
 if /I "%~1"=="--tunnel" goto tunnel
+
+title Iniciando Servidor A5 em Segundo Plano
 
 if not exist "database\a5_kanban.db" (
     echo ERRO: banco de dados nao encontrado em "%CD%\database\a5_kanban.db".
@@ -27,6 +37,8 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
+
+if not exist "%A5_LOG_DIR%" mkdir "%A5_LOG_DIR%" >nul 2>nul
 
 :: Localiza o Python
 set "A5_PYTHON="
@@ -120,51 +132,80 @@ if not defined A5_SECRET_KEY (
 )
 
 echo.
-echo Iniciando o servidor A5 e o Tunnel protegido...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "if (Test-NetConnection 127.0.0.1 -Port 5000 -InformationLevel Quiet) { exit 0 } else { exit 1 }"
-if errorlevel 1 (
-    start "A5 - Servidor" "%ComSpec%" /k ""%~f0" --server"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "$deadline=(Get-Date).AddSeconds(45); do { try { $r=Invoke-RestMethod 'http://127.0.0.1:5000/healthz' -TimeoutSec 2; if ($r.service -eq 'a5-kanban' -and $r.status -eq 'ok') { exit 0 } } catch {}; Start-Sleep -Seconds 1 } while ((Get-Date) -lt $deadline); exit 1"
-    if errorlevel 1 (
-        echo ERRO: o servidor A5 nao ficou pronto; o Tunnel nao sera iniciado.
-        echo Confira a janela 'A5 - Servidor'.
-        pause
-        exit /b 1
-    )
-) else (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-RestMethod 'http://127.0.0.1:5000/healthz' -TimeoutSec 3; if ($r.service -eq 'a5-kanban' -and $r.status -eq 'ok') { exit 0 } } catch {}; exit 1"
-    if errorlevel 1 (
-        echo ERRO: a porta 5000 ja esta ocupada por outro servidor.
-        echo Feche o servidor antigo, depois execute este BAT novamente.
-        pause
-        exit /b 1
-    )
-)
+echo Iniciando o servidor A5 e o Tunnel em segundo plano...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $c=New-Object Net.Sockets.TcpClient; $ar=$c.BeginConnect('127.0.0.1', 5000, $null, $null); if ($ar.AsyncWaitHandle.WaitOne(350)) { $c.EndConnect($ar); $c.Close(); exit 0 } else { $c.Close(); exit 1 } } catch { exit 1 }"
+if errorlevel 1 goto start_hidden_server
 
-start "A5 - Cloudflare Tunnel" "%ComSpec%" /k ""%~f0" --tunnel"
-timeout /t 2 /nobreak >nul
-start "" "https://%A5_TUNNEL_PUBLIC_HOSTNAME%/admin"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-RestMethod 'http://127.0.0.1:5000/healthz' -TimeoutSec 3; if ($r.service -eq 'a5-kanban' -and $r.status -eq 'ok') { exit 0 } } catch {}; exit 1"
+if errorlevel 1 (
+    echo ERRO: a porta 5000 ja esta ocupada por outro servidor.
+    echo Execute PARAR_SERVIDOR.bat ou feche o servidor antigo, depois tente novamente.
+    pause
+    exit /b 1
+)
+echo [OK] Servidor A5 ja esta ativo em segundo plano na porta 5000.
+goto ensure_tunnel
+
+:start_hidden_server
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; $arg='/c call '+$q+$env:A5_SELF+$q+' --server'; $p=Start-Process -FilePath $env:ComSpec -ArgumentList $arg -WorkingDirectory $env:A5_ROOT -WindowStyle Hidden -PassThru; [IO.File]::WriteAllText($env:A5_SERVER_PID_FILE, [string]$p.Id)"
+if errorlevel 1 (
+    echo ERRO: nao foi possivel iniciar o processo oculto do servidor.
+    pause
+    exit /b 1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$deadline=(Get-Date).AddSeconds(45); do { try { $r=Invoke-RestMethod 'http://127.0.0.1:5000/healthz' -TimeoutSec 2; if ($r.service -eq 'a5-kanban' -and $r.status -eq 'ok') { exit 0 } } catch {}; Start-Sleep -Milliseconds 700 } while ((Get-Date) -lt $deadline); exit 1"
+if errorlevel 1 (
+    echo ERRO: o servidor A5 nao respondeu na porta 5000; o Tunnel nao sera iniciado.
+    echo Confira o log em: "%A5_SERVER_LOG%"
+    pause
+    exit /b 1
+)
+echo [OK] Servidor A5 iniciado oculto em segundo plano.
+
+:ensure_tunnel
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$t=Get-CimInstance Win32_Process | Where-Object { ($_.Name -ieq 'cmd.exe' -and $_.CommandLine -like '*INICIAR_SERVIDOR.bat*--tunnel*') -or ($_.Name -ieq 'cloudflared.exe' -and $_.CommandLine -like '*tunnel run*') }; if ($t) { exit 0 } else { exit 1 }"
+if errorlevel 1 goto start_hidden_tunnel
+echo [OK] Cloudflare Tunnel ja esta ativo em segundo plano.
+goto done_start
+
+:start_hidden_tunnel
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; $arg='/c call '+$q+$env:A5_SELF+$q+' --tunnel'; $p=Start-Process -FilePath $env:ComSpec -ArgumentList $arg -WorkingDirectory $env:A5_ROOT -WindowStyle Hidden -PassThru; [IO.File]::WriteAllText($env:A5_TUNNEL_PID_FILE, [string]$p.Id)"
+if errorlevel 1 (
+    echo ERRO: nao foi possivel iniciar o processo oculto do Cloudflare Tunnel.
+    pause
+    exit /b 1
+)
+ping -n 3 127.0.0.1 >nul
+echo [OK] Cloudflare Tunnel iniciado oculto em segundo plano.
+
+:done_start
 echo.
-echo As janelas do servidor e do Tunnel devem permanecer abertas.
-echo Feche cada janela para encerrar o processo correspondente.
+echo Servidor e Tunnel rodando sem janelas na barra de tarefas.
+echo Logs salvos em: "%A5_LOG_DIR%"
+echo Para encerrar tudo quando precisar, execute PARAR_SERVIDOR.bat.
+ping -n 3 127.0.0.1 >nul
 exit /b 0
 
 :server
 set "A5_RUNTIME_MODE=production"
+if not exist "%A5_LOG_DIR%" mkdir "%A5_LOG_DIR%" >nul 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if ((Test-Path $env:A5_SERVER_LOG) -and ((Get-Item $env:A5_SERVER_LOG).Length -gt 5242880)) { Move-Item -Force $env:A5_SERVER_LOG ($env:A5_SERVER_LOG + '.old') }" >nul 2>nul
 set "A5_SECRET_KEY="
 set /p A5_SECRET_KEY=<"%A5_SECRET_FILE%"
 set "A5_PYTHON="
 call :find_python
 if not defined A5_PYTHON exit /b 1
 :server_loop
-echo [%date% %time%] Iniciando o servidor A5...
-"%A5_PYTHON%" app.py
-echo [%date% %time%] O servidor encerrou. Nova tentativa em 5 segundos.
-timeout /t 5 /nobreak >nul
+echo [%date% %time%] Iniciando o servidor A5...>>"%A5_SERVER_LOG%"
+"%A5_PYTHON%" -u "%A5_ROOT%\app.py" >>"%A5_SERVER_LOG%" 2>&1
+echo [%date% %time%] O servidor encerrou. Nova tentativa em 5 segundos.>>"%A5_SERVER_LOG%"
+ping -n 6 127.0.0.1 >nul
 goto server_loop
 
 :tunnel
 set "A5_RUNTIME_MODE=production"
+if not exist "%A5_LOG_DIR%" mkdir "%A5_LOG_DIR%" >nul 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if ((Test-Path $env:A5_TUNNEL_LOG) -and ((Get-Item $env:A5_TUNNEL_LOG).Length -gt 5242880)) { Move-Item -Force $env:A5_TUNNEL_LOG ($env:A5_TUNNEL_LOG + '.old') }" >nul 2>nul
 set "A5_SECRET_KEY="
 set /p A5_SECRET_KEY=<"%A5_SECRET_FILE%"
 set "CLOUDFLARED="
@@ -182,10 +223,10 @@ set "TUNNEL_TOKEN=%A5_TUNNEL_TOKEN%"
 set "TUNNEL_NO_AUTOUPDATE=true"
 
 :tunnel_loop
-echo [%date% %time%] Conectando ao Tunnel kanban.a5painel.cloud...
-"%CLOUDFLARED%" --no-autoupdate tunnel run --token "%A5_TUNNEL_TOKEN%"
-echo [%date% %time%] O Tunnel encerrou. Nova tentativa em 5 segundos.
-timeout /t 5 /nobreak >nul
+echo [%date% %time%] Conectando ao Tunnel kanban.a5painel.cloud...>>"%A5_TUNNEL_LOG%"
+"%CLOUDFLARED%" --no-autoupdate tunnel run --token "%A5_TUNNEL_TOKEN%" >>"%A5_TUNNEL_LOG%" 2>&1
+echo [%date% %time%] O Tunnel encerrou. Nova tentativa em 5 segundos.>>"%A5_TUNNEL_LOG%"
+ping -n 6 127.0.0.1 >nul
 goto tunnel_loop
 
 :find_python

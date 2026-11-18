@@ -43,12 +43,16 @@ git config credential.helper manager
 
 echo.
 echo Encerrando temporariamente o servidor na porta 5000 para liberar os arquivos...
-taskkill /F /FI "WINDOWTITLE eq A5 - Servidor*" /T >nul 2>nul
-taskkill /F /FI "WINDOWTITLE eq A5 Sistema Kanban*" /T >nul 2>nul
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
-    if not "%%a"=="0" taskkill /F /PID %%a >nul 2>nul
+if exist "%~dp0PARAR_SERVIDOR.bat" (
+    call "%~dp0PARAR_SERVIDOR.bat" --quiet
+) else (
+    taskkill /F /FI "WINDOWTITLE eq A5 - Servidor*" /T >nul 2>nul
+    taskkill /F /FI "WINDOWTITLE eq A5 Sistema Kanban*" /T >nul 2>nul
+    for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5000" ^| findstr "LISTENING"') do (
+        if not "%%a"=="0" taskkill /F /PID %%a /T >nul 2>nul
+    )
 )
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 
 if "%OPCAO%"=="2" goto opcao2
 goto opcao1
@@ -154,30 +158,30 @@ exit /b 1
 
 :iniciar_servidor
 echo.
-echo Iniciando o servidor atualizado na porta 5000...
-set "A5_TUNNEL_HOME=%LOCALAPPDATA%\A5Processos\Cloudflare"
+echo Iniciando o servidor atualizado em segundo plano...
+set "A5_STATE_HOME=%LOCALAPPDATA%\A5Processos"
+set "A5_TUNNEL_HOME=%A5_STATE_HOME%\Cloudflare"
 if exist "%A5_TUNNEL_HOME%\producao-token.txt" (
     if exist "%A5_TUNNEL_HOME%\session.key" (
         if exist "%~dp0INICIAR_SERVIDOR.bat" goto iniciar_tunnel
     )
 )
 
-start "A5 Sistema Kanban" "%ComSpec%" /k ""%A5_PYTHON%" app.py"
-echo Servidor iniciado com sucesso!
+set "A5_LOG_DIR=%A5_STATE_HOME%\logs"
+set "A5_SERVER_LOG=%A5_LOG_DIR%\servidor.log"
+set "A5_SERVER_PID_FILE=%A5_STATE_HOME%\server.pid"
+set "A5_APP_FILE=%CD%\app.py"
+set "A5_ROOT=%CD%"
+if not exist "%A5_LOG_DIR%" mkdir "%A5_LOG_DIR%" >nul 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; $cmd='/c '+$q+$q+$env:A5_PYTHON+$q+' -u '+$q+$env:A5_APP_FILE+$q+' >>'+$q+$env:A5_SERVER_LOG+$q+' 2>&1'+$q; $p=Start-Process -FilePath $env:ComSpec -ArgumentList $cmd -WorkingDirectory $env:A5_ROOT -WindowStyle Hidden -PassThru; [IO.File]::WriteAllText($env:A5_SERVER_PID_FILE, [string]$p.Id)"
+echo [OK] Servidor iniciado em segundo plano sem janelas na barra!
 echo.
 pause
 exit /b 0
 
 :iniciar_tunnel
-tasklist /FI "IMAGENAME eq cloudflared.exe" 2>nul | find /I "cloudflared.exe" >nul
-if errorlevel 1 (
-    echo Tunnel Cloudflare ainda nao estava ativo; iniciando servidor e Tunnel...
-    call "%~dp0INICIAR_SERVIDOR.bat"
-) else (
-    echo Tunnel Cloudflare ja esta ativo; reiniciando apenas o servidor A5 em modo Tunnel...
-    start "A5 - Servidor" "%ComSpec%" /k ""%~dp0INICIAR_SERVIDOR.bat" --server"
-)
-echo Servidor iniciado com sucesso!
+call "%~dp0INICIAR_SERVIDOR.bat"
+if errorlevel 1 exit /b 1
 echo.
 pause
 exit /b 0
