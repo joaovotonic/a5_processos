@@ -174,6 +174,41 @@ class TestDbGuardAndSafeUpdater(unittest.TestCase):
         self.assertIn("-m kanban.db_guard snapshot", txt)
         self.assertIn("-m kanban.db_guard restore", txt)
         self.assertIn("-m kanban.db_guard verify-post-init", txt)
+        self.assertIn("a5_atualizar_runner.bat", txt)
+        self.assertIn('--runner "%A5_ORIG_DIR%"', txt)
+
+    def test_05_atualizar_sistema_bat_survives_self_modification_during_git_reset(self):
+        """
+        Reproduz o bug real do cmd.exe ('rigin nao e reconhecido'):
+        quando o proprio .bat muda de tamanho no meio da execucao (git reset --hard),
+        a copia em %TEMP% impede qualquer corrupcao de offset.
+        """
+        if os.name != "nt":
+            self.skipTest("Teste especifico de cmd.exe no Windows")
+
+        raw_txt = (BASE_DIR / "ATUALIZAR_SISTEMA.bat").read_text(encoding="utf-8")
+        with tempfile.TemporaryDirectory() as td:
+            td_p = pathlib.Path(td)
+            bat_copy = td_p / "ATUALIZAR_SISTEMA.bat"
+            lines = []
+            for ln in raw_txt.splitlines():
+                s = ln.strip()
+                if s == "git reset --hard origin/main":
+                    # Simula `git reset --hard` alterando o tamanho do ATUALIZAR_SISTEMA.bat original em disco!
+                    lines.append('echo MODIFIED_BY_SIMULATED_GIT_RESET_WITH_DIFFERENT_SIZE > "%A5_REPO_DIR%\\ATUALIZAR_SISTEMA.bat"')
+                elif s.startswith(("git ", '"%A5_PYTHON%" ', "taskkill ", "powershell ", "pause", "ping ", 'call "%A5_REPO_DIR%\\')):
+                    indent = ln[: len(ln) - len(ln.lstrip())]
+                    lines.append(indent + "echo [DRY] " + s.split(" ")[0])
+                else:
+                    lines.append(ln)
+            bat_copy.write_bytes(("\r\n".join(lines) + "\r\n").encode("utf-8"))
+
+            res = subprocess.run([str(bat_copy)], text=True, capture_output=True)
+            self.assertEqual(res.returncode, 0, msg=f"STDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}")
+            self.assertEqual(res.stderr.strip(), "", msg=f"STDERR inesperado: {res.stderr}")
+            self.assertIn("CODIGO ATUALIZADO! BANCO LOCAL 100% PRESERVADO.", res.stdout)
+            # Confirma que o arquivo original realmente foi reescrito durante a execucao sem quebrar o runner
+            self.assertIn("MODIFIED_BY_SIMULATED_GIT_RESET", bat_copy.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

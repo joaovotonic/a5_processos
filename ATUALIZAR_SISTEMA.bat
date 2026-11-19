@@ -1,8 +1,25 @@
 @echo off
 chcp 65001 > nul
+if /I not "%~1"=="--runner" goto launch_from_temp
+goto run_updater
+
+:launch_from_temp
+:: Copia este script para %TEMP% antes do `git reset`, evitando erro de deslocamento
+:: do cmd.exe caso o proprio ATUALIZAR_SISTEMA.bat mude de tamanho durante o reset.
+set "A5_RUNNER=%TEMP%\a5_atualizar_runner.bat"
+copy /Y "%~f0" "%A5_RUNNER%" >nul
+if errorlevel 1 goto run_updater
+set "A5_ORIG_DIR=%~dp0"
+if "%A5_ORIG_DIR:~-1%"=="\" set "A5_ORIG_DIR=%A5_ORIG_DIR:~0,-1%"
+"%A5_RUNNER%" --runner "%A5_ORIG_DIR%"
+
+:run_updater
 setlocal
 title Atualizando Sistema A5 Tecnologia
-cd /d "%~dp0"
+set "A5_REPO_DIR=%~2"
+if not defined A5_REPO_DIR set "A5_REPO_DIR=%~dp0"
+if "%A5_REPO_DIR:~-1%"=="\" set "A5_REPO_DIR=%A5_REPO_DIR:~0,-1%"
+cd /d "%A5_REPO_DIR%"
 
 :: Garante que o Git esteja no PATH do Windows
 set "PATH=%PATH%;C:\Program Files\Git\cmd;C:\Program Files\Git\bin;C:\Program Files (x86)\Git\cmd;%LOCALAPPDATA%\Programs\Git\cmd"
@@ -25,7 +42,7 @@ if not defined A5_PYTHON (
 
 set "A5_STATE_HOME=%LOCALAPPDATA%\A5Processos"
 set "A5_PRE_UPDATE_DIR=%A5_STATE_HOME%\pre_update_backups"
-set "A5_DB_PATH=%CD%\database\a5_kanban.db"
+set "A5_DB_PATH=%A5_REPO_DIR%\database\a5_kanban.db"
 
 echo ==========================================================
 echo       ATUALIZANDO SISTEMA A5 TECNOLOGIA (SOMENTE CODIGO)
@@ -41,8 +58,9 @@ git config user.email "joaovotoni1@gmail.com"
 git config credential.helper manager
 
 echo [1/4] Encerrando temporariamente o servidor para liberar o banco...
-if exist "%~dp0PARAR_SERVIDOR.bat" (
-    call "%~dp0PARAR_SERVIDOR.bat" --quiet
+if exist "%A5_REPO_DIR%\PARAR_SERVIDOR.bat" (
+    call "%A5_REPO_DIR%\PARAR_SERVIDOR.bat" --quiet
+    title Atualizando Sistema A5 Tecnologia
 ) else (
     taskkill /F /FI "WINDOWTITLE eq A5 - Servidor*" /T >nul 2>nul
     taskkill /F /FI "WINDOWTITLE eq A5 Sistema Kanban*" /T >nul 2>nul
@@ -56,7 +74,7 @@ echo [2/4] Consolidando WAL e criando snapshot verificado do banco local...
 set "HAS_DB_SNAPSHOT=0"
 if exist "%A5_DB_PATH%" (
     set "HAS_DB_SNAPSHOT=1"
-    "%A5_PYTHON%" -m kanban.db_guard snapshot --db "%A5_DB_PATH%" --state-dir "%A5_PRE_UPDATE_DIR%" --extra-backup-dir "%CD%\backups"
+    "%A5_PYTHON%" -m kanban.db_guard snapshot --db "%A5_DB_PATH%" --state-dir "%A5_PRE_UPDATE_DIR%" --extra-backup-dir "%A5_REPO_DIR%\backups"
     if errorlevel 1 (
         echo.
         echo [ABORTADO] Nao foi possivel proteger o banco de dados local com seguranca.
@@ -129,15 +147,15 @@ echo Iniciando o servidor atualizado em segundo plano...
 set "A5_TUNNEL_HOME=%A5_STATE_HOME%\Cloudflare"
 if exist "%A5_TUNNEL_HOME%\producao-token.txt" (
     if exist "%A5_TUNNEL_HOME%\session.key" (
-        if exist "%~dp0INICIAR_SERVIDOR.bat" goto iniciar_tunnel
+        if exist "%A5_REPO_DIR%\INICIAR_SERVIDOR.bat" goto iniciar_tunnel
     )
 )
 
 set "A5_LOG_DIR=%A5_STATE_HOME%\logs"
 set "A5_SERVER_LOG=%A5_LOG_DIR%\servidor.log"
 set "A5_SERVER_PID_FILE=%A5_STATE_HOME%\server.pid"
-set "A5_APP_FILE=%CD%\app.py"
-set "A5_ROOT=%CD%"
+set "A5_APP_FILE=%A5_REPO_DIR%\app.py"
+set "A5_ROOT=%A5_REPO_DIR%"
 if not exist "%A5_LOG_DIR%" mkdir "%A5_LOG_DIR%" >nul 2>nul
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$q=[char]34; $cmd='/c '+$q+$q+$env:A5_PYTHON+$q+' -u '+$q+$env:A5_APP_FILE+$q+' >>'+$q+$env:A5_SERVER_LOG+$q+' 2>&1'+$q; $p=Start-Process -FilePath $env:ComSpec -ArgumentList $cmd -WorkingDirectory $env:A5_ROOT -WindowStyle Hidden -PassThru; [IO.File]::WriteAllText($env:A5_SERVER_PID_FILE, [string]$p.Id)"
 echo [OK] Servidor iniciado em segundo plano sem janelas na barra!
@@ -146,7 +164,7 @@ pause
 exit /b 0
 
 :iniciar_tunnel
-call "%~dp0INICIAR_SERVIDOR.bat"
+call "%A5_REPO_DIR%\INICIAR_SERVIDOR.bat"
 if errorlevel 1 exit /b 1
 echo.
 pause
