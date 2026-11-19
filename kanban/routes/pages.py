@@ -208,7 +208,7 @@ def diretoria_logout():
 
 @bp.route("/etiqueta/<path:os_number>")
 def etiqueta_page(os_number):
-    """5. Etiqueta Térmica 60x40mm com QR Code de transferência de listas (sem login)."""
+    """5. Etiqueta Térmica 60x55mm com QR Code de transferência de listas (sem login)."""
     row = get_card_row_by_os(os_number)
     if not row:
         return "Ordem de Serviço não encontrada.", 404

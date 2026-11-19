@@ -145,7 +145,12 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
 
         with connect() as conn:
             conn.execute("DELETE FROM cards WHERE os_number IN ('026991', '26991')")
-        create_manual_os({"os_number": "26991", "client_name": "TESTE QR CLOUD", "equipment_model": "PRIX 5"})
+        create_manual_os({
+            "os_number": "26991",
+            "client_name": "TESTE QR CLOUD",
+            "equipment_model": "PRIX 5",
+            "reported_defect": "Display apagando intermitente",
+        })
 
         anon = self.app.test_client()
         try:
@@ -153,6 +158,11 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
             r_local = anon.get("/etiqueta/26991", headers={"Host": "127.0.0.1:5000"})
             self.assertEqual(r_local.status_code, 200)
             html_local = r_local.get_data(as_text=True)
+            self.assertIn("60mm 55mm", html_local)
+            self.assertIn("A5 TECNOLOGIA", html_local)
+            self.assertIn("DEFEITO:", html_local)
+            self.assertIn("Display apagando intermitente", html_local)
+            self.assertNotIn("ACESSÓRIOS:", html_local)
             self.assertIn("/static/js/qrcode.min.js", html_local)
             self.assertNotIn("cdnjs.cloudflare.com", html_local)
             m_local = re.search(r'qrText\s*=\s*"([^"]+)"', html_local)
