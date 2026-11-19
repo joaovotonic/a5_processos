@@ -23,26 +23,24 @@ if not defined A5_PYTHON (
     exit /b 1
 )
 
+set "A5_STATE_HOME=%LOCALAPPDATA%\A5Processos"
+set "A5_PRE_UPDATE_DIR=%A5_STATE_HOME%\pre_update_backups"
+set "A5_DB_PATH=%CD%\database\a5_kanban.db"
+
 echo ==========================================================
-echo       ATUALIZANDO SISTEMA A5 TECNOLOGIA (PC PRISCILA)
+echo       ATUALIZANDO SISTEMA A5 TECNOLOGIA (SOMENTE CODIGO)
 echo ==========================================================
 echo.
-echo Escolha o tipo de atualizacao desejada:
+echo Modo seguro ativo: o banco de dados local da oficina
+echo (database\a5_kanban.db + WAL) sera 100%% preservado e
+echo validado com SHA-256 antes e depois da atualizacao.
 echo.
-echo   [1] Atualizar TUDO (Codigo + Cards e Banco organizados pelo Joao)
-echo   [2] Atualizar apenas CODIGO (Manter o banco local deste PC)
-echo.
-set "OPCAO=1"
-set /p "OPCAO=Digite 1 ou 2 e pressione ENTER [Padrao: 1]: "
-if defined OPCAO set "OPCAO=%OPCAO: =%"
-if not defined OPCAO set "OPCAO=1"
 
 git config user.name "joaovotonic"
 git config user.email "joaovotoni1@gmail.com"
 git config credential.helper manager
 
-echo.
-echo Encerrando temporariamente o servidor na porta 5000 para liberar os arquivos...
+echo [1/4] Encerrando temporariamente o servidor para liberar o banco...
 if exist "%~dp0PARAR_SERVIDOR.bat" (
     call "%~dp0PARAR_SERVIDOR.bat" --quiet
 ) else (
@@ -54,112 +52,80 @@ if exist "%~dp0PARAR_SERVIDOR.bat" (
 )
 ping -n 3 127.0.0.1 >nul
 
-if "%OPCAO%"=="2" goto opcao2
-goto opcao1
-
-:opcao2
-echo.
-echo ==========================================================
-echo [Opcao 2] Atualizando codigo e PRESERVANDO banco local...
-echo ==========================================================
-echo.
-if exist "database\a5_kanban.db" (
-    echo [1/3] Protegendo o banco de dados local da oficina...
-    copy /Y "database\a5_kanban.db" "database\a5_kanban_local_preserve.bak" >nul
+echo [2/4] Consolidando WAL e criando snapshot verificado do banco local...
+set "HAS_DB_SNAPSHOT=0"
+if exist "%A5_DB_PATH%" (
+    set "HAS_DB_SNAPSHOT=1"
+    "%A5_PYTHON%" -m kanban.db_guard snapshot --db "%A5_DB_PATH%" --state-dir "%A5_PRE_UPDATE_DIR%" --extra-backup-dir "%CD%\backups"
     if errorlevel 1 (
-        echo [ERRO] Nao foi possivel copiar database\a5_kanban.db para backup temporario.
+        echo.
+        echo [ABORTADO] Nao foi possivel proteger o banco de dados local com seguranca.
+        echo NENHUMA alteracao foi feita no codigo ou no banco.
         echo Feche qualquer programa usando o banco e tente novamente.
         pause
         exit /b 1
     )
 )
 
-echo [2/3] Baixando atualizacoes de codigo do GitHub (origin/main)...
+echo [3/4] Baixando atualizacoes de codigo do GitHub (origin/main)...
 git fetch origin main
-if errorlevel 1 goto erro_git_restore_local
+if errorlevel 1 goto erro_git
 git reset --hard origin/main
-if errorlevel 1 goto erro_git_restore_local
+if errorlevel 1 goto erro_git
 
-if exist "database\a5_kanban_local_preserve.bak" (
-    copy /Y "database\a5_kanban_local_preserve.bak" "database\a5_kanban.db" >nul
-    if not errorlevel 1 del /F /Q "database\a5_kanban_local_preserve.bak" >nul
+if "%HAS_DB_SNAPSHOT%"=="1" (
+    "%A5_PYTHON%" -m kanban.db_guard restore --db "%A5_DB_PATH%" --state-dir "%A5_PRE_UPDATE_DIR%"
+    if errorlevel 1 (
+        echo.
+        echo [ERRO CRITICO] Falha ao restaurar o snapshot do banco local.
+        echo Uma copia permanente intacta foi salva em:
+        echo   %A5_PRE_UPDATE_DIR%
+        pause
+        exit /b 1
+    )
 )
 
-echo [3/3] Verificando novas dependencias e tabelas do banco...
+echo [4/4] Verificando dependencias, migracoes seguras e integridade do banco...
 "%A5_PYTHON%" -m pip install -r requirements.txt --quiet --no-warn-script-location
 if errorlevel 1 (
     echo [AVISO] Alguma dependencia pip retornou erro. Verifique sua conexao se houver falha ao iniciar.
 )
 "%A5_PYTHON%" -c "from kanban.database import init_db; init_db()"
 if errorlevel 1 (
-    echo [ERRO] Falha ao atualizar tabelas do banco de dados.
+    echo [ERRO] Falha ao verificar tabelas do banco de dados.
     pause
     exit /b 1
 )
 
+if "%HAS_DB_SNAPSHOT%"=="1" (
+    "%A5_PYTHON%" -m kanban.db_guard verify-post-init --db "%A5_DB_PATH%" --state-dir "%A5_PRE_UPDATE_DIR%"
+    if errorlevel 1 (
+        echo.
+        echo [ALERTA] Verifique o aviso acima antes de continuar!
+        pause
+        exit /b 1
+    )
+)
+
 echo.
 echo ==========================================================
-echo      CODIGO ATUALIZADO! BANCO LOCAL PRESERVADO.
+echo   CODIGO ATUALIZADO! BANCO LOCAL 100%% PRESERVADO.
 echo ==========================================================
 goto iniciar_servidor
 
-:erro_git_restore_local
-if exist "database\a5_kanban_local_preserve.bak" (
-    copy /Y "database\a5_kanban_local_preserve.bak" "database\a5_kanban.db" >nul
-    if not errorlevel 1 del /F /Q "database\a5_kanban_local_preserve.bak" >nul
+:erro_git
+if "%HAS_DB_SNAPSHOT%"=="1" (
+    "%A5_PYTHON%" -m kanban.db_guard restore --db "%A5_DB_PATH%" --state-dir "%A5_PRE_UPDATE_DIR%" >nul 2>nul
 )
 echo.
-echo [ERRO] Falha ao baixar atualizacoes do GitHub. Verifique a internet ou credenciais Git.
-pause
-exit /b 1
-
-:opcao1
-echo.
-echo ==========================================================
-echo [Opcao 1] Atualizando TUDO (Codigo + Cards e Banco do Joao)...
-echo ==========================================================
-echo.
-if exist "database\a5_kanban.db" (
-    echo [1/3] Criando copia de seguranca do banco atual por garantia...
-    copy /Y "database\a5_kanban.db" "database\a5_kanban_backup_antes_atualizar.bak" >nul
-)
-
-echo [2/3] Baixando versao completa da nuvem (joaovotonic/a5_processos)...
-git fetch origin main
-if errorlevel 1 goto erro_git_opcao1
-git reset --hard origin/main
-if errorlevel 1 goto erro_git_opcao1
-
-echo [3/3] Verificando novas dependencias e tabelas do banco...
-"%A5_PYTHON%" -m pip install -r requirements.txt --quiet --no-warn-script-location
-if errorlevel 1 (
-    echo [AVISO] Alguma dependencia pip retornou erro. Verifique sua conexao se houver falha ao iniciar.
-)
-"%A5_PYTHON%" -c "from kanban.database import init_db; init_db()"
-if errorlevel 1 (
-    echo [ERRO] Falha ao atualizar tabelas do banco de dados.
-    pause
-    exit /b 1
-)
-
-echo.
-echo ==========================================================
-echo   SISTEMA E CARDS ATUALIZADOS COM SUCESSO!
-echo ==========================================================
-echo Todos os cards organizados pelo Joao estao prontos no painel.
-echo Copia anterior salva em: database\a5_kanban_backup_antes_atualizar.bak
-goto iniciar_servidor
-
-:erro_git_opcao1
-echo.
-echo [ERRO] Falha ao baixar atualizacoes do GitHub. Verifique a internet ou credenciais Git.
+echo [ERRO] Falha ao baixar atualizacoes do GitHub.
+echo Seu banco local permanece intacto. Verifique a internet ou credenciais Git.
 pause
 exit /b 1
 
 :iniciar_servidor
 echo.
 echo Iniciando o servidor atualizado em segundo plano...
-set "A5_STATE_HOME=%LOCALAPPDATA%\A5Processos"
 set "A5_TUNNEL_HOME=%A5_STATE_HOME%\Cloudflare"
 if exist "%A5_TUNNEL_HOME%\producao-token.txt" (
     if exist "%A5_TUNNEL_HOME%\session.key" (

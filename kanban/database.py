@@ -272,8 +272,12 @@ def _ensure_esteira_lists(cursor):
             (target_pos,)
         )
 
-    # Remove colunas desnecessárias do kanban antigo se existirem
-    cursor.execute("DELETE FROM lists WHERE title IN ('SR. JACSON', 'PENDÊNCIAS', 'BALANÇAS PRONTAS');")
+    # Remove colunas desnecessárias do kanban antigo somente se estiverem vazias (nunca apaga O.S.)
+    cursor.execute("""
+        DELETE FROM lists
+        WHERE title IN ('SR. JACSON', 'PENDÊNCIAS', 'BALANÇAS PRONTAS')
+          AND NOT EXISTS (SELECT 1 FROM cards WHERE cards.list_id = lists.id);
+    """)
 
     # Deduplica a lista 'FINALIZADAS', mantendo uma única coluna oficial
     fin_lists = cursor.execute("SELECT id FROM lists WHERE title = 'FINALIZADAS' OR role = 'finalizada' ORDER BY id ASC").fetchall()
