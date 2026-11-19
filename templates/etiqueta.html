@@ -37,10 +37,10 @@
         .header-bar {
             background: #000000;
             color: #ffffff;
-            padding: 1.8mm 2.4mm 1.7mm 2.4mm;
+            padding: 1.4mm 2.2mm 1.3mm 2.2mm;
             display: flex;
             flex-direction: column;
-            gap: 0.7mm;
+            gap: 0.5mm;
             flex-shrink: 0;
         }
         .header-top-row {
@@ -102,10 +102,10 @@
 
         /* 2. BLOCO CENTRAL: CLIENTE E EQUIPAMENTO */
         .client-section {
-            padding: 1.6mm 2.4mm 1.2mm 2.4mm;
+            padding: 1.2mm 2.2mm 1.1mm 2.2mm;
             display: flex;
             flex-direction: column;
-            gap: 0.5mm;
+            gap: 0.35mm;
             flex-shrink: 0;
         }
         .client-meta-row {
@@ -133,10 +133,10 @@
             text-transform: uppercase;
         }
         .client-name {
-            font-size: 10.2pt;
+            font-size: 9.8pt;
             font-weight: 900;
             text-transform: uppercase;
-            line-height: 1.12;
+            line-height: 1.1;
             color: #000000;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -145,21 +145,22 @@
             word-break: break-word;
         }
         .equip-name {
-            font-size: 7.8pt;
+            font-size: 7.5pt;
             font-weight: 700;
             color: #111111;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: 0.3mm;
+            margin-top: 0.2mm;
         }
 
-        /* 3. BLOCO INFERIOR: DEFEITO + N/S À ESQUERDA | QR GIGANTE À DIREITA */
+        /* 3. BLOCO INFERIOR: DEFEITO + N/S À ESQUERDA | QR À DIREITA COM FOLGA DA LINHA */
         .bottom-section {
             flex: 1;
             min-height: 0;
+            overflow: hidden;
             border-top: 0.4mm solid #000000;
-            padding: 1.4mm 2.4mm 1.8mm 2.4mm;
+            padding: 1.8mm 2.2mm 1.6mm 2.2mm;
             display: flex;
             align-items: stretch;
             justify-content: space-between;
@@ -175,16 +176,16 @@
         .defect-body {
             display: flex;
             flex-direction: column;
-            gap: 0.8mm;
+            gap: 0.7mm;
             min-height: 0;
         }
         .defect-text {
-            font-size: 7.8pt;
+            font-size: 7.6pt;
             font-weight: 700;
-            line-height: 1.18;
+            line-height: 1.16;
             color: #000000;
             display: -webkit-box;
-            -webkit-line-clamp: 5;
+            -webkit-line-clamp: 4;
             -webkit-box-orient: vertical;
             overflow: hidden;
             word-break: break-word;
@@ -197,15 +198,15 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-top: 0.8mm;
+            margin-top: 0.6mm;
         }
 
-        /* QR CODE GIGANTE COM MOLDURA LIMPA E NITIDEZ TÉRMICA 203 DPI */
+        /* QR CODE COM MOLDURA LIMPA, FOLGA DA LINHA SUPERIOR E NITIDEZ TÉRMICA 203 DPI */
         .qr-frame {
             flex-shrink: 0;
             align-self: center;
-            width: 23mm;
-            height: 23mm;
+            width: 20.5mm;
+            height: 20.5mm;
             border: 0.45mm solid #000000;
             border-radius: 1.2mm;
             padding: 0.8mm;
@@ -215,8 +216,8 @@
             justify-content: center;
         }
         .qr-box {
-            width: 21mm;
-            height: 21mm;
+            width: 18.6mm;
+            height: 18.6mm;
             background: #ffffff;
             display: flex;
             align-items: center;
@@ -224,8 +225,8 @@
         }
         .qr-box img,
         .qr-box canvas {
-            width: 20.6mm !important;
-            height: 20.6mm !important;
+            width: 18.4mm !important;
+            height: 18.4mm !important;
             display: block;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
