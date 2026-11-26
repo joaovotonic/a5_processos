@@ -34,6 +34,7 @@ from ..services import clients as clients_service
 
 
 @bp.route("/cnpj/<path:cnpj>", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def lookup_cnpj(cnpj):
     """Consulta CNPJ em tempo real na Receita Federal (via BrasilAPI) com cache no banco local."""
     data = clients_service.fetch_cnpj_info(cnpj)
@@ -43,6 +44,7 @@ def lookup_cnpj(cnpj):
 
 
 @bp.route("/clients/search", methods=["GET"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def search_clients():
     """Autocompletar de clientes cadastrados por Nome, Fantasia, CNPJ ou Telefone."""
     q = request.args.get("q", "").strip()
@@ -50,51 +52,12 @@ def search_clients():
 
 
 @bp.route("/clients", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
 def save_client():
     """Salva ou atualiza os dados de um cliente manualmente."""
     payload = request.get_json(silent=True) or request.form.to_dict()
     client = clients_service.save_or_update_client(payload)
     return jsonify({"success": True, "client": client})
-
-
-@bp.route("/pending-entries", methods=["GET"])
-def get_pending_entries():
-    """Lista as pré-entradas de fotos tiradas na recepção aguardando geração de O.S. no Teorema."""
-    return jsonify({"pending_entries": cards_service.list_pending_entries()})
-
-
-@bp.route("/pending-entries", methods=["POST"])
-def create_pending_entry():
-    """Salva fotos tiradas pela Priscila no celular (/recepcao-fotos) com os dados de CNPJ, Cliente e Acessórios."""
-    form = request.form
-    fields = {
-        "entry_id": form.get("entry_id"),
-        "client_name": get_text(form, "client_name").upper(),
-        "cnpj_cpf": get_text(form, "cnpj_cpf"),
-        "trade_name": get_text(form, "trade_name").upper(),
-        "phone": get_text(form, "phone"),
-        "email": get_text(form, "email"),
-        "address": get_text(form, "address"),
-        "city_state": get_text(form, "city_state"),
-        "accessories_json": form.get("accessories_json", "[]"),
-        "equipment_type": get_text(form, "equipment_type", DEFAULT_EQUIPMENT_TYPE),
-        "equipment_model": get_text(form, "equipment_model"),
-        "serial_number": get_text(form, "serial_number"),
-        "reported_defect": get_text(form, "reported_defect"),
-        "previous_service": get_text(form, "previous_service"),
-    }
-    entry = cards_service.create_pending_entry(fields, request.files.getlist("entry_photos"))
-    board = realtime.broadcast_board()
-    return jsonify({"success": True, "entry": entry, "board": board})
-
-
-@bp.route("/pending-entries/<int:entry_id>", methods=["DELETE"])
-@require_api_roles("admin_recepcao", "master")
-def delete_pending_entry(entry_id):
-    """Remove uma pré-entrada de fotos da recepção."""
-    cards_service.delete_pending_entry(entry_id)
-    board = realtime.broadcast_board()
-    return jsonify({"success": True, "board": board})
 
 
 @bp.route("/cards", methods=["POST"])
@@ -293,20 +256,27 @@ def update_card(card_id):
 
 
 def _verify_delete_credentials():
-    """Extrai login/senha e valida se pertence a um usuário Master (inclusive admin padrão)."""
-    from ..auth import authenticate_user
+    """Extrai login/senha do corpo da requisição e valida se pertence a um usuário Master."""
+    from ..auth import authenticate_user, check_login_rate_limit, clear_login_failures, record_login_failure
+
+    allowed, retry_after = check_login_rate_limit("delete_card")
+    if not allowed:
+        raise ApiError(f"Muitas tentativas de exclusão incorretas. Aguarde {retry_after}s.", status=429)
+
     data = {}
     try:
         data = request_data() or {}
     except Exception:
         data = {}
 
-    username = (data.get("username") or data.get("login") or request.args.get("username") or request.args.get("login") or "").strip()
-    password = (data.get("password") or data.get("senha") or request.args.get("password") or request.args.get("senha") or "").strip()
+    username = (data.get("username") or data.get("login") or "").strip()
+    password = (data.get("password") or data.get("senha") or "").strip()
 
     auth_user = authenticate_user(username, password)
     if not auth_user or auth_user.get("role") != "master":
+        record_login_failure("delete_card")
         raise ApiError("Acesso negado: Login ou senha incorretos para exclusão de O.S.", status=403)
+    clear_login_failures("delete_card")
 
 
 @bp.route("/cards/<int:card_id>", methods=["DELETE", "POST"])

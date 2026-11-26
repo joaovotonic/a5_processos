@@ -14,14 +14,45 @@ export interface CallTarget {
   target: string;
 }
 
+export interface DefaultPasswordUser {
+  username: string;
+  display_name: string;
+  role: UserRole;
+}
+
+export interface SystemUpdateCommit {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+  is_backup?: boolean;
+}
+
+export interface SystemUpdateStatus {
+  success: boolean;
+  has_update: boolean;
+  behind_count: number;
+  branch: string;
+  repo: string;
+  current_commit?: string;
+  current_message?: string;
+  remote_commit?: string;
+  commits: SystemUpdateCommit[];
+  applying?: boolean;
+  checked_at?: string;
+  error?: string;
+}
+
 export interface A5BootConfig {
-  intakeUrl: string;
+  publicUrl?: string;
   localIp: string;
   port: number;
   tunnelMode: boolean;
   user: AuthUser | null;
   directorFirstAccessDone: boolean;
   directorSavedUser: string;
+  usingDefaultPassword?: boolean;
+  defaultPasswordUsers?: DefaultPasswordUser[];
   callTargets: CallTarget[];
   page?: string;
 }
@@ -110,6 +141,8 @@ export interface KanbanList {
   role: string;
   cards: KanbanCard[];
   card_count: number;
+  total_card_count?: number;
+  truncated?: boolean;
 }
 
 export interface PendingEntry {

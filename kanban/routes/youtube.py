@@ -1,18 +1,38 @@
 """Rotas HTTP de Integração com o YouTube (Pesquisa de Músicas, Stream Nativo Sem Anúncios e Conta Premium)."""
 import urllib.error
+import urllib.parse
 import urllib.request
 from flask import Blueprint, Response, jsonify, request, stream_with_context
 
+from ..auth import require_api_roles
 from ..errors import ApiError
 from ..services import youtube as yt_service
 from ..utils import json_body
 
 bp = Blueprint("api_youtube", __name__, url_prefix="/api/youtube")
 
+_ALLOWED_YT_BROWSERS = {"", "firefox", "chrome", "edge", "brave"}
+_ALLOWED_YT_MODES = {"premium_direct", "browser_cookies"}
+
+
+def _enforce_same_origin_proxy():
+    """Bloqueia hotlink externo (cross-site) para evitar uso da VPS como proxy aberto de YouTube."""
+    sec_fetch_site = (request.headers.get("Sec-Fetch-Site") or "").strip().lower()
+    if sec_fetch_site == "cross-site":
+        raise ApiError("Acesso externo (cross-site) bloqueado.", status=403)
+
+    referer = (request.headers.get("Referer") or "").strip()
+    if referer:
+        ref_host = (urllib.parse.urlparse(referer).netloc or "").lower()
+        req_host = (request.headers.get("X-Forwarded-Host") or request.host or "").split(",")[0].strip().lower()
+        if ref_host and req_host and ref_host != req_host:
+            raise ApiError("Origem não autorizada para streaming.", status=403)
+
 
 @bp.route("/search", methods=["GET"])
 def api_youtube_search():
     """Pesquisa músicas, artistas, shows ao vivo ou álbuns no YouTube."""
+    _enforce_same_origin_proxy()
     q = (request.args.get("q") or "").strip()
     limit = request.args.get("limit", 8)
     if not q:
@@ -24,6 +44,7 @@ def api_youtube_search():
 @bp.route("/info/<video_id>", methods=["GET"])
 def api_youtube_info(video_id):
     """Retorna metadados da música/vídeo e prepara o stream em cache."""
+    _enforce_same_origin_proxy()
     force = request.args.get("refresh") == "1"
     info = yt_service.resolve_video_stream(video_id, force_refresh=force)
     clean_id = info["id"]
@@ -50,6 +71,7 @@ def api_youtube_stream(video_id):
     Proxy de streaming de vídeo/áudio MP4 com suporte a HTTP Range (206 Partial Content).
     Permite tocar qualquer música ou show no player nativo da TV sem bloqueio de embed e sem anúncios.
     """
+    _enforce_same_origin_proxy()
     info = yt_service.resolve_video_stream(video_id)
     range_header = request.headers.get("Range")
 
@@ -107,16 +129,24 @@ def api_youtube_stream(video_id):
     return Response(stream_with_context(_generate()), status=status_code, headers=resp_headers)
 
 
-@bp.route("/account", methods=["GET", "POST"])
-def api_youtube_account():
-    """Consulta ou vincula a sessão do YouTube Premium / Navegador."""
-    if request.method == "GET":
-        return jsonify({"success": True, "account": yt_service.get_youtube_account_status()})
+@bp.route("/account", methods=["GET"])
+def api_youtube_account_get():
+    """Consulta o status da integração do YouTube."""
+    return jsonify({"success": True, "account": yt_service.get_youtube_account_status()})
 
+
+@bp.route("/account", methods=["POST"])
+@require_api_roles("admin_recepcao", "diretoria", "master")
+def api_youtube_account_post():
+    """Vincula a sessão do YouTube Premium / Navegador (somente equipe autenticada)."""
     data = json_body()
-    mode = data.get("mode", "premium_direct")
-    browser = data.get("browser", "")
-    email = data.get("email", "")
+    mode = str(data.get("mode") or "premium_direct").strip().lower()
+    browser = str(data.get("browser") or "").strip().lower()
+    email = str(data.get("email") or "").strip()[:120]
+    if mode not in _ALLOWED_YT_MODES:
+        raise ApiError("Modo de conta YouTube inválido.", status=400)
+    if browser not in _ALLOWED_YT_BROWSERS:
+        raise ApiError("Navegador não suportado.", status=400)
     acc = yt_service.save_youtube_account_status(mode=mode, browser=browser, email=email)
     return jsonify({"success": True, "account": acc})
 

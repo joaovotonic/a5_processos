@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+frontend/node_modules/
+backups/a5_kanban_backup_*.db
+backups/a5_kanban_dump_*.json
+enviados_vps/
+*.bak
+.DS_Store
+Thumbs.db

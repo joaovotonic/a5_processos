@@ -31,6 +31,8 @@ interface KanbanBoardProps {
   onCreateList: () => void;
   onRenameList: (list: KanbanList) => void;
   onDeleteList: (list: KanbanList) => void;
+  onLoadAllFinished?: () => void;
+  loadingAllFinished?: boolean;
 }
 
 const LARGE_LIST_THRESHOLD = 60;
@@ -76,6 +78,8 @@ const DroppableColumnBody = memo<{
   onOpenDetail: (osNumber: string) => void;
   onAdvanceAdmin: (osNumber: string, action: string) => void;
   onDeleteRequest: (card: KanbanCard) => void;
+  onLoadAllFinished?: () => void;
+  loadingAllFinished?: boolean;
 }>(({
   list,
   visibleCards,
@@ -86,6 +90,8 @@ const DroppableColumnBody = memo<{
   onOpenDetail,
   onAdvanceAdmin,
   onDeleteRequest,
+  onLoadAllFinished,
+  loadingAllFinished,
 }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: `col-${list.id}`,
@@ -135,6 +141,18 @@ const DroppableColumnBody = memo<{
                 📂 Mostrar todas as {totalFilteredCount} O.S. (+{hiddenCount} anteriores)
               </button>
             )}
+            {list.truncated && onLoadAllFinished && (
+              <button
+                type="button"
+                disabled={loadingAllFinished}
+                onClick={onLoadAllFinished}
+                className="w-full py-2.5 px-3 rounded-xl text-[11px] font-extrabold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-500/30 transition cursor-pointer disabled:opacity-60"
+              >
+                {loadingAllFinished
+                  ? '⏳ Carregando histórico completo...'
+                  : `🗄️ Carregar todas as ${list.total_card_count || list.card_count} O.S. finalizadas`}
+              </button>
+            )}
           </>
         )}
       </SortableContext>
@@ -153,6 +171,8 @@ const KanbanColumn = memo<{
   onDeleteRequest: (card: KanbanCard) => void;
   onRenameList: (list: KanbanList) => void;
   onDeleteList: (list: KanbanList) => void;
+  onLoadAllFinished?: () => void;
+  loadingAllFinished?: boolean;
 }>(({
   list,
   searchQuery,
@@ -164,6 +184,8 @@ const KanbanColumn = memo<{
   onDeleteRequest,
   onRenameList,
   onDeleteList,
+  onLoadAllFinished,
+  loadingAllFinished,
 }) => {
   const { filteredCards, visibleCards, isLargeCapped } = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -216,7 +238,9 @@ const KanbanColumn = memo<{
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <span className="font-mono tabular-nums text-[11px] font-black px-2 py-0.5 rounded-full bg-blue-500/12 text-blue-600 dark:text-sky-400">
-            {filteredCards.length}
+            {list.truncated && !searchQuery.trim() && activeFilter === 'todos'
+              ? (list.total_card_count ?? list.card_count)
+              : filteredCards.length}
           </span>
           <button
             type="button"
@@ -249,6 +273,8 @@ const KanbanColumn = memo<{
         onOpenDetail={onOpenDetail}
         onAdvanceAdmin={onAdvanceAdmin}
         onDeleteRequest={onDeleteRequest}
+        onLoadAllFinished={onLoadAllFinished}
+        loadingAllFinished={loadingAllFinished}
       />
     </div>
   );
@@ -265,6 +291,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onCreateList,
   onRenameList,
   onDeleteList,
+  onLoadAllFinished,
+  loadingAllFinished,
 }) => {
   const [activeCard, setActiveCard] = useState<KanbanCard | null>(null);
   const [localLists, setLocalLists] = useState<KanbanList[] | null>(null);
@@ -496,6 +524,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             onDeleteRequest={onDeleteRequest}
             onRenameList={onRenameList}
             onDeleteList={onDeleteList}
+            onLoadAllFinished={onLoadAllFinished}
+            loadingAllFinished={loadingAllFinished}
           />
         ))}
 

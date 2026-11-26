@@ -10,13 +10,15 @@ declare global {
 export function getBootConfig(): A5BootConfig {
   const cfg = window.__A5_CONFIG__ || {};
   return {
-    intakeUrl: cfg.intakeUrl || `${window.location.origin}/recepcao-fotos`,
+    publicUrl: cfg.publicUrl || window.location.origin,
     localIp: cfg.localIp || window.location.hostname,
     port: cfg.port || 5000,
     tunnelMode: Boolean(cfg.tunnelMode),
     user: cfg.user ?? null,
     directorFirstAccessDone: Boolean(cfg.directorFirstAccessDone),
     directorSavedUser: cfg.directorSavedUser || '',
+    usingDefaultPassword: Boolean(cfg.usingDefaultPassword),
+    defaultPasswordUsers: cfg.defaultPasswordUsers || [],
     callTargets: cfg.callTargets || [
       { name: 'João Otoni', role: 'Técnico', target: 'João Otoni' },
       { name: 'Wisley', role: 'Técnico', target: 'Wisley' },

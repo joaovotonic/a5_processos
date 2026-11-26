@@ -29,16 +29,19 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
         return c, r
 
     def test_01_public_routes_accessible_without_login(self):
-        """TV, QR Code da balança (/os/<os>), pré-entrada (/recepcao-fotos), etiqueta e healthz funcionam sem login."""
+        """TV, QR Code da balança (/os/<os>), etiqueta e healthz funcionam sem login; /recepcao-fotos foi removida."""
         test_os = "995501"
         with connect() as conn:
             conn.execute("DELETE FROM cards WHERE os_number = ?", (test_os,))
         create_manual_os({"os_number": test_os, "client_name": "CLIENTE QR TESTE", "equipment_model": "Prix 5 Plus"})
 
         anon = self.app.test_client()
-        for url in ("/tv", "/painel-tv", "/recepcao-fotos", "/healthz", "/login", f"/os/{test_os}", f"/etiqueta/{test_os}"):
+        for url in ("/tv", "/painel-tv", "/healthz", "/login", f"/os/{test_os}", f"/etiqueta/{test_os}"):
             res = anon.get(url)
             self.assertEqual(res.status_code, 200, f"Rota pública {url} deveria abrir sem login")
+
+        # Rota removida de fotos da recepção retorna 404
+        self.assertEqual(anon.get("/recepcao-fotos").status_code, 404)
 
         # Verifica modernização Light/Dark nos templates públicos
         tv_html = anon.get("/tv").get_data(as_text=True)
@@ -50,10 +53,6 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
         os_html = anon.get(f"/os/{test_os}").get_data(as_text=True)
         self.assertIn("toggleTheme", os_html)
         self.assertIn("A5 Tecnologia", os_html)
-
-        fotos_html = anon.get("/recepcao-fotos").get_data(as_text=True)
-        self.assertIn("toggleTheme", fotos_html)
-        self.assertIn('name="entry_photos"', fotos_html)
 
     def test_02_anonymous_blocked_from_protected_pages_and_apis(self):
         anon = self.app.test_client()
@@ -278,17 +277,12 @@ class TestRoleBasedAuthAndPublicRoutes(unittest.TestCase):
                 board_src = f.read()
             self.assertIn("SmartPointerSensor", board_src)
 
-            # 5. AdminPage conecta Pré-Entrada, Chamar TV e Silenciar TV + NewOsModal aceita initialEntry
+            # 5. AdminPage conecta Chamar TV e Silenciar TV (sem Pré-Entrada removida)
             with open(os.path.join(base_dir, "frontend", "src", "pages", "AdminPage.tsx"), "r", encoding="utf-8") as f:
                 admin_src = f.read()
-            self.assertIn("PendingPhotosModal", admin_src)
+            self.assertNotIn("PendingPhotosModal", admin_src)
             self.assertIn("CallTechModal", admin_src)
             self.assertIn("/api/admin/panic-silence", admin_src)
-
-            with open(os.path.join(base_dir, "frontend", "src", "components", "admin", "NewOsModal.tsx"), "r", encoding="utf-8") as f:
-                newos_src = f.read()
-            self.assertIn("pending_entry_id", newos_src)
-            self.assertIn("initialEntry", newos_src)
         finally:
             with connect() as conn:
                 conn.execute("DELETE FROM card_history WHERE os_number = ?", (test_os,))

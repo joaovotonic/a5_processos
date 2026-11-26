@@ -8,10 +8,27 @@ Todo o código fica no pacote `kanban/` (veja kanban/__init__.py para o mapa dos
 import importlib.util
 import os
 
+# Monkey-patch do gevent precisa rodar ANTES de importar sockets/urllib/threading
+_async_mode_env = os.environ.get("A5_SOCKETIO_ASYNC_MODE", "").strip().lower()
+_proxy_or_tunnel_env = (
+    os.environ.get("A5_TUNNEL_MODE", "").strip().lower() in {"1", "true", "yes"}
+    or os.environ.get("A5_BEHIND_PROXY", "").strip().lower() in {"1", "true", "yes"}
+)
+if (_async_mode_env == "gevent" or (not _async_mode_env and _proxy_or_tunnel_env)):
+    try:
+        from gevent import monkey as _gevent_monkey
+        _gevent_monkey.patch_all()
+    except ImportError:
+        pass
+
 from kanban import create_app
 from kanban.config import (
+    BEHIND_PROXY,
     DB_PATH,
+    DEFAULT_SECRET_KEY,
     PORT,
+    PUBLIC_URL,
+    SECRET_KEY,
     SOCKETIO_ASYNC_MODE,
     TUNNEL_MODE,
     TUNNEL_PUBLIC_HOSTNAME,
@@ -21,17 +38,19 @@ from kanban.utils import get_local_ip
 
 
 def validate_runtime_configuration():
-    if not TUNNEL_MODE:
+    if not (TUNNEL_MODE or BEHIND_PROXY):
         return
-    if not TUNNEL_PUBLIC_HOSTNAME:
+    if TUNNEL_MODE and not TUNNEL_PUBLIC_HOSTNAME and not PUBLIC_URL:
         raise RuntimeError(
-            "Defina A5_TUNNEL_PUBLIC_HOSTNAME com o endereço Access configurado."
+            "Defina A5_TUNNEL_PUBLIC_HOSTNAME ou A5_PUBLIC_URL com o endereço público configurado."
         )
-    if not os.environ.get("A5_SECRET_KEY"):
-        raise RuntimeError("Defina uma A5_SECRET_KEY persistente para o modo Tunnel.")
+    if not os.environ.get("A5_SECRET_KEY") or SECRET_KEY == DEFAULT_SECRET_KEY or len(SECRET_KEY) < 24:
+        raise RuntimeError(
+            "Defina uma A5_SECRET_KEY forte e persistente (>= 24 caracteres) para rodar atrás de proxy/túnel."
+        )
     if SOCKETIO_ASYNC_MODE != "gevent":
-        raise RuntimeError("O modo Tunnel exige A5_SOCKETIO_ASYNC_MODE=gevent.")
-    if not os.path.isfile(DB_PATH):
+        raise RuntimeError("O modo produção (Tunnel/Proxy) exige A5_SOCKETIO_ASYNC_MODE=gevent.")
+    if TUNNEL_MODE and not os.path.isfile(DB_PATH):
         raise RuntimeError(
             f"Banco de dados não encontrado em {DB_PATH}; "
             "o modo Tunnel não inicia com um banco vazio."

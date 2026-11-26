@@ -24,16 +24,17 @@ from .extensions import socketio
 
 def create_app():
     app = Flask(__name__, template_folder=config.TEMPLATE_DIR, static_folder=None)
+    behind_https_proxy = config.TUNNEL_MODE or config.BEHIND_PROXY
     app.config.update(
         SECRET_KEY=config.SECRET_KEY,
         MAX_CONTENT_LENGTH=config.MAX_CONTENT_LENGTH,
         TEMPLATES_AUTO_RELOAD=True,
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SECURE=config.TUNNEL_MODE,
+        SESSION_COOKIE_SECURE=behind_https_proxy,
         SESSION_COOKIE_SAMESITE="Lax",
     )
-    if config.TUNNEL_MODE:
-        app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    if behind_https_proxy:
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
 
@@ -73,8 +74,17 @@ def create_app():
         return jsonify({"error": err.message}), err.status
 
     @app.after_request
+    def apply_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "same-origin")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        return response
+
+    @app.after_request
     def compress_large_responses(response):
-        # Comprime respostas JSON/texto grandes (ex: /api/board no Cloudflare Tunnel) de ~3.7MB para ~90KB
+        # Comprime respostas JSON/texto grandes quando não houver proxy comprimindo (ex: Caddy com A5_DISABLE_PYTHON_GZIP=1)
+        if config.DISABLE_PYTHON_GZIP:
+            return response
         if (
             response.status_code < 200
             or response.status_code >= 300

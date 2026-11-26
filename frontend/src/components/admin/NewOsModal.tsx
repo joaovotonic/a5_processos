@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ClipboardList, X } from 'lucide-react';
-import type { KanbanList, Label, PendingEntry } from '../../types';
+import type { KanbanList, Label } from '../../types';
 import { apiJson } from '../../lib/api';
 import { MOTION_EASE } from '../motion/motionTokens';
 import { MorphButton, type MorphButtonState } from '../fluid/morph-button/MorphButton';
@@ -10,7 +10,6 @@ interface NewOsModalProps {
   open: boolean;
   lists: KanbanList[];
   labels: Label[];
-  initialEntry?: PendingEntry | null;
   onClose: () => void;
   onCreated: (osNumber: string) => void;
 }
@@ -36,7 +35,6 @@ export const NewOsModal: React.FC<NewOsModalProps> = ({
   open,
   lists,
   labels,
-  initialEntry = null,
   onClose,
   onCreated,
 }) => {
@@ -61,7 +59,6 @@ export const NewOsModal: React.FC<NewOsModalProps> = ({
   const [scaleSuggestions, setScaleSuggestions] = useState<ScaleSuggestion[]>([]);
   const [btnState, setBtnState] = useState<MorphButtonState>('idle');
   const [error, setError] = useState('');
-  const [linkedEntryId, setLinkedEntryId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -70,23 +67,7 @@ export const NewOsModal: React.FC<NewOsModalProps> = ({
     const orcCol = lists.find((l) => l.role === 'orcamento' || l.title.toUpperCase() === 'ORÇAMENTOS') || lists[0];
     const defaultListId = orcCol ? String(orcCol.id) : '';
     resetForm(defaultListId);
-    if (initialEntry) {
-      setLinkedEntryId(initialEntry.id);
-      setClientName(initialEntry.client_name || '');
-      setCnpjCpf(initialEntry.cnpj_cpf || '');
-      setTradeName(initialEntry.trade_name || '');
-      setPhone(initialEntry.phone || '');
-      setEmail(initialEntry.email || '');
-      setAddress(initialEntry.address || '');
-      setCityState(initialEntry.city_state || '');
-      setAccessoriesJson(initialEntry.accessories_json || '[]');
-      setEquipmentType(initialEntry.equipment_type || 'Balança Toledo Prix');
-      setEquipmentModel(initialEntry.equipment_model || '');
-      setSerialNumber(initialEntry.serial_number || '');
-      setReportedDefect(initialEntry.reported_defect || '');
-      setPreviousService(initialEntry.previous_service || '');
-    }
-  }, [open, initialEntry]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -117,7 +98,6 @@ export const NewOsModal: React.FC<NewOsModalProps> = ({
     setFiles(null);
     setClientSuggestions([]);
     setScaleSuggestions([]);
-    setLinkedEntryId(null);
   };
 
   const handleClientInput = async (val: string) => {
@@ -187,9 +167,6 @@ export const NewOsModal: React.FC<NewOsModalProps> = ({
     fd.append('previous_service', previousService);
     fd.append('list_id', listId);
     fd.append('labels_json', JSON.stringify(selectedLabels));
-    if (linkedEntryId) {
-      fd.append('pending_entry_id', String(linkedEntryId));
-    }
     if (files) {
       Array.from(files).forEach((f) => fd.append('entry_photos', f));
     }
@@ -253,30 +230,6 @@ export const NewOsModal: React.FC<NewOsModalProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {initialEntry && linkedEntryId && (
-                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="font-extrabold text-emerald-700 dark:text-emerald-300">
-                      📸 Pré-entrada vinculada ({initialEntry.photos?.length || 0} foto(s) de {initialEntry.client_name})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setLinkedEntryId(null)}
-                      className="text-[11px] font-bold text-rose-500 hover:underline cursor-pointer"
-                    >
-                      Desvincular
-                    </button>
-                  </div>
-                  {initialEntry.photos?.length > 0 && (
-                    <div className="flex gap-1.5 overflow-x-auto">
-                      {initialEntry.photos.map((src, i) => (
-                        <img key={i} src={src} alt="" className="w-11 h-11 rounded-lg object-cover border border-emerald-500/30" />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-1">
                   Anexar fotos do equipamento (Opcional):

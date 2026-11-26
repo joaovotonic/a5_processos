@@ -19,6 +19,17 @@ from ..errors import ApiError
 _STREAM_CACHE = {}
 _CACHE_LOCK = threading.Lock()
 _STREAM_TTL_SECONDS = 5400  # 90 minutos (URLs do googlevideo duram ~6 horas)
+_STREAM_CACHE_MAX_ENTRIES = 100
+
+
+def _prune_stream_cache_unlocked(now: float) -> None:
+    """Remove entradas expiradas e limita o cache em memória para não crescer indefinidamente na VPS."""
+    expired = [k for k, v in _STREAM_CACHE.items() if v.get("expires_at", 0) <= now]
+    for k in expired:
+        _STREAM_CACHE.pop(k, None)
+    while len(_STREAM_CACHE) >= _STREAM_CACHE_MAX_ENTRIES:
+        oldest_key = min(_STREAM_CACHE, key=lambda k: _STREAM_CACHE[k].get("expires_at", 0))
+        _STREAM_CACHE.pop(oldest_key, None)
 
 _YT_ID_REGEX = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
@@ -214,24 +225,30 @@ def resolve_video_stream(video_id, force_refresh=False):
     acc = get_youtube_account_status()
     browser = acc.get("browser", "")
 
+    import os
+    from ..config import YT_COOKIES_FILE
+
     base_opts = {
         "format": "18/best[ext=mp4][acodec!=none][vcodec!=none]/best[acodec!=none]/best",
         "quiet": True,
         "no_warnings": True,
         "noplaylist": True,
         "geo_bypass": True,
+        "socket_timeout": 12,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android", "ios", "web"],
+                "player_client": ["android_vr", "android", "ios", "web"],
             }
         },
     }
+    if YT_COOKIES_FILE and os.path.isfile(YT_COOKIES_FILE):
+        base_opts["cookiefile"] = YT_COOKIES_FILE
 
     info = None
     last_err = None
 
-    # 1. Se o usuário vinculou navegador (Firefox/Chrome/Edge) para YouTube Premium, tenta com cookies primeiro
-    if browser in ("firefox", "chrome", "edge", "brave"):
+    # 1. Se o usuário vinculou navegador local (desktop) e não há cookiefile, tenta cookies do navegador
+    if browser in ("firefox", "chrome", "edge", "brave") and "cookiefile" not in base_opts:
         try:
             cookie_opts = dict(base_opts)
             cookie_opts["cookiesfrombrowser"] = (browser,)
@@ -241,16 +258,28 @@ def resolve_video_stream(video_id, force_refresh=False):
             last_err = e
             info = None
 
-    # 2. Extração direta multi-client (Android/iOS/Web) — funciona para 100% dos vídeos musicais sem login
+    # 2. Extração direta multi-client testada na VPS (android_vr/android/ios/web) com fallback mweb/tv_embedded
     if not info:
-        try:
-            with yt_dlp.YoutubeDL(base_opts) as ydl:
-                info = ydl.extract_info(f"https://www.youtube.com/watch?v={clean_id}", download=False)
-        except Exception as e:
-            last_err = e
+        for client_group in (["android_vr", "android", "ios", "web"], ["mweb", "tv_embedded", "web"]):
+            try:
+                attempt_opts = dict(base_opts)
+                attempt_opts["extractor_args"] = {"youtube": {"player_client": client_group}}
+                with yt_dlp.YoutubeDL(attempt_opts) as ydl:
+                    cand = ydl.extract_info(f"https://www.youtube.com/watch?v={clean_id}", download=False)
+                if cand and cand.get("url"):
+                    info = cand
+                    break
+            except Exception as e:
+                last_err = e
 
     if not info or not info.get("url"):
-        raise ApiError(f"Não foi possível carregar este vídeo ({last_err or 'Indisponível'}).", status=502)
+        err_text = str(last_err or "Indisponível")
+        if "sign in to confirm" in err_text.lower() or "not a bot" in err_text.lower():
+            raise ApiError(
+                "YouTube solicitou verificação no IP da VPS. Configure o arquivo yt_cookies.txt em A5_YT_COOKIES_FILE.",
+                status=502,
+            )
+        raise ApiError(f"Não foi possível carregar este vídeo ({err_text}).", status=502)
 
     resolved = {
         "id": clean_id,
@@ -267,6 +296,7 @@ def resolve_video_stream(video_id, force_refresh=False):
     }
 
     with _CACHE_LOCK:
+        _prune_stream_cache_unlocked(now)
         _STREAM_CACHE[clean_id] = resolved
 
     return resolved

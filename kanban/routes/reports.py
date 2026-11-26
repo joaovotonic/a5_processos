@@ -20,11 +20,13 @@ def analytics():
 @require_api_roles("diretoria", "master")
 def export_csv():
     """Exporta relatório completo de O.S. para Excel (CSV UTF-8 com BOM)."""
+    from werkzeug.utils import secure_filename
     content, filename = build_os_csv(request.args.get("period", "all"))  # day, month, year, all
+    safe_filename = secure_filename(str(filename or "")) or "relatorio_os.csv"
     return Response(
         content,
         mimetype="text/csv; charset=utf-8",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
     )
 
 

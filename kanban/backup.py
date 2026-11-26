@@ -1,13 +1,16 @@
 """Backup diário automático do banco (cópia .db consistente + dump JSON legível + envio para nuvem GitHub)."""
+import base64
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
+import sys
 import threading
 from datetime import datetime
 from typing import Dict, Any
 
-from .config import BASE_DIR, DB_PATH, BACKUP_DIR, MAX_BACKUP_FILES
+from .config import BASE_DIR, DATA_DIR, DB_PATH, BACKUP_DIR, GITHUB_TOKEN, MAX_BACKUP_FILES
 from .database import connect
 
 _backup_lock = threading.Lock()
@@ -121,15 +124,23 @@ def _resolve_git_executable() -> str:
 
 
 def _run_git(args, timeout=45):
-    """Executa comando git na pasta raiz do projeto garantindo o caminho do git.exe no Windows."""
+    """Executa comando git na pasta raiz do projeto (Windows e Linux/Docker, com suporte opcional a A5_GITHUB_TOKEN)."""
     git_exe = _resolve_git_executable()
     env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
     if os.path.isabs(git_exe):
         git_dir = os.path.dirname(git_exe)
         env["PATH"] = f"{git_dir}{os.pathsep}{env.get('PATH', '')}"
 
+    cmd = [git_exe]
+    token = os.environ.get("A5_GITHUB_TOKEN", GITHUB_TOKEN).strip()
+    if token and args and args[0] in ("fetch", "pull", "push", "ls-remote"):
+        basic = base64.b64encode(f"x-access-token:{token}".encode("utf-8")).decode("ascii")
+        cmd.extend(["-c", f"http.extraheader=AUTHORIZATION: basic {basic}"])
+    cmd.extend(args)
+
     return subprocess.run(
-        [git_exe] + args,
+        cmd,
         cwd=BASE_DIR,
         env=env,
         capture_output=True,
@@ -220,7 +231,9 @@ def upload_database_to_github(dry_run: bool = False) -> Dict[str, Any]:
             finally:
                 target.close()
 
-            # Cria espelho JSON legível em backups/a5_kanban_nuvem_latest.json
+            # Cria espelho JSON legível em backups/a5_kanban_nuvem_latest.json (sem hashes de senha)
+            from .services.board import _strip_secret_settings
+            raw_settings = {r["key"]: r["value"] for r in conn.execute("SELECT key, value FROM settings").fetchall()}
             dump = {
                 "empresa": "A5 Tecnologia",
                 "github_repo": f"{GITHUB_USER}/{GITHUB_REPO_NAME}",
@@ -229,7 +242,7 @@ def upload_database_to_github(dry_run: bool = False) -> Dict[str, Any]:
                 "cards": [dict(r) for r in conn.execute("SELECT * FROM cards ORDER BY id").fetchall()],
                 "clients": [dict(r) for r in conn.execute("SELECT * FROM clients ORDER BY id").fetchall()],
                 "external_orders": [dict(r) for r in conn.execute("SELECT * FROM external_orders ORDER BY id").fetchall()],
-                "settings": {r["key"]: r["value"] for r in conn.execute("SELECT key, value FROM settings").fetchall()},
+                "settings": _strip_secret_settings(raw_settings),
             }
             tmp_json_path = f"{cloud_json_path}.tmp"
             with open(tmp_json_path, "w", encoding="utf-8") as f:
@@ -250,13 +263,25 @@ def upload_database_to_github(dry_run: bool = False) -> Dict[str, Any]:
         try:
             _run_git(["config", "user.name", GITHUB_USER])
             _run_git(["config", "user.email", GITHUB_EMAIL])
-            _run_git(["config", "credential.helper", "manager"])
+            if sys.platform.startswith("win"):
+                _run_git(["config", "credential.helper", "manager"])
 
             rem = _run_git(["remote", "get-url", "origin"])
             if rem.returncode != 0:
                 _run_git(["remote", "add", "origin", GITHUB_REPO_URL])
             elif GITHUB_REPO_NAME not in (rem.stdout or ""):
                 _run_git(["remote", "set-url", "origin", GITHUB_REPO_URL])
+
+            # Se DATA_DIR está fora do repositório (ex: volume /data no Docker), espelha os arquivos para o repo antes do commit
+            repo_db_path = os.path.join(BASE_DIR, "database", "a5_kanban.db")
+            repo_cloud_db = os.path.join(BASE_DIR, "backups", "a5_kanban_nuvem_latest.db")
+            repo_cloud_json = os.path.join(BASE_DIR, "backups", "a5_kanban_nuvem_latest.json")
+            if os.path.abspath(DATA_DIR) != os.path.abspath(BASE_DIR):
+                os.makedirs(os.path.dirname(repo_db_path), exist_ok=True)
+                os.makedirs(os.path.dirname(repo_cloud_db), exist_ok=True)
+                shutil.copy2(cloud_db_path, repo_db_path)
+                shutil.copy2(cloud_db_path, repo_cloud_db)
+                shutil.copy2(cloud_json_path, repo_cloud_json)
 
             files_to_stage = [
                 "database/a5_kanban.db",
@@ -273,11 +298,11 @@ def upload_database_to_github(dry_run: bool = False) -> Dict[str, Any]:
 
             if push_res.returncode != 0:
                 # Se houver atualizações remotas no GitHub, preserva o banco local da Priscila, sincroniza e envia
-                with open(DB_PATH, "rb") as f_db:
+                with open(repo_db_path, "rb") as f_db:
                     db_bytes = f_db.read()
-                with open(cloud_db_path, "rb") as f_cdb:
+                with open(repo_cloud_db, "rb") as f_cdb:
                     cdb_bytes = f_cdb.read()
-                with open(cloud_json_path, "rb") as f_cjs:
+                with open(repo_cloud_json, "rb") as f_cjs:
                     cjs_bytes = f_cjs.read()
 
                 _run_git(["fetch", "origin", "main"], timeout=30)
@@ -286,11 +311,11 @@ def upload_database_to_github(dry_run: bool = False) -> Dict[str, Any]:
                     _run_git(["rebase", "--abort"])
                     _run_git(["reset", "--soft", "origin/main"])
 
-                with open(DB_PATH, "wb") as f_db:
+                with open(repo_db_path, "wb") as f_db:
                     f_db.write(db_bytes)
-                with open(cloud_db_path, "wb") as f_cdb:
+                with open(repo_cloud_db, "wb") as f_cdb:
                     f_cdb.write(cdb_bytes)
-                with open(cloud_json_path, "wb") as f_cjs:
+                with open(repo_cloud_json, "wb") as f_cjs:
                     f_cjs.write(cjs_bytes)
 
                 _run_git(["add", "-f"] + files_to_stage)

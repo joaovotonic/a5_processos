@@ -4,12 +4,16 @@ from werkzeug.security import generate_password_hash
 
 from ..auth import (
     authenticate_user,
+    check_login_rate_limit,
+    clear_login_failures,
     ensure_users_table,
     get_current_user,
+    get_default_password_warnings,
     get_director_setup_status,
     home_for_role,
     login_user_session,
     logout_user_session,
+    record_login_failure,
     require_api_roles,
 )
 from ..config import PORT, TUNNEL_MODE
@@ -19,21 +23,20 @@ from ..utils import get_local_ip, json_body, resolve_public_base_url
 bp = Blueprint("api_auth", __name__, url_prefix="/api/auth")
 
 
-def _build_intake_url() -> str:
-    return f"{resolve_public_base_url()}/recepcao-fotos"
-
-
 @bp.route("/me", methods=["GET"])
 def auth_me():
     user = get_current_user()
     first_done, saved_dir_user = get_director_setup_status()
+    pw_warn = get_default_password_warnings(user)
     return jsonify({
         "authenticated": bool(user),
         "user": user,
         "director_first_access_done": first_done,
         "director_saved_user": saved_dir_user,
+        "using_default_password": pw_warn["using_default_password"],
+        "default_password_users": pw_warn["default_password_users"],
         "config": {
-            "intake_url": _build_intake_url(),
+            "public_url": resolve_public_base_url(),
             "local_ip": get_local_ip(),
             "port": PORT,
             "tunnel_mode": TUNNEL_MODE,
@@ -43,14 +46,23 @@ def auth_me():
 
 @bp.route("/login", methods=["POST"])
 def auth_login():
+    allowed, retry_after = check_login_rate_limit("login")
+    if not allowed:
+        return jsonify({
+            "success": False,
+            "error": f"Muitas tentativas de login. Aguarde {retry_after}s e tente novamente.",
+        }), 429
+
     data = json_body()
     username = (data.get("username") or "").strip()
     password = (data.get("password") or "").strip()
 
     user = authenticate_user(username, password)
     if not user:
+        record_login_failure("login")
         return jsonify({"success": False, "error": "Usuário ou senha incorretos."}), 401
 
+    clear_login_failures("login")
     login_user_session(user)
     return jsonify({
         "success": True,
@@ -80,8 +92,8 @@ def auth_setup_director():
 
     if not username:
         return jsonify({"success": False, "error": "Digite o nome de usuário desejado."}), 400
-    if not password:
-        return jsonify({"success": False, "error": "Digite uma senha para o acesso."}), 400
+    if not password or len(password) < 4:
+        return jsonify({"success": False, "error": "A senha deve ter pelo menos 4 caracteres."}), 400
     if confirm_password and password != confirm_password:
         return jsonify({"success": False, "error": "A confirmação de senha não confere."}), 400
 

@@ -157,8 +157,91 @@ def enrich_card(row_dict):
     return card
 
 
-def get_full_board():
-    """Retorna todo o estado do Kanban (Listas, Cartões ordenados, Etiquetas e Placar do Dia)."""
+_SECRET_SETTING_FRAGMENTS = ("pass", "secret", "token", "key")
+
+
+def _strip_secret_settings(settings_dict: dict) -> dict:
+    """Remove chaves sensíveis (ex: director_pass) antes de expor settings em APIs ou backups JSON."""
+    return {
+        k: v
+        for k, v in (settings_dict or {}).items()
+        if not any(frag in str(k).lower() for frag in _SECRET_SETTING_FRAGMENTS)
+    }
+
+
+_TV_PUBLIC_CARD_FIELDS = (
+    "id",
+    "os_number",
+    "client_name",
+    "equipment_type",
+    "equipment_model",
+    "list_id",
+    "list_title",
+    "list_role",
+    "list_is_tech",
+    "position",
+    "pipeline_phase",
+    "tech_name",
+    "labels",
+    "is_urgent",
+    "is_warranty",
+    "sla_expired",
+    "hours_in_stage",
+    "timer_end_at",
+    "timer_label",
+    "created_at",
+    "moved_at",
+    "finished_at",
+)
+
+
+def sanitize_board_for_tv(board: dict) -> dict:
+    """
+    Remove dados pessoais/internos (CNPJ, telefone, e-mail, endereço, anotações, fotos, pré-entradas)
+    e omite cartões antigos de FINALIZADAS/PENDENTES que a TV não exibe, reduzindo o payload em >95%.
+    """
+    safe_lists = []
+    for lst in board.get("lists") or []:
+        role = (lst.get("role") or "").strip().lower()
+        title_up = (lst.get("title") or "").upper()
+        hide_cards_on_tv = role in ("finalizada", "balancas_pendentes") or "FINALIZAD" in title_up
+        if hide_cards_on_tv:
+            safe_cards = []
+        else:
+            safe_cards = [
+                {k: c.get(k) for k in _TV_PUBLIC_CARD_FIELDS if k in c}
+                for c in (lst.get("cards") or [])
+            ]
+        safe_lists.append({
+            "id": lst.get("id"),
+            "title": lst.get("title"),
+            "position": lst.get("position"),
+            "is_tech": lst.get("is_tech"),
+            "role": lst.get("role"),
+            "cards": safe_cards,
+            "card_count": lst.get("card_count", len(safe_cards)),
+        })
+
+    raw_settings = board.get("settings") or {}
+    safe_settings = {
+        k: raw_settings[k]
+        for k in ("tv_muted", "daily_goal", "admin_theme")
+        if k in raw_settings
+    }
+    return {
+        "lists": safe_lists,
+        "labels": board.get("labels") or [],
+        "settings": safe_settings,
+        "pending_entries": [],
+        "stats": board.get("stats") or {},
+    }
+
+
+DEFAULT_FINISHED_BOARD_LIMIT = 60
+
+
+def get_full_board(finished_limit: int | None = DEFAULT_FINISHED_BOARD_LIMIT):
+    """Retorna o estado do Kanban (limitando FINALIZADAS antigas por padrão para reduzir payload de ~3.7MB para ~350KB)."""
     from ..backup import perform_daily_backup
     perform_daily_backup(force=False)
 
@@ -221,7 +304,12 @@ def get_full_board():
 
     for lst in lists:
         col_cards = cards_by_list.get(lst["id"], [])
-        if "ENVIADO" in (lst.get("title") or "").upper():
+        title_up = (lst.get("title") or "").upper()
+        role_low = (lst.get("role") or "").strip().lower()
+        total_in_col = len(col_cards)
+        truncated = False
+
+        if "ENVIADO" in title_up:
             # Na coluna ORÇAMENTOS ENVIADOS, ordena sempre pelo que acabou de ser enviado (mais recente no topo)
             col_cards.sort(
                 key=lambda c: (
@@ -230,13 +318,28 @@ def get_full_board():
                 ),
                 reverse=True,
             )
+        elif role_low == "finalizada" or "FINALIZAD" in title_up:
+            # Ordena FINALIZADAS pelas mais recentes primeiro e limita payload inicial (ex: 60 mais recentes)
+            col_cards.sort(
+                key=lambda c: (
+                    c.get("finished_at") or c.get("moved_at") or c.get("updated_at") or c.get("created_at") or "",
+                    int(c.get("id") or 0),
+                ),
+                reverse=True,
+            )
+            if finished_limit is not None and total_in_col > finished_limit:
+                col_cards = col_cards[:finished_limit]
+                truncated = True
+
         lst["cards"] = col_cards
-        lst["card_count"] = len(lst["cards"])
+        lst["card_count"] = total_in_col
+        lst["total_card_count"] = total_in_col
+        lst["truncated"] = truncated
 
     return {
         "lists": lists,
         "labels": labels,
-        "settings": settings,
+        "settings": _strip_secret_settings(settings),
         "pending_entries": pending_entries,
         "stats": {
             "finished_today": finished_today,

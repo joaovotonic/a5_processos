@@ -276,16 +276,18 @@ def export_csv():
         date_to=date_to
     )
 
+    from werkzeug.utils import secure_filename
+
     filename_suffix = date_filter or (f"{date_from}_a_{date_to}" if date_from else "completo")
     if shift_filter and shift_filter.strip().lower() not in ("geral", "all", ""):
         filename_suffix += f"_{shift_filter}"
-    filename = f"rotas_externos_{filename_suffix}.csv"
+    filename = secure_filename(f"rotas_externos_{filename_suffix}.csv") or "rotas_externos.csv"
 
     return Response(
         csv_data,
         mimetype="text/csv; charset=utf-8-sig",
         headers={
-            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Cache-Control": "no-cache, no-store, must-revalidate"
         }
     )

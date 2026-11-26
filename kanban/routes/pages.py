@@ -7,12 +7,16 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from ..auth import (
     authenticate_user,
+    check_login_rate_limit,
+    clear_login_failures,
     ensure_users_table,
     get_current_user,
+    get_default_password_warnings,
     get_director_setup_status,
     home_for_role,
     login_user_session,
     logout_user_session,
+    record_login_failure,
     require_page_roles,
 )
 from ..config import FRONTEND_DIST_DIR, PORT, TUNNEL_MODE
@@ -38,28 +42,36 @@ CALL_TARGETS = [
 ]
 
 
-def _get_intake_url() -> str:
-    return f"{resolve_public_base_url()}/recepcao-fotos"
-
-
 def _render_spa(extra_config=None):
     """Serve a SPA React compilada (frontend/dist/index.html) injetando configuração dinâmica."""
     dist_index = os.path.join(FRONTEND_DIST_DIR, "index.html")
     first_done, saved_dir_user = get_director_setup_status()
+    current_user = (extra_config or {}).get("user") or get_current_user()
+    pw_warn = get_default_password_warnings(current_user)
     payload = {
-        "intakeUrl": _get_intake_url(),
+        "publicUrl": resolve_public_base_url(),
         "localIp": get_local_ip(),
         "port": PORT,
         "tunnelMode": TUNNEL_MODE,
-        "user": get_current_user(),
+        "user": current_user,
         "directorFirstAccessDone": first_done,
         "directorSavedUser": saved_dir_user,
+        "usingDefaultPassword": pw_warn["using_default_password"],
+        "defaultPasswordUsers": pw_warn["default_password_users"],
         "callTargets": CALL_TARGETS,
     }
     if extra_config:
         payload.update(extra_config)
 
-    config_script = f"<script>window.__A5_CONFIG__ = {json.dumps(payload, ensure_ascii=False)};</script>"
+    safe_json = (
+        json.dumps(payload, ensure_ascii=False)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+    config_script = f"<script>window.__A5_CONFIG__ = {safe_json};</script>"
     if os.path.isfile(dist_index):
         with open(dist_index, "r", encoding="utf-8") as f:
             html = f.read()
@@ -107,12 +119,6 @@ def admin_page():
     if err_resp:
         return err_resp
     return _render_spa({"page": "admin", "user": user})
-
-
-@bp.route("/recepcao-fotos")
-def reception_photos_page():
-    """Tela mobile para registrar fotos antes de abrir a O.S. no Teorema (pública sem login)."""
-    return render_template("recepcao_fotos.html")
 
 
 @bp.route("/tv")
@@ -164,7 +170,11 @@ def diretoria_page():
         confirm_password = (request.form.get("confirm_password") or "").strip()
 
         if action == "first_access":
-            if not username or not password:
+            first_done, _ = get_director_setup_status()
+            current = get_current_user()
+            if first_done and (not current or current.get("role") != "master"):
+                return Response("Primeiro acesso da Diretoria já foi concluído.", status=403)
+            if not username or not password or len(password) < 4:
                 return redirect(url_for("pages.login_page"))
             if confirm_password and password != confirm_password:
                 return redirect(url_for("pages.login_page"))
@@ -186,10 +196,16 @@ def diretoria_page():
             })
             return redirect(url_for("pages.diretoria_page"))
 
+        allowed, retry_after = check_login_rate_limit("login")
+        if not allowed:
+            return Response(f"Muitas tentativas de login. Aguarde {retry_after}s.", status=429)
+
         user = authenticate_user(username, password)
         if user and user["role"] in ("diretoria", "master"):
+            clear_login_failures("login")
             login_user_session(user)
             return redirect(url_for("pages.diretoria_page"))
+        record_login_failure("login")
         return redirect(url_for("pages.login_page"))
 
     user, err_resp = require_page_roles("diretoria", "master")

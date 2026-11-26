@@ -25,16 +25,26 @@ MAX_BACKUP_FILES = 60  # 30 pares (.db + .json)
 
 PORT = int(os.environ.get("A5_PORT", "5000"))
 TUNNEL_MODE = os.environ.get("A5_TUNNEL_MODE", "").strip().lower() in {"1", "true", "yes"}
+BEHIND_PROXY = os.environ.get("A5_BEHIND_PROXY", "").strip().lower() in {"1", "true", "yes"}
 TUNNEL_PUBLIC_HOSTNAME = os.environ.get("A5_TUNNEL_PUBLIC_HOSTNAME", "").strip().lower()
+PUBLIC_URL = os.environ.get("A5_PUBLIC_URL", "").strip().rstrip("/")
+DISABLE_PYTHON_GZIP = os.environ.get("A5_DISABLE_PYTHON_GZIP", "").strip().lower() in {"1", "true", "yes"}
 SOCKETIO_ASYNC_MODE = os.environ.get(
     "A5_SOCKETIO_ASYNC_MODE",
-    "gevent" if TUNNEL_MODE else "threading",
+    "gevent" if (TUNNEL_MODE or BEHIND_PROXY) else "threading",
 ).strip().lower()
 if SOCKETIO_ASYNC_MODE not in {"threading", "gevent"}:
     raise ValueError("A5_SOCKETIO_ASYNC_MODE deve ser 'threading' ou 'gevent'.")
 
-# Pode ser sobrescrita pela variável de ambiente A5_SECRET_KEY
-SECRET_KEY = os.environ.get("A5_SECRET_KEY", "a5-tecnologia-toledo-prix-secret-key-2025")
+# Pode ser sobrescrita pela variável de ambiente A5_SECRET_KEY (obrigatória em produção/proxy)
+DEFAULT_SECRET_KEY = "a5-tecnologia-toledo-prix-secret-key-2025"
+SECRET_KEY = os.environ.get("A5_SECRET_KEY", DEFAULT_SECRET_KEY)
+
+# Integrações opcionais de produção/VPS
+PDF_INGEST_TOKEN = os.environ.get("A5_PDF_INGEST_TOKEN", "").strip()
+GITHUB_TOKEN = os.environ.get("A5_GITHUB_TOKEN", "").strip()
+UPDATE_BRANCH = os.environ.get("A5_UPDATE_BRANCH", "main").strip() or "main"
+YT_COOKIES_FILE = os.environ.get("A5_YT_COOKIES_FILE", os.path.join(DB_DIR, "yt_cookies.txt")).strip()
 MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # Limite de 50MB por envio de fotos
 
 ALLOWED_PHOTO_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif", "jfif", "bmp", "heic", "heif"}

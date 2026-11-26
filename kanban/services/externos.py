@@ -918,15 +918,41 @@ def build_route_image_filename(date_str: str, shift: str, tech_or_conjunta: str)
 
 def save_route_image_file(image_base64: str, filename: str) -> Dict[str, Any]:
     """
-    Decodifica base64 da imagem e salva na pasta dedicada rotas_imagens/.
+    Decodifica base64 da imagem e salva com segurança na pasta dedicada rotas_imagens/.
     """
-    os.makedirs(ROTAS_IMAGENS_DIR, exist_ok=True)
-    # Remove prefixo de data URI caso venha do canvas
-    if "," in image_base64:
-        image_base64 = image_base64.split(",", 1)[1]
+    from werkzeug.utils import secure_filename
+    from ..errors import ApiError
 
-    file_bytes = base64.b64decode(image_base64)
-    file_path = os.path.join(ROTAS_IMAGENS_DIR, filename)
+    os.makedirs(ROTAS_IMAGENS_DIR, exist_ok=True)
+
+    raw_name = os.path.basename(str(filename or "").strip())
+    safe_name = secure_filename(raw_name)
+    if not safe_name or not safe_name.lower().endswith((".png", ".jpg", ".jpeg")):
+        raise ApiError("Nome de arquivo de imagem inválido (permitido apenas .png, .jpg ou .jpeg).", status=400)
+
+    # Remove prefixo de data URI caso venha do canvas
+    b64_payload = str(image_base64 or "").strip()
+    if "," in b64_payload:
+        b64_payload = b64_payload.split(",", 1)[1]
+
+    try:
+        file_bytes = base64.b64decode(b64_payload, validate=True)
+    except Exception:
+        raise ApiError("Conteúdo de imagem base64 inválido.", status=400)
+
+    if not file_bytes or len(file_bytes) > 15 * 1024 * 1024:
+        raise ApiError("Imagem vazia ou excede o limite de 15 MB.", status=400)
+
+    # Valida assinatura binária (PNG ou JPEG)
+    is_png = file_bytes.startswith(b"\x89PNG\r\n\x1a\n")
+    is_jpg = file_bytes.startswith(b"\xff\xd8\xff")
+    if not (is_png or is_jpg):
+        raise ApiError("Arquivo enviado não é uma imagem PNG ou JPEG válida.", status=400)
+
+    root_real = os.path.realpath(ROTAS_IMAGENS_DIR)
+    file_path = os.path.realpath(os.path.join(root_real, safe_name))
+    if not file_path.startswith(root_real + os.sep):
+        raise ApiError("Caminho de destino inválido.", status=400)
 
     with open(file_path, "wb") as f:
         f.write(file_bytes)
@@ -934,10 +960,10 @@ def save_route_image_file(image_base64: str, filename: str) -> Dict[str, Any]:
     logger.info(f"Imagem de rota salva com sucesso: {file_path} ({len(file_bytes)} bytes)")
     return {
         "success": True,
-        "filename": filename,
+        "filename": safe_name,
         "path": file_path,
         "size": len(file_bytes),
-        "url": f"/api/externos/images/{filename}"
+        "url": f"/api/externos/images/{safe_name}"
     }
 
 

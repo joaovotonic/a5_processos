@@ -10,9 +10,11 @@ import hashlib
 import logging
 import os
 
+from ..config import DB_DIR
+
 logger = logging.getLogger(__name__)
 
-CACHE_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "database", "tts_cache")
+CACHE_DIR = os.path.join(DB_DIR, "tts_cache")
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 # Vozes Neurais em Português do Brasil

@@ -32,7 +32,7 @@ class TestA5KanbanComplete(unittest.TestCase):
         db.init_db()
         cls.client = cls.app.test_client()
         cls.client.post("/api/auth/login", json={"username": "admin", "password": "admin"})
-        cls.sio = socketio.test_client(cls.app)
+        cls.sio = socketio.test_client(cls.app, flask_test_client=cls.client)
         # Limpa dados de teste anteriores se houver
         with connect() as conn:
             conn.execute("DELETE FROM card_history WHERE os_number IN ('990001', '770001')")
@@ -46,7 +46,7 @@ class TestA5KanbanComplete(unittest.TestCase):
         self.assertEqual(r_anon.status_code, 302)
         self.assertTrue(r_anon.headers["Location"].endswith("/login"))
 
-        for pub in ("/login", "/recepcao-fotos", "/painel-tv", "/tv", "/healthz"):
+        for pub in ("/login", "/painel-tv", "/tv", "/healthz"):
             res = anon.get(pub)
             self.assertEqual(res.status_code, 200, f"Falha na página pública {pub}")
 
@@ -145,18 +145,7 @@ class TestA5KanbanComplete(unittest.TestCase):
         """Ciclo completo de vida de uma O.S.: criação, claim, orçamento, reabertura, aprovação, finalização mobile, conferência admin."""
         test_os = "990001"
 
-        # 1. Pré-Entrada de fotos na recepção
-        r_pre = self.client.post("/api/pending-entries", data={
-            "client_name": "PADARIA CENTRAL DE TESTES",
-            "equipment_type": "Balança Toledo Prix",
-            "equipment_model": "Prix 5 Plus",
-            "reported_defect": "Diferença de peso",
-            "entry_photos": [(io.BytesIO(b"fake_pre_image"), "pre1.jpg")],
-        }, content_type="multipart/form-data")
-        self.assertEqual(r_pre.status_code, 200)
-        pre_id = r_pre.get_json()["entry"]["id"]
-
-        # 2. Criação da O.S. vinculando à pré-entrada
+        # 1. Criação da O.S. com fotos de entrada
         r_create = self.client.post("/api/cards", data={
             "os_number": test_os,
             "client_name": "PADARIA CENTRAL DE TESTES",
@@ -164,7 +153,6 @@ class TestA5KanbanComplete(unittest.TestCase):
             "equipment_model": "Prix 5 Plus",
             "shelf_location": "Bancada 01",
             "reported_defect": "Diferença de peso",
-            "pending_entry_id": str(pre_id),
             "entry_photos": [(io.BytesIO(b"fake_entry_image"), "ent1.jpg")],
         }, content_type="multipart/form-data")
         self.assertEqual(r_create.status_code, 200)
@@ -375,22 +363,8 @@ class TestA5KanbanComplete(unittest.TestCase):
         self.assertTrue(len(results) >= 1)
         self.assertEqual(results[0]["trade_name"], "SUPERMERCADO BOM PRECO")
 
-        # 4. Testa criação de pré-entrada com CNPJ e acessórios
-        r_pre = self.client.post("/api/pending-entries", data={
-            "client_name": "A G TAVARES - EPP",
-            "trade_name": "SUPERMERCADO BOM PRECO",
-            "cnpj_cpf": "84083807000125",
-            "equipment_type": "Balança Toledo Prix",
-            "equipment_model": "Prix 4 Uno",
-            "reported_defect": "Não liga",
-            "accessories_json": json.dumps(["prato", "fonte"]),
-            "entry_photos": [(io.BytesIO(b"fake_pre_image"), "pre1.jpg")]
-        }, content_type="multipart/form-data")
-        self.assertEqual(r_pre.status_code, 200)
-        entry_id = r_pre.get_json()["entry"]["id"]
-
-        # 5. Valida integridade da pré-entrada salva
-        self.assertIsNotNone(entry_id)
+        # 4. Rota antiga de pré-entrada de fotos foi removida (retorna 404)
+        self.assertEqual(self.client.get("/api/pending-entries").status_code, 404)
 
     def test_09_nao_autorizado_and_call_adm(self):
         """Testa o fluxo completo de Orçamento NÃO AUTORIZADO, criação dinâmica da coluna e chamada de ADM (Arthur/Roosevelt)."""

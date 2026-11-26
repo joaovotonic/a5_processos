@@ -3,9 +3,12 @@ Avisos em tempo real (WebSocket) para todas as telas: quadro atualizado e
 anúncios sonoros/visuais da TV da oficina (os textos falados ficam todos aqui).
 """
 import re
+import threading
+
+from flask import current_app, has_app_context
 
 from .extensions import socketio
-from .services.board import get_full_board
+from .services.board import get_full_board, sanitize_board_for_tv
 from .services.tts import get_neural_audio_base64, VOICE_JACSON, VOICE_RECEPTION, VOICE_OFICINA
 
 
@@ -19,25 +22,47 @@ def _emit_safe(event, *args, **kwargs):
 
 
 def broadcast_board():
-    """Envia o quadro completo para todas as telas e o retorna."""
+    """Envia o quadro completo para a equipe autenticada e o quadro sanitizado para telas públicas (TV)."""
     board = get_full_board()
-    _emit_safe("board_updated", board)
+    _emit_safe("board_updated", board, to="staff")
+    _emit_safe("board_updated", sanitize_board_for_tv(board), to="public")
     return board
+
+
+def _is_testing_context() -> bool:
+    try:
+        return bool(has_app_context() and current_app.config.get("TESTING"))
+    except Exception:
+        return False
 
 
 def _announce(payload, voice=None):
     """
     Emite anúncio para a TV. Se o payload não tiver gravação de microfone (audio_base64),
-    sintetiza fala neural humana de estúdio (Edge-TTS) para reprodução cristalina.
+    sintetiza fala neural humana de estúdio (Edge-TTS) em background para não travar
+    o tempo de resposta HTTP no Kanban.
     """
-    if not payload.get("audio_base64") and payload.get("tts_text"):
-        chosen_voice = voice or (VOICE_JACSON if payload.get("type") == "director_call" else VOICE_RECEPTION)
-        neural_audio = get_neural_audio_base64(payload["tts_text"], voice=chosen_voice)
-        if neural_audio:
-            payload["audio_base64"] = neural_audio
-            payload["is_neural_audio"] = True
+    needs_tts = bool(not payload.get("audio_base64") and payload.get("tts_text"))
+    chosen_voice = voice or (VOICE_JACSON if payload.get("type") == "director_call" else VOICE_RECEPTION)
 
-    _emit_safe("tv_announcement", payload)
+    def _emit_with_tts():
+        data = dict(payload)
+        if needs_tts:
+            neural_audio = get_neural_audio_base64(data["tts_text"], voice=chosen_voice)
+            if neural_audio:
+                data["audio_base64"] = neural_audio
+                data["is_neural_audio"] = True
+        _emit_safe("tv_announcement", data)
+
+    # Em testes automatizados (ou sem servidor SocketIO ativo), mantém execução síncrona e determinística
+    if not needs_tts or _is_testing_context() or getattr(socketio, "server", None) is None:
+        _emit_with_tts()
+        return
+
+    try:
+        socketio.start_background_task(_emit_with_tts)
+    except Exception:
+        threading.Thread(target=_emit_with_tts, daemon=True).start()
 
 
 def announce_arrival(card, stage, intro=""):
@@ -204,8 +229,8 @@ def notify_tv_mute(muted):
 
 
 def notify_admin(payload):
-    """Envia uma notificação em tempo real para o painel Admin da Recepção (Priscila)."""
-    _emit_safe("admin_notification", payload)
+    """Envia uma notificação em tempo real apenas para usuários autenticados da equipe."""
+    _emit_safe("admin_notification", payload, to="staff")
 
 
 def emit_tv_mini_alert(os_number, client_name, label_name, color="#EF4444"):

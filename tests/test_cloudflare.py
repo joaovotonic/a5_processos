@@ -28,7 +28,7 @@ class TestCloudflareTunnel(unittest.TestCase):
         client = app.test_client()
 
         health = client.get("/healthz")
-        intake_page = client.get("/recepcao-fotos")
+        removed_intake = client.get("/recepcao-fotos")
 
         tunnel_headers = {
             "Host": "127.0.0.1:5000",
@@ -56,10 +56,9 @@ class TestCloudflareTunnel(unittest.TestCase):
         self.assertTrue(app.config["SESSION_COOKIE_SECURE"])
         self.assertEqual(health.get_json(), {"service": "a5-kanban", "status": "ok"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(intake_page.status_code, 200)
-        self.assertIn('name="entry_photos"', intake_page.get_data(as_text=True))
+        self.assertEqual(removed_intake.status_code, 404)
         self.assertIn(
-            "https://kanban.a5painel.cloud/recepcao-fotos",
+            "https://kanban.a5painel.cloud",
             response.get_data(as_text=True),
         )
 

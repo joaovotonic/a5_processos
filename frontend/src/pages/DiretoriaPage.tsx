@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
+  AlertTriangle,
   BarChart2,
   ChevronDown,
   Download,
@@ -13,7 +14,7 @@ import {
   Truck,
   Volume2,
 } from 'lucide-react';
-import type { AuthUser, BoardData, DirectorReport } from '../types';
+import type { AuthUser, BoardData, DefaultPasswordUser, DirectorReport } from '../types';
 import { apiJson, getBootConfig, getSocket, playDoorbellSound } from '../lib/api';
 import { A5Logo } from '../components/A5Logo';
 import { useTheme } from '../components/ThemeProvider';
@@ -53,6 +54,19 @@ export const DiretoriaPage: React.FC<DiretoriaPageProps> = ({ user, onNavigate, 
   const toastTimerRef = useRef<number | null>(null);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [usingDefaultPw, setUsingDefaultPw] = useState<boolean>(Boolean(boot.usingDefaultPassword));
+  const [defaultPwUsers, setDefaultPwUsers] = useState<DefaultPasswordUser[]>(boot.defaultPasswordUsers || []);
+
+  const refreshPasswordWarning = async () => {
+    const res = await apiJson<{
+      using_default_password?: boolean;
+      default_password_users?: DefaultPasswordUser[];
+    }>('/api/auth/me');
+    if (res.ok) {
+      setUsingDefaultPw(Boolean(res.data.using_default_password));
+      setDefaultPwUsers(res.data.default_password_users || []);
+    }
+  };
 
   // Dados ao vivo
   const [board, setBoard] = useState<BoardData | null>(null);
@@ -311,6 +325,28 @@ export const DiretoriaPage: React.FC<DiretoriaPageProps> = ({ user, onNavigate, 
         </div>
       </header>
 
+      {/* Alerta de Senha Padrão */}
+      {usingDefaultPw && (
+        <div className="px-5 py-2 bg-rose-600 text-white flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-200 shrink-0" />
+            <span className="font-extrabold">Segurança:</span>
+            <span>
+              {defaultPwUsers.length > 0
+                ? `Conta(s) usando senha padrão inicial (${defaultPwUsers.map((u) => u.username).join(', ')}). Troque agora.`
+                : 'Sua conta ainda usa a senha padrão inicial. Troque agora.'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPasswordModalOpen(true)}
+            className="px-3 py-1 rounded-full bg-white text-rose-700 hover:bg-rose-50 font-black text-xs cursor-pointer"
+          >
+            🔑 Trocar Senha Agora
+          </button>
+        </div>
+      )}
+
       {/* Conteúdo Principal */}
       <main className="max-w-7xl w-full mx-auto p-4 sm:p-6 flex-1 pb-24">
         <AnimatePresence mode="wait">
@@ -359,7 +395,10 @@ export const DiretoriaPage: React.FC<DiretoriaPageProps> = ({ user, onNavigate, 
         open={passwordModalOpen}
         user={user}
         onClose={() => setPasswordModalOpen(false)}
-        onSuccess={(msg) => showToast(msg)}
+        onSuccess={(msg) => {
+          showToast(msg);
+          refreshPasswordWarning();
+        }}
       />
     </div>
   );

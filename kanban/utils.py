@@ -70,7 +70,7 @@ def resolve_public_base_url() -> str:
     3. Se o host da requisição atual já for público/LAN (não loopback), usa ele próprio.
     4. Se acessado via localhost/127.0.0.1 localmente, substitui pelo IP real da rede Wi-Fi/LAN para o celular conseguir abrir.
     """
-    from .config import PORT, TUNNEL_MODE, TUNNEL_PUBLIC_HOSTNAME
+    from .config import PORT, PUBLIC_URL, TUNNEL_MODE, TUNNEL_PUBLIC_HOSTNAME
 
     xf_host = (request.headers.get("X-Forwarded-Host") or "").split(",")[0].strip()
     if xf_host and not _is_loopback_host(xf_host):
@@ -78,6 +78,9 @@ def resolve_public_base_url() -> str:
         if xf_proto not in ("http", "https"):
             xf_proto = "https"
         return f"{xf_proto}://{xf_host}".rstrip("/")
+
+    if PUBLIC_URL:
+        return PUBLIC_URL.rstrip("/")
 
     if TUNNEL_MODE and TUNNEL_PUBLIC_HOSTNAME:
         clean_host = TUNNEL_PUBLIC_HOSTNAME.replace("https://", "").replace("http://", "").strip("/")
@@ -139,8 +142,12 @@ def adopt_pre_entry_photos(pre_urls, os_number, stage="entrada"):
     for url in pre_urls:
         if not isinstance(url, str) or not url.startswith("/static/uploads/"):
             continue
-        rel_path = url.lstrip("/").replace("/", os.sep)
-        src_path = os.path.join(BASE_DIR, rel_path)
+        rel_inside_uploads = url[len("/static/uploads/"):].lstrip("/").replace("/", os.sep)
+        # Busca primeiro em UPLOAD_FOLDER (A5_DATA_DIR/static/uploads) com fallback para BASE_DIR legado
+        src_path = os.path.join(UPLOAD_FOLDER, rel_inside_uploads)
+        if not os.path.isfile(src_path):
+            rel_path = url.lstrip("/").replace("/", os.sep)
+            src_path = os.path.join(BASE_DIR, rel_path)
         if os.path.isfile(src_path):
             filename = os.path.basename(src_path)
             if filename.startswith("pre_entrada_"):

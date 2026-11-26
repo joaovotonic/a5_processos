@@ -2154,6 +2154,14 @@
             } catch (err) {
                 isYtLoading = false;
                 document.getElementById("ytLoadingOverlay")?.classList.add("hidden");
+                const statusBadge = document.getElementById("ytStatusBadge");
+                if (statusBadge) {
+                    statusBadge.textContent = "Indisponível";
+                    statusBadge.className = "text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-500 border border-rose-500/30";
+                }
+                const btnSublabel = document.getElementById("ytBtnSublabel");
+                if (btnSublabel) btnSublabel.textContent = "Tente outra faixa";
+                console.warn("YouTube stream falhou:", err);
             }
         }
 
@@ -2301,8 +2309,16 @@
             if (msg) { msg.textContent = `⏳ Vinculando ${browserName}...`; msg.classList.remove("hidden"); }
             try {
                 const res = await fetch("/api/youtube/account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mode: "browser_cookies", browser: browserName }) });
-                if (res.ok && msg) msg.textContent = `✅ Conta vinculada (${browserName.toUpperCase()})!`;
-            } catch {}
+                if (res.ok && msg) {
+                    msg.textContent = `✅ Conta vinculada (${browserName.toUpperCase()})!`;
+                } else if (res.status === 401 && msg) {
+                    msg.textContent = "🔒 Faça login no /admin primeiro para vincular conta.";
+                } else if (msg) {
+                    msg.textContent = "⚠️ Não foi possível vincular a conta.";
+                }
+            } catch {
+                if (msg) msg.textContent = "⚠️ Falha de conexão ao vincular.";
+            }
         }
         function toggleYtVideoVisibility(hideVideo) {
             const wrap = document.getElementById("ytPlayerContainerWrap");

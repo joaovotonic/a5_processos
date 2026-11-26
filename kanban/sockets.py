@@ -1,13 +1,34 @@
 """Eventos WebSocket (tempo real entre Recepção, celulares e TV)."""
+from flask_socketio import join_room
+
 from . import realtime
+from .auth import get_current_user
 from .database import connect
 from .extensions import socketio
 from .services.cards import finish_timer
 
 
+def _require_socket_roles(*allowed_roles) -> bool:
+    user = get_current_user()
+    if not user:
+        return False
+    return user.get("role") in allowed_roles
+
+
+@socketio.on("connect")
+def handle_connect():
+    """Separa conexões autenticadas (equipe) de telas públicas (TV/mobile) para evitar vazamento de dados."""
+    if get_current_user():
+        join_room("staff")
+    else:
+        join_room("public")
+
+
 @socketio.on("call_tech_reception")
 def handle_call_tech(data):
     """Priscila chama um técnico específico (ou todos) na recepção."""
+    if not _require_socket_roles("admin_recepcao", "master"):
+        return
     data = data or {}
     realtime.announce_call_tech(
         data.get("tech_name", "Técnico"),
@@ -18,6 +39,8 @@ def handle_call_tech(data):
 @socketio.on("director_call_tech")
 def handle_director_call(data):
     """Sr. Jacson chama membro da equipe com mensagem ou áudio."""
+    if not _require_socket_roles("diretoria", "master"):
+        return
     data = data or {}
     realtime.announce_director_call(
         tech_name=data.get("tech_name", "Oficina"),
@@ -32,7 +55,9 @@ def handle_director_call(data):
 def handle_bench_support(data):
     """Técnico solicita apoio na bancada pelo celular."""
     data = data or {}
-    realtime.announce_bench_support(data.get("tech_name", "Técnico"), data.get("os_number", ""))
+    tech_name = str(data.get("tech_name", "Técnico"))[:80]
+    os_number = str(data.get("os_number", ""))[:32]
+    realtime.announce_bench_support(tech_name, os_number)
 
 
 @socketio.on("timer_finished_alert")
@@ -42,7 +67,7 @@ def handle_timer_finished(data):
     Se houver mais de uma TV aberta, só o primeiro aviso é anunciado.
     """
     data = data or {}
-    os_number = data.get("os_number", "")
+    os_number = str(data.get("os_number", ""))[:32]
     card_row = finish_timer(os_number)
     if card_row is None:
         return
@@ -58,6 +83,8 @@ def handle_timer_finished(data):
 @socketio.on("panic_silence_tv")
 def handle_panic_silence(data):
     """Botão de Pânico/Silenciador acionado pela Priscila para cortar o som da TV imediatamente."""
+    if not _require_socket_roles("admin_recepcao", "master"):
+        return
     muted = bool((data or {}).get("muted"))
     with connect() as conn:
         conn.execute("UPDATE settings SET value = ? WHERE key = 'tv_muted'", ("1" if muted else "0",))
