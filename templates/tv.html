@@ -651,14 +651,37 @@
         <span id="ytMiniVol">80%</span>
     </div>
 
+    <!-- TELA DE DESCANSO DO YOUTUBE (ENTRA APÓS 1 MIN SEM ALTERAÇÃO NO PAINEL) -->
+    <div id="ytScreensaverOverlay" onclick="exitYtScreensaver(event)"
+         class="hidden fixed inset-0 z-[95] bg-black items-center justify-center cursor-pointer select-none">
+        <div id="ytScreensaverVideoSlot" class="w-full h-full flex items-center justify-center bg-black"></div>
+        <div class="pointer-events-none absolute bottom-5 left-6 right-6 flex items-end justify-between gap-4">
+            <div class="px-4 py-2.5 rounded-2xl bg-black/65 border border-white/15 text-white max-w-xl shadow-2xl">
+                <div class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>A5 Tecnologia • Tocando na Oficina</span>
+                </div>
+                <div id="ytSsTitle" class="text-sm font-black truncate mt-0.5">Som da Oficina</div>
+            </div>
+            <div class="px-4 py-2.5 rounded-2xl bg-black/65 border border-white/15 text-right text-white shrink-0 shadow-2xl">
+                <div id="ytSsClock" class="font-mono text-2xl font-black leading-none tabular-nums">00:00</div>
+                <div class="text-[10px] font-bold text-sky-200/85 mt-1">Clique na tela para voltar ao painel</div>
+            </div>
+        </div>
+    </div>
+
     <script>
         const socket = io();
         let boardData = { lists: [], stats: {}, settings: {} };
         let tvMuted = false;
         let audioCtx = null;
         let lastActivityTime = Date.now();
+        let lastPanelChangeTime = Date.now();
+        let lastBoardFingerprint = "";
+        let ytScreensaverActive = false;
         let lastDisplayedScore = 0;
         const timerInitialMaxSec = {};
+        const YT_SCREENSAVER_TIMEOUT_MS = 60 * 1000; // 1 minuto sem alteração no painel -> vídeo YouTube em tela cheia
         const SCREENSAVER_TIMEOUT_MS = 20 * 60 * 1000;
         const MOTION_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
         const MOTION_SPRING = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -901,8 +924,19 @@
             }
         }
 
-        window.addEventListener("pointerdown", () => unlockAudioEngine());
-        window.addEventListener("keydown", () => unlockAudioEngine());
+        window.addEventListener("pointerdown", () => {
+            unlockAudioEngine();
+            if (!ytScreensaverActive) lastPanelChangeTime = Date.now();
+        });
+        window.addEventListener("keydown", (e) => {
+            unlockAudioEngine();
+            if (ytScreensaverActive) {
+                e.preventDefault();
+                exitYtScreensaver();
+                return;
+            }
+            lastPanelChangeTime = Date.now();
+        });
 
         socket.on("connect", () => {
             const dot = document.getElementById("tvLiveDot");
@@ -947,6 +981,94 @@
             hideScreensaverOverlay();
         }
 
+        function isYouTubeVideoPlayingNow() {
+            const video = getYtNativeVideo();
+            return Boolean(video && !video.paused && !video.ended && video.readyState >= 2);
+        }
+
+        function computeBoardFingerprint(data) {
+            try {
+                const lists = Array.isArray(data?.lists) ? data.lists : [];
+                return lists.map((l) => {
+                    const cards = Array.isArray(l.cards) ? l.cards : [];
+                    return `${l.id}:${cards.map((c) => `${c.id}-${c.pipeline_phase || ""}-${c.timer_end_at || ""}-${(c.labels || []).map((x) => x.name).join(",")}`).join("|")}`;
+                }).join("||") + `::${data?.stats?.finished_today ?? ""}`;
+            } catch {
+                return "";
+            }
+        }
+
+        function enterYtScreensaver() {
+            if (ytScreensaverActive) return;
+            const video = getYtNativeVideo();
+            const overlay = document.getElementById("ytScreensaverOverlay");
+            const slot = document.getElementById("ytScreensaverVideoSlot");
+            if (!video || !overlay || !slot || !isYouTubeVideoPlayingNow()) return;
+
+            ytScreensaverActive = true;
+
+            // Fecha o popover flutuante se estivesse aberto sem interromper o vídeo
+            const widget = document.getElementById("ytFloatingWidget");
+            if (widget && !widget.classList.contains("hidden")) {
+                widget.classList.add("hidden");
+                widget.classList.remove("flex");
+                const btn = document.getElementById("ytToggleBtn");
+                const chev = document.getElementById("ytBtnChevron");
+                if (btn) btn.classList.remove("yt-btn-open");
+                if (chev) chev.style.transform = "rotate(0deg)";
+            }
+
+            const wasPlaying = !video.paused && !video.ended;
+            slot.appendChild(video);
+            video.className = "w-full h-full object-contain bg-black";
+            if (wasPlaying && video.paused) {
+                video.play().catch(() => {});
+            }
+
+            const nowTitle = document.getElementById("ytNowPlayingTitle")?.textContent || "Som da Oficina";
+            const ssTitle = document.getElementById("ytSsTitle");
+            if (ssTitle) ssTitle.textContent = nowTitle;
+            const ssClock = document.getElementById("ytSsClock");
+            if (ssClock) ssClock.textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+            overlay.classList.remove("hidden");
+            overlay.classList.add("flex");
+            A5Motion.fadeIn(overlay, 320);
+        }
+
+        function exitYtScreensaver(evt) {
+            if (evt) {
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+            lastPanelChangeTime = Date.now();
+            lastActivityTime = Date.now();
+            if (!ytScreensaverActive) return;
+            ytScreensaverActive = false;
+
+            const video = getYtNativeVideo();
+            const overlay = document.getElementById("ytScreensaverOverlay");
+            const videoBox = document.getElementById("ytVideoBox");
+
+            if (video && videoBox) {
+                const wasPlaying = !video.paused && !video.ended;
+                video.className = "w-full h-full object-contain bg-slate-950";
+                videoBox.insertBefore(video, videoBox.firstChild);
+                if (wasPlaying && video.paused) {
+                    video.play().catch(() => {});
+                }
+            }
+
+            if (overlay) {
+                A5Motion.fadeOut(overlay, () => {
+                    if (!ytScreensaverActive) {
+                        overlay.classList.remove("flex");
+                        overlay.classList.add("hidden");
+                    }
+                }, 200);
+            }
+        }
+
         setInterval(() => {
             const now = new Date();
             document.getElementById("tvClock").textContent = now.toLocaleTimeString("pt-BR");
@@ -956,8 +1078,35 @@
                 document.getElementById("tvDate").textContent = dateText;
             }
 
+            if (ytScreensaverActive) {
+                const ssClock = document.getElementById("ytSsClock");
+                if (ssClock) ssClock.textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                const ssTitle = document.getElementById("ytSsTitle");
+                const nowTitle = document.getElementById("ytNowPlayingTitle")?.textContent;
+                if (ssTitle && nowTitle) ssTitle.textContent = nowTitle;
+                // Se o vídeo foi pausado externamente ou silenciado por alerta, volta ao painel
+                if (!isYouTubeVideoPlayingNow() && !isYtLoading) {
+                    exitYtScreensaver();
+                }
+            } else {
+                const panelIdleMs = Date.now() - lastPanelChangeTime;
+                const activeTag = (document.activeElement?.tagName || "").toUpperCase();
+                const isTypingNow = activeTag === "INPUT" || activeTag === "TEXTAREA";
+                if (
+                    panelIdleMs >= YT_SCREENSAVER_TIMEOUT_MS
+                    && isYouTubeVideoPlayingNow()
+                    && !activeAnnouncement
+                    && !isAudioDucked
+                    && !manualScreensaverActive
+                    && !screensaverShown
+                    && !isTypingNow
+                ) {
+                    enterYtScreensaver();
+                }
+            }
+
             const idleMs = Date.now() - lastActivityTime;
-            if (manualScreensaverActive || idleMs >= SCREENSAVER_TIMEOUT_MS) {
+            if (!ytScreensaverActive && (manualScreensaverActive || idleMs >= SCREENSAVER_TIMEOUT_MS)) {
                 document.getElementById("ssClock").textContent = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
                 showScreensaverOverlay();
             } else if (screensaverShown) {
@@ -969,7 +1118,9 @@
         function registerActivity() {
             manualScreensaverActive = false;
             lastActivityTime = Date.now();
+            lastPanelChangeTime = Date.now();
             hideScreensaverOverlay();
+            if (ytScreensaverActive) exitYtScreensaver();
         }
 
         function animateTvScore(target) {
@@ -1024,13 +1175,19 @@
         async function loadBoard() {
             const res = await fetch("/api/board");
             boardData = await res.json();
+            lastBoardFingerprint = computeBoardFingerprint(boardData);
             tvMuted = boardData.settings?.tv_muted === "1";
             renderTvBoard();
         }
         loadBoard();
 
         socket.on("board_updated", (data) => {
-            registerActivity();
+            const nextFp = computeBoardFingerprint(data);
+            const changed = !lastBoardFingerprint || nextFp !== lastBoardFingerprint;
+            lastBoardFingerprint = nextFp;
+            if (changed) {
+                registerActivity();
+            }
             boardData = data;
             tvMuted = boardData.settings?.tv_muted === "1";
             setFooterEvent(`Esteira sincronizada às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`);
