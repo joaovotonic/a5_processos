@@ -237,6 +237,13 @@ def apply_github_update(actor: str = "Admin", auto_restart: bool = True) -> Dict
             if reset_res.returncode != 0:
                 err_msg = (reset_res.stderr or reset_res.stdout or "Falha no git reset.").strip()
                 return {"success": False, "error": f"Falha ao aplicar código novo: {err_msg[:300]}"}
+
+            ep_path = os.path.join(BASE_DIR, "docker-entrypoint.sh")
+            if os.path.isfile(ep_path):
+                try:
+                    os.chmod(ep_path, 0o755)
+                except OSError:
+                    pass
         finally:
             # 4. Restaura o banco intacto se ele estava dentro do repo
             if guard_state_dir is not None:
