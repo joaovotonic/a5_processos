@@ -226,7 +226,28 @@ def resolve_video_stream(video_id, force_refresh=False):
     browser = acc.get("browser", "")
 
     import os
+    import shutil
     from ..config import YT_COOKIES_FILE
+
+    def _probe_stream_url(stream_url: str, headers: dict | None = None) -> bool:
+        """Valida com 1 requisição Range (64 bytes) se o googlevideo realmente libera o stream (evita cachear URL 403)."""
+        req_headers = {
+            "User-Agent": (headers or {}).get(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            ),
+            "Accept": "*/*",
+            "Range": "bytes=0-63",
+        }
+        for hk in ("Accept-Language", "Referer", "Origin"):
+            if headers and headers.get(hk):
+                req_headers[hk] = headers[hk]
+        try:
+            probe_req = urllib.request.Request(stream_url, headers=req_headers)
+            with urllib.request.urlopen(probe_req, timeout=8) as resp:
+                return resp.status in (200, 206)
+        except Exception:
+            return False
 
     base_opts = {
         "format": "18/best[ext=mp4][acodec!=none][vcodec!=none]/best[acodec!=none]/best",
@@ -237,10 +258,12 @@ def resolve_video_stream(video_id, force_refresh=False):
         "socket_timeout": 12,
         "extractor_args": {
             "youtube": {
-                "player_client": ["android_vr", "android", "ios", "web"],
+                "player_client": ["android"],
             }
         },
     }
+    if shutil.which("node"):
+        base_opts["js_runtimes"] = {"node": {}}
     if YT_COOKIES_FILE and os.path.isfile(YT_COOKIES_FILE):
         base_opts["cookiefile"] = YT_COOKIES_FILE
 
@@ -253,22 +276,28 @@ def resolve_video_stream(video_id, force_refresh=False):
             cookie_opts = dict(base_opts)
             cookie_opts["cookiesfrombrowser"] = (browser,)
             with yt_dlp.YoutubeDL(cookie_opts) as ydl:
-                info = ydl.extract_info(f"https://www.youtube.com/watch?v={clean_id}", download=False)
+                cand = ydl.extract_info(f"https://www.youtube.com/watch?v={clean_id}", download=False)
+            if cand and cand.get("url") and (cand.get("is_live") or _probe_stream_url(cand["url"], cand.get("http_headers"))):
+                info = cand
         except Exception as e:
             last_err = e
             info = None
 
-    # 2. Extração direta multi-client testada na VPS (android_vr/android/ios/web) com fallback mweb/tv_embedded
+    # 2. Tenta clientes em ordem de confiabilidade na VPS (`android` primeiro — sem exigir PO Token)
+    #    e testa o stream com Range 0-63 antes de aceitar, evitando URLs 403 do android_vr.
     if not info:
-        for client_group in (["android_vr", "android", "ios", "web"], ["mweb", "tv_embedded", "web"]):
+        for client_group in (["android"], ["ios"], ["android_vr"], ["mweb", "web"]):
             try:
                 attempt_opts = dict(base_opts)
                 attempt_opts["extractor_args"] = {"youtube": {"player_client": client_group}}
                 with yt_dlp.YoutubeDL(attempt_opts) as ydl:
                     cand = ydl.extract_info(f"https://www.youtube.com/watch?v={clean_id}", download=False)
-                if cand and cand.get("url"):
+                if not cand or not cand.get("url"):
+                    continue
+                if cand.get("is_live") or _probe_stream_url(cand["url"], cand.get("http_headers")):
                     info = cand
                     break
+                last_err = f"Stream recusado (HTTP 403) no cliente {client_group}"
             except Exception as e:
                 last_err = e
 

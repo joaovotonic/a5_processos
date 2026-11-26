@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         tzdata \
         curl \
+        nodejs \
     && ln -snf /usr/share/zoneinfo/America/Manaus /etc/localtime \
     && echo "America/Manaus" > /etc/timezone \
     && git config --system --add safe.directory /app \

@@ -76,14 +76,18 @@ def api_youtube_stream(video_id):
     range_header = request.headers.get("Range")
 
     def _open_upstream(stream_info):
+        upstream_hdrs = stream_info.get("http_headers") or {}
         headers = {
-            "User-Agent": stream_info.get("http_headers", {}).get(
+            "User-Agent": upstream_hdrs.get(
                 "User-Agent",
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             ),
             "Accept": "*/*",
             "Connection": "keep-alive",
         }
+        for hk in ("Accept-Language", "Referer", "Origin"):
+            if upstream_hdrs.get(hk):
+                headers[hk] = upstream_hdrs[hk]
         if range_header:
             headers["Range"] = range_header
         req = urllib.request.Request(stream_info["direct_url"], headers=headers)
@@ -93,8 +97,13 @@ def api_youtube_stream(video_id):
         upstream = _open_upstream(info)
     except urllib.error.HTTPError as err:
         if err.code in (401, 403, 410):
-            info = yt_service.resolve_video_stream(video_id, force_refresh=True)
-            upstream = _open_upstream(info)
+            try:
+                info = yt_service.resolve_video_stream(video_id, force_refresh=True)
+                upstream = _open_upstream(info)
+            except urllib.error.HTTPError as retry_err:
+                raise ApiError(f"Erro ao abrir stream do YouTube (HTTP {retry_err.code}).", status=502)
+            except Exception as retry_exc:
+                raise ApiError(f"Falha ao reabrir stream do YouTube: {retry_exc}", status=502)
         else:
             raise ApiError(f"Erro ao abrir stream do YouTube (HTTP {err.code}).", status=502)
     except Exception as exc:
