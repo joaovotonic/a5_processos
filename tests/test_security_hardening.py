@@ -219,7 +219,7 @@ class TestSecurityHardening(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.headers.get("X-Content-Type-Options"), "nosniff")
         self.assertEqual(r.headers.get("X-Frame-Options"), "SAMEORIGIN")
-        self.assertEqual(r.headers.get("Referrer-Policy"), "same-origin")
+        self.assertEqual(r.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
         html = r.get_data(as_text=True)
         self.assertNotIn("x</script><img", html)
         self.assertIn("\\u003c/script\\u003e", html)

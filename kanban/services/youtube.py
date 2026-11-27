@@ -20,6 +20,59 @@ _STREAM_CACHE = {}
 _CACHE_LOCK = threading.Lock()
 _STREAM_TTL_SECONDS = 5400  # 90 minutos (URLs do googlevideo duram ~6 horas)
 _STREAM_CACHE_MAX_ENTRIES = 100
+_BOT_BLOCKED_UNTIL = 0.0
+_BOT_COOLDOWN_SECONDS = 1800  # 30 minutos em modo embed automático se IP de VPS receber bot-check
+
+
+def _fetch_oembed_metadata(clean_id: str) -> dict:
+    """Consulta metadados públicos (título, canal, thumbnail) via YouTube oEmbed (nunca bloqueia IP de VPS)."""
+    url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={urllib.parse.quote(clean_id)}&format=json"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=6) as r:
+            data = json.loads(r.read().decode("utf-8", errors="ignore"))
+        return {
+            "title": (data.get("title") or "").strip() or f"YouTube ({clean_id})",
+            "channel": (data.get("author_name") or "").strip() or "YouTube",
+            "thumbnail": (data.get("thumbnail_url") or "").strip() or f"https://i.ytimg.com/vi/{clean_id}/hqdefault.jpg",
+        }
+    except Exception:
+        return {
+            "title": f"YouTube ({clean_id})",
+            "channel": "YouTube",
+            "thumbnail": f"https://i.ytimg.com/vi/{clean_id}/hqdefault.jpg",
+        }
+
+
+def _build_embed_fallback(clean_id: str, now: float, reason: str = "") -> dict:
+    """Retorna payload de reprodução oficial YouTube IFrame (usa o IP do navegador da TV, sem bloqueio de datacenter)."""
+    meta = _fetch_oembed_metadata(clean_id)
+    resolved = {
+        "id": clean_id,
+        "title": meta["title"],
+        "channel": meta["channel"],
+        "duration": 0,
+        "duration_str": "YouTube Player",
+        "thumbnail": meta["thumbnail"],
+        "direct_url": "",
+        "embed_url": f"https://www.youtube.com/embed/{clean_id}",
+        "playback_mode": "embed",
+        "fallback_reason": reason,
+        "ext": "embed",
+        "http_headers": {},
+        "is_live": False,
+        "expires_at": now + 900,
+    }
+    with _CACHE_LOCK:
+        _prune_stream_cache_unlocked(now)
+        _STREAM_CACHE[clean_id] = resolved
+    return resolved
 
 
 def _prune_stream_cache_unlocked(now: float) -> None:
@@ -203,9 +256,13 @@ def _format_duration(seconds):
 
 def resolve_video_stream(video_id, force_refresh=False):
     """
-    Resolve a URL direta de vídeo/áudio (MP4 com áudio embutido) via yt-dlp.
-    Contorna 100% dos bloqueios de embed (Erro 150 / 152-18) e remove anúncios.
+    Resolve a reprodução do vídeo do YouTube:
+    1) Tenta extração direta MP4 via yt-dlp (funciona em IP residencial ou com cookies na VPS).
+    2) Se o IP da VPS receber verificação anti-bot do YouTube, ativa fallback imediato para
+       o player oficial YouTube IFrame (`playback_mode="embed"`) com metadados via oEmbed,
+       rodando direto no navegador da TV (zero bloqueio de datacenter e zero banda na VPS).
     """
+    global _BOT_BLOCKED_UNTIL
     clean_id = extract_clean_youtube_id(video_id)
     if not clean_id:
         raise ApiError("ID de vídeo do YouTube inválido.")
@@ -217,17 +274,24 @@ def resolve_video_stream(video_id, force_refresh=False):
             if cached and cached.get("expires_at", 0) > now:
                 return cached
 
-    try:
-        import yt_dlp
-    except ImportError:
-        raise ApiError("Biblioteca yt-dlp não instalada no servidor.", status=500)
-
-    acc = get_youtube_account_status()
-    browser = acc.get("browser", "")
-
     import os
     import shutil
     from ..config import YT_COOKIES_FILE
+
+    has_cookie_file = bool(YT_COOKIES_FILE and os.path.isfile(YT_COOKIES_FILE))
+
+    # Se o IP da VPS sofreu bot-check recentemente e não há cookies configurados,
+    # responde em ~100ms com modo embed oficial sem travar 15s tentando yt-dlp.
+    if not has_cookie_file and not force_refresh and _BOT_BLOCKED_UNTIL > now:
+        return _build_embed_fallback(clean_id, now, reason="vps_bot_cooldown")
+
+    try:
+        import yt_dlp
+    except ImportError:
+        return _build_embed_fallback(clean_id, now, reason="yt_dlp_missing")
+
+    acc = get_youtube_account_status()
+    browser = acc.get("browser", "")
 
     def _probe_stream_url(stream_url: str, headers: dict | None = None) -> bool:
         """Valida com 1 requisição Range (64 bytes) se o googlevideo realmente libera o stream (evita cachear URL 403)."""
@@ -255,7 +319,7 @@ def resolve_video_stream(video_id, force_refresh=False):
         "no_warnings": True,
         "noplaylist": True,
         "geo_bypass": True,
-        "socket_timeout": 12,
+        "socket_timeout": 10,
         "extractor_args": {
             "youtube": {
                 "player_client": ["android"],
@@ -264,14 +328,15 @@ def resolve_video_stream(video_id, force_refresh=False):
     }
     if shutil.which("node"):
         base_opts["js_runtimes"] = {"node": {}}
-    if YT_COOKIES_FILE and os.path.isfile(YT_COOKIES_FILE):
+    if has_cookie_file:
         base_opts["cookiefile"] = YT_COOKIES_FILE
 
     info = None
     last_err = None
+    bot_blocked = False
 
     # 1. Se o usuário vinculou navegador local (desktop) e não há cookiefile, tenta cookies do navegador
-    if browser in ("firefox", "chrome", "edge", "brave") and "cookiefile" not in base_opts:
+    if browser in ("firefox", "chrome", "edge", "brave") and not has_cookie_file:
         try:
             cookie_opts = dict(base_opts)
             cookie_opts["cookiesfrombrowser"] = (browser,)
@@ -283,8 +348,8 @@ def resolve_video_stream(video_id, force_refresh=False):
             last_err = e
             info = None
 
-    # 2. Tenta clientes em ordem de confiabilidade na VPS (`android` primeiro — sem exigir PO Token)
-    #    e testa o stream com Range 0-63 antes de aceitar, evitando URLs 403 do android_vr.
+    # 2. Tenta clientes em ordem de confiabilidade (`android` primeiro — sem PO Token).
+    #    Se detectar bloqueio anti-bot no IP da VPS, interrompe imediatamente e cai para embed oficial.
     if not info:
         for client_group in (["android"], ["ios"], ["android_vr"], ["mweb", "web"]):
             try:
@@ -300,15 +365,17 @@ def resolve_video_stream(video_id, force_refresh=False):
                 last_err = f"Stream recusado (HTTP 403) no cliente {client_group}"
             except Exception as e:
                 last_err = e
+                low = str(e).lower()
+                if "sign in to confirm" in low or "not a bot" in low:
+                    bot_blocked = True
+                    break
 
     if not info or not info.get("url"):
-        err_text = str(last_err or "Indisponível")
-        if "sign in to confirm" in err_text.lower() or "not a bot" in err_text.lower():
-            raise ApiError(
-                "YouTube solicitou verificação no IP da VPS. Configure o arquivo yt_cookies.txt em A5_YT_COOKIES_FILE.",
-                status=502,
-            )
-        raise ApiError(f"Não foi possível carregar este vídeo ({err_text}).", status=502)
+        if bot_blocked and not has_cookie_file:
+            _BOT_BLOCKED_UNTIL = time.time() + _BOT_COOLDOWN_SECONDS
+            return _build_embed_fallback(clean_id, now, reason="vps_bot_check")
+        # Mesmo em outros erros de extração no servidor, oferece fallback oficial YouTube IFrame na TV
+        return _build_embed_fallback(clean_id, now, reason=str(last_err or "unavailable")[:120])
 
     resolved = {
         "id": clean_id,
@@ -318,6 +385,8 @@ def resolve_video_stream(video_id, force_refresh=False):
         "duration_str": _format_duration(info.get("duration")),
         "thumbnail": info.get("thumbnail") or f"https://i.ytimg.com/vi/{clean_id}/hqdefault.jpg",
         "direct_url": info["url"],
+        "embed_url": f"https://www.youtube.com/embed/{clean_id}",
+        "playback_mode": "native",
         "ext": info.get("ext") or "mp4",
         "http_headers": info.get("http_headers") or {},
         "is_live": bool(info.get("is_live")),

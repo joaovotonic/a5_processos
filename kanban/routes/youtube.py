@@ -48,6 +48,7 @@ def api_youtube_info(video_id):
     force = request.args.get("refresh") == "1"
     info = yt_service.resolve_video_stream(video_id, force_refresh=force)
     clean_id = info["id"]
+    playback_mode = info.get("playback_mode") or ("native" if info.get("direct_url") else "embed")
     return jsonify({
         "success": True,
         "video": {
@@ -58,8 +59,10 @@ def api_youtube_info(video_id):
             "duration_str": info["duration_str"],
             "thumbnail": info["thumbnail"],
             "is_live": info["is_live"],
-            "stream_url": f"/api/youtube/stream/{clean_id}",
-            "direct_url": info["direct_url"],
+            "playback_mode": playback_mode,
+            "stream_url": f"/api/youtube/stream/{clean_id}" if playback_mode == "native" else "",
+            "direct_url": info.get("direct_url") or "",
+            "embed_url": info.get("embed_url") or f"https://www.youtube.com/embed/{clean_id}",
         },
         "account": yt_service.get_youtube_account_status(),
     })
@@ -73,6 +76,8 @@ def api_youtube_stream(video_id):
     """
     _enforce_same_origin_proxy()
     info = yt_service.resolve_video_stream(video_id)
+    if not info.get("direct_url"):
+        raise ApiError("Stream direto indisponível no IP da VPS (use o player embed oficial).", status=502)
     range_header = request.headers.get("Range")
 
     def _open_upstream(stream_info):
