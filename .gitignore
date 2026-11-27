@@ -61,6 +61,8 @@ entrada_chamados_externos/*
 !entrada_chamados_externos/.gitkeep
 arquivados_chamados_externos/*
 !arquivados_chamados_externos/.gitkeep
+biblioteca_pdfs/
+enviados_vps/
 rotas_imagens/*
 !rotas_imagens/.gitkeep
 

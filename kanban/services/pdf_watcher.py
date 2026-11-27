@@ -104,11 +104,21 @@ def _archive_pdf_file(pdf_path: str, archive_root_dir: str, os_number: str) -> s
                     dest_filename = f"OS_{os_number}_{now_dt.strftime('%H%M%S')}_{base_name}"
                     dest_path = os.path.join(month_dir, dest_filename)
             shutil.move(pdf_path, dest_path)
+            try:
+                from .pdf_library import index_local_archived_pdf
+                index_local_archived_pdf(dest_path)
+            except Exception as idx_err:
+                logger.debug("Indexação no acervo PDF ignorada: %s", idx_err)
             return os.path.relpath(dest_path, os.path.dirname(archive_root_dir))
         except Exception:
             try:
                 shutil.copy2(pdf_path, dest_path)
                 os.remove(pdf_path)
+                try:
+                    from .pdf_library import index_local_archived_pdf
+                    index_local_archived_pdf(dest_path)
+                except Exception as idx_err:
+                    logger.debug("Indexação no acervo PDF ignorada: %s", idx_err)
                 return os.path.relpath(dest_path, os.path.dirname(archive_root_dir))
             except Exception:
                 time.sleep(0.3)

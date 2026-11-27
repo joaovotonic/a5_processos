@@ -15,6 +15,7 @@ ARQUIVADOS_PDFS_DIR = os.path.join(DATA_DIR, "arquivados_pdfs")
 
 ENTRADA_EXTERNOS_DIR = os.path.join(DATA_DIR, "entrada_chamados_externos")
 ARQUIVADOS_EXTERNOS_DIR = os.path.join(DATA_DIR, "arquivados_chamados_externos")
+PDF_LIBRARY_DIR = os.path.join(DATA_DIR, "biblioteca_pdfs")
 ROTAS_IMAGENS_DIR = os.path.join(DATA_DIR, "rotas_imagens")
 
 DB_DIR = os.path.join(DATA_DIR, "database")

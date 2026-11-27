@@ -10,7 +10,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import quote
 
-from flask import Blueprint, jsonify, make_response, render_template, request
+from flask import Blueprint, jsonify, make_response, render_template, request, send_file
 
 from .. import config
 from ..auth import get_current_user, require_api_roles
@@ -402,3 +402,114 @@ def api_integration_notify_whatsapp():
         return jsonify({"success": False, "error": f"Falha ao enviar via Chatwoot/WhatsApp: {err_msg}"}), 502
     except Exception as exc:
         return jsonify({"success": False, "error": f"Ponte WhatsApp indisponível: {exc}"}), 502
+
+
+def _is_authorized_integration_write() -> bool:
+    """Aceita apenas sessão admin/master OU token mestre (X-A5-Ingest-Token / X-A5-Integration-Token)."""
+    user = get_current_user()
+    if user and user.get("role") in ("admin_recepcao", "master"):
+        return True
+    expected = _active_integration_token()
+    provided_hdr = (
+        request.headers.get("X-A5-Integration-Token")
+        or request.headers.get("X-A5-Ingest-Token")
+        or ""
+    ).strip()
+    return bool(expected and provided_hdr and hmac.compare_digest(provided_hdr, expected))
+
+
+@bp.route("/api/integration/pdf-library/check", methods=["POST"])
+def api_pdf_library_check():
+    """Verifica em lote quais hashes SHA-256 de PDFs já existem no acervo da VPS."""
+    if not _is_authorized_integration_write():
+        return jsonify({"success": False, "error": "Token ou sessão inválida."}), 401
+    from ..services.pdf_library import check_existing_hashes
+
+    data = request.get_json(silent=True) or {}
+    hashes = data.get("hashes") if isinstance(data.get("hashes"), list) else []
+    existing = check_existing_hashes(hashes)
+    return jsonify({"success": True, "existing": existing})
+
+
+@bp.route("/api/integration/pdf-library/upload", methods=["POST"])
+def api_pdf_library_upload():
+    """Recebe uma cópia somente-leitura de um PDF da pasta do PC da Recepção e indexa no acervo."""
+    if not _is_authorized_integration_write():
+        return jsonify({"success": False, "error": "Token ou sessão inválida."}), 401
+    from ..services.pdf_library import store_and_index_uploaded_pdf
+
+    pdf_file = request.files.get("file") or request.files.get("pdf")
+    if not pdf_file or not pdf_file.filename:
+        raise ApiError("Nenhum arquivo PDF enviado.", status=400)
+
+    raw_bytes = pdf_file.read()
+    source_rel_path = (request.form.get("source_rel_path") or pdf_file.filename or "").strip()
+    raw_mtime = request.form.get("file_mtime")
+    try:
+        file_mtime = float(raw_mtime) if raw_mtime else None
+    except ValueError:
+        file_mtime = None
+
+    try:
+        res = store_and_index_uploaded_pdf(
+            raw_bytes=raw_bytes,
+            orig_filename=os.path.basename(pdf_file.filename),
+            source_rel_path=source_rel_path,
+            file_mtime=file_mtime,
+        )
+    except ValueError as exc:
+        raise ApiError(str(exc), status=400)
+
+    return jsonify({"success": True, **res}), 200
+
+
+@bp.route("/api/integration/pdf-library/search", methods=["GET"])
+def api_pdf_library_search():
+    """Busca PDFs de O.S. no acervo ordenados dos mais recentes para os mais antigos."""
+    if not _is_authorized_integration_read():
+        return jsonify({"success": False, "error": "Token ou sessão inválida."}), 401
+    from ..services.pdf_library import get_library_stats, search_pdf_library
+
+    q = (request.args.get("q") or "").strip()
+    phone = (request.args.get("phone") or "").strip()
+    try:
+        limit = int(request.args.get("limit", "8"))
+    except ValueError:
+        limit = 8
+
+    items = search_pdf_library(q=q, phone=phone, limit=limit)
+    return jsonify({
+        "success": True,
+        "count": len(items),
+        "query": q,
+        "phone": phone,
+        "items": items,
+        "stats": get_library_stats(),
+    })
+
+
+@bp.route("/api/integration/pdf-library/stats", methods=["GET"])
+def api_pdf_library_stats():
+    if not _is_authorized_integration_read():
+        return jsonify({"success": False, "error": "Token ou sessão inválida."}), 401
+    from ..services.pdf_library import get_library_stats
+
+    return jsonify({"success": True, **get_library_stats()})
+
+
+@bp.route("/api/integration/pdf-library/<int:pdf_id>/download", methods=["GET"])
+def api_pdf_library_download(pdf_id: int):
+    """Baixa o arquivo PDF real do acervo (usado pelo Chatwoot /enviarpdf e pelo painel)."""
+    if not _is_authorized_integration_read():
+        return jsonify({"success": False, "error": "Token ou sessão inválida."}), 401
+    from ..services.pdf_library import resolve_safe_pdf_path
+
+    abs_path, filename = resolve_safe_pdf_path(pdf_id)
+    if not abs_path:
+        return jsonify({"success": False, "error": "PDF não encontrado no acervo."}), 404
+    return send_file(
+        abs_path,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=filename,
+    )
