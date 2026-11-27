@@ -42,6 +42,9 @@ SECRET_KEY = os.environ.get("A5_SECRET_KEY", DEFAULT_SECRET_KEY)
 
 # Integrações opcionais de produção/VPS
 PDF_INGEST_TOKEN = os.environ.get("A5_PDF_INGEST_TOKEN", "").strip()
+INTEGRATION_TOKEN = os.environ.get("A5_INTEGRATION_TOKEN", "").strip()
+CHATWOOT_BRIDGE_URL = os.environ.get("A5_CHATWOOT_BRIDGE_URL", "http://gemini-assistant:4000").strip().rstrip("/")
+CHATWOOT_PUBLIC_URL = os.environ.get("A5_CHATWOOT_PUBLIC_URL", "https://chat.a5painel.cloud").strip().rstrip("/")
 GITHUB_TOKEN = os.environ.get("A5_GITHUB_TOKEN", "").strip()
 UPDATE_BRANCH = os.environ.get("A5_UPDATE_BRANCH", "main").strip() or "main"
 YT_COOKIES_FILE = os.environ.get("A5_YT_COOKIES_FILE", os.path.join(DB_DIR, "yt_cookies.txt")).strip()

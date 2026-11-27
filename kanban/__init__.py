@@ -77,7 +77,9 @@ def create_app():
     def apply_security_headers(response):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        csp = response.headers.get("Content-Security-Policy", "")
+        if "frame-ancestors" not in csp.lower():
+            response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         return response
 
     @app.after_request

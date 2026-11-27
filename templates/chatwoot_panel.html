@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Esteira A5 • Painel Chatwoot</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --surface-2: #0b1324;
+      --border: rgba(148, 163, 184, 0.22);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f8fafc;
+        --surface: #ffffff;
+        --surface-2: #f1f5f9;
+        --border: rgba(15, 23, 42, 0.12);
+        --text: #0f172a;
+        --muted: #475569;
+        --accent: #0284c7;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .hdr-title {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+      display: inline-block;
+    }
+    .ctx-banner {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .search-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .search-row input {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12.5px;
+      outline: none;
+    }
+    .search-row input:focus { border-color: var(--accent); }
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.92; }
+    .btn-ghost {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px;
+      margin-bottom: 10px;
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .os-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--accent);
+    }
+    .badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .tone-emerald { background: rgba(16, 185, 129, 0.18); color: #10b981; }
+    .tone-blue, .tone-sky, .tone-cyan { background: rgba(56, 189, 248, 0.18); color: #38bdf8; }
+    .tone-teal { background: rgba(20, 184, 166, 0.18); color: #14b8a6; }
+    .tone-indigo { background: rgba(99, 102, 241, 0.18); color: #818cf8; }
+    .tone-amber, .tone-orange { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
+    .tone-rose { background: rgba(244, 63, 94, 0.18); color: #f43f5e; }
+    .client {
+      font-weight: 800;
+      font-size: 12.5px;
+      margin-bottom: 2px;
+    }
+    .meta {
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .defect {
+      font-size: 11.5px;
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 6px 8px;
+      margin: 6px 0;
+      border: 1px solid var(--border);
+    }
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .actions button, .actions a {
+      flex: 1;
+      text-align: center;
+      text-decoration: none;
+      font-size: 11.5px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px 12px;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      background: #10b981;
+      color: #052e16;
+      font-weight: 800;
+      font-size: 12px;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      display: none;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="hdr">
+    <div class="hdr-title"><span class="pill-dot"></span><span>Esteira A5 • Ordens de Serviço</span></div>
+    <a class="btn btn-ghost" style="padding:4px 8px;font-size:11px;text-decoration:none" href="{{ public_url }}/admin" target="_blank" rel="noreferrer">Abrir Painel ↗</a>
+  </div>
+
+  <div id="ctxBanner" class="ctx-banner">
+    <span id="ctxText">Aguardando conversa do Chatwoot...</span>
+    <button id="ctxResetBtn" class="btn btn-ghost" style="padding:3px 7px;font-size:10.5px;display:none" onclick="loadFromContext()">Cliente atual</button>
+  </div>
+
+  <form class="search-row" onsubmit="event.preventDefault(); searchManual();">
+    <input id="qInput" type="text" placeholder="Buscar O.S., cliente ou nº de série..." autocomplete="off" />
+    <button type="submit" class="btn">Buscar</button>
+  </form>
+
+  <div id="results"></div>
+  <div id="toast" class="toast">Mensagem copiada!</div>
+
+  <script>
+    const DASHBOARD_TOKEN = {{ dashboard_token | tojson }};
+    const PUBLIC_URL = {{ public_url | tojson }};
+    let currentContactPhone = "";
+    let currentContactName = "";
+    let lastItems = [];
+
+    function esc(v) {
+      return String(v || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { t.style.display = "none"; }, 2200);
+    }
+
+    async function copyReply(idx) {
+      const item = lastItems[idx];
+      if (!item) return;
+      const txt = item.suggested_whatsapp_reply || "";
+      try {
+        await navigator.clipboard.writeText(txt);
+        showToast("Resposta da O.S. " + item.os_number + " copiada! Cole no chat.");
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        showToast("Resposta copiada!");
+      }
+    }
+
+    function renderItems(items, emptyMsg) {
+      lastItems = items || [];
+      const wrap = document.getElementById("results");
+      if (!lastItems.length) {
+        wrap.innerHTML = `<div class="empty">${esc(emptyMsg || "Nenhuma O.S. localizada.")}</div>`;
+        return;
+      }
+      wrap.innerHTML = lastItems.map((it, idx) => {
+        const eq = [it.equipment_type, it.equipment_model].filter(Boolean).join(" • ");
+        const extras = [
+          it.serial_number ? `Série: <b>${esc(it.serial_number)}</b>` : "",
+          it.tech_name ? `Técnico: <b>${esc(it.tech_name)}</b>` : "",
+          it.shelf_location ? `Local: <b>${esc(it.shelf_location)}</b>` : "",
+          it.inmetro_seal ? `Lacre: <b>${esc(it.inmetro_seal)}</b>` : "",
+          it.created_at ? `Entrada: ${esc(String(it.created_at).slice(0, 10))}` : "",
+        ].filter(Boolean).join(" • ");
+        return `
+          <div class="card">
+            <div class="card-top">
+              <span class="os-tag">O.S. ${esc(it.os_number)}</span>
+              <span class="badge tone-${esc(it.badge_tone || 'sky')}">${esc(it.stage_label)}</span>
+            </div>
+            <div class="client">${esc(it.client_name)}</div>
+            <div class="meta">${esc(eq)}</div>
+            ${extras ? `<div class="meta">${extras}</div>` : ""}
+            ${it.reported_defect ? `<div class="defect"><b>Defeito:</b> ${esc(it.reported_defect)}</div>` : ""}
+            ${it.technical_report ? `<div class="defect"><b>Laudo:</b> ${esc(it.technical_report)}</div>` : ""}
+            <div class="actions">
+              <button type="button" class="btn" onclick="copyReply(${idx})">📋 Copiar resposta</button>
+              <a class="btn btn-ghost" href="${esc(it.public_os_url)}" target="_blank" rel="noreferrer">🔗 Ver O.S.</a>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function fetchOs({ q = "", phone = "" }) {
+      const wrap = document.getElementById("results");
+      wrap.innerHTML = `<div class="empty">Consultando Esteira A5...</div>`;
+      try {
+        const params = new URLSearchParams();
+        if (q) params.set("q", q);
+        if (phone) params.set("phone", phone);
+        params.set("limit", "10");
+        const res = await fetch(`/api/integration/os-lookup?${params.toString()}`, {
+          headers: { "X-A5-Dashboard-Token": DASHBOARD_TOKEN },
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Erro ao consultar Esteira");
+        }
+        renderItems(
+          data.items || [],
+          q || phone
+            ? "Nenhuma O.S. encontrada para este cliente. Use a busca acima pelo número da O.S. ou nome da loja."
+            : "Nenhuma O.S. ativa encontrada."
+        );
+      } catch (err) {
+        wrap.innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
+      }
+    }
+
+    function searchManual() {
+      const q = document.getElementById("qInput").value.trim();
+      fetchOs({ q });
+    }
+
+    function loadFromContext() {
+      document.getElementById("qInput").value = "";
+      const isGenericName = !currentContactName || /^\+?\d[\d\s\-()]+$/.test(currentContactName.trim());
+      fetchOs({
+        phone: currentContactPhone,
+        q: isGenericName ? "" : currentContactName,
+      });
+    }
+
+    window.addEventListener("message", (event) => {
+      let payload = event.data;
+      if (typeof payload === "string") {
+        try { payload = JSON.parse(payload); } catch { return; }
+      }
+      if (!payload || payload.event !== "appContext" || !payload.data) return;
+      const contact = payload.data.contact || {};
+      const nextPhone = contact.phone_number || "";
+      const nextName = contact.name || "";
+      if (nextPhone !== currentContactPhone || nextName !== currentContactName) {
+        currentContactPhone = nextPhone;
+        currentContactName = nextName;
+        document.getElementById("ctxText").textContent =
+          `Cliente: ${nextName || "Sem nome"}${nextPhone ? " (" + nextPhone + ")" : ""}`;
+        document.getElementById("ctxResetBtn").style.display = "inline-block";
+        loadFromContext();
+      }
+    });
+
+    // Solicita o contexto da conversa atual ao Chatwoot e faz carga inicial
+    try { window.parent.postMessage("chatwoot-dashboard-app:fetch-info", "*"); } catch {}
+    setTimeout(() => {
+      if (!currentContactPhone && !currentContactName) {
+        document.getElementById("ctxText").textContent = "Mostrando O.S. recentes da oficina";
+        fetchOs({});
+      }
+    }, 900);
+  </script>
+</body>
+</html>

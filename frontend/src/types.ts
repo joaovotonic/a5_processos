@@ -84,6 +84,9 @@ export interface KanbanCard {
   id: number;
   os_number: string;
   client_name: string;
+  trade_name?: string;
+  phone?: string;
+  cnpj_cpf?: string;
   equipment_type: string;
   equipment_model: string;
   serial_number: string;

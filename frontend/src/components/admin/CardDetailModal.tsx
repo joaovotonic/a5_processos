@@ -7,6 +7,7 @@ import {
   CheckCircle,
   Inbox,
   Layers,
+  MessageSquare,
   PackageCheck,
   Plus,
   Printer,
@@ -59,6 +60,34 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
   const [clientName, setClientName] = useState('');
   const [reportedDefect, setReportedDefect] = useState('');
   const [saveBtnState, setSaveBtnState] = useState<MorphButtonState>('idle');
+  const [waOpen, setWaOpen] = useState(false);
+  const [waPhone, setWaPhone] = useState('');
+  const [waInbox, setWaInbox] = useState<'laboratorio' | 'chamados'>('laboratorio');
+  const [waMessage, setWaMessage] = useState('');
+  const [waSending, setWaSending] = useState(false);
+
+  const buildDefaultWaMessage = (c: KanbanCard) => {
+    const eq = [c.equipment_type, c.equipment_model].filter(Boolean).join(' ').trim() || 'seu equipamento';
+    const ph = (c.pipeline_phase || '').toUpperCase();
+    const lt = (c.list_title || '').toUpperCase();
+    const sealTxt = c.inmetro_seal ? ` (Lacre IPEM: ${c.inmetro_seal})` : '';
+    if (ph === 'PRONTAS' || ph === 'FINALIZADAS' || c.finished_at || lt.includes('FINALIZADA') || lt.includes('PRONTA')) {
+      return `Olá! Aqui é da A5 Tecnologia. Informamos que o equipamento referente à O.S. ${c.os_number} (${eq})${sealTxt} já está finalizado e pronto para retirada em nossa oficina!`;
+    }
+    if (ph === 'NAO_AUTORIZADO' || lt.includes('NÃO AUTORIZAD') || lt.includes('NAO AUTORIZAD')) {
+      return `Olá! Referente à O.S. ${c.os_number} (${eq}), consta como orçamento não autorizado e o equipamento está disponível para retirada em nossa oficina.`;
+    }
+    if (ph === 'ORCAMENTOS_FEITOS' || ph === 'ORCAMENTOS_ENVIADOS' || lt.includes('FEITO') || lt.includes('ENVIAD')) {
+      return `Olá! Aqui é da A5 Tecnologia. O orçamento referente à O.S. ${c.os_number} (${eq}) já está pronto. Ficamos no aguardo da sua aprovação para iniciarmos o reparo!`;
+    }
+    if (ph === 'BALANCAS_PENDENTES' || lt.includes('PENDENTE')) {
+      return `Olá! Sobre a O.S. ${c.os_number} (${eq}), o equipamento encontra-se aprovado e aguardando a chegada de peça para conclusão do reparo. Assim que finalizar, avisaremos por aqui!`;
+    }
+    if (ph === 'EM_MANUTENCAO' || ph === 'APROVADOS' || lt.includes('APROVAD')) {
+      return `Olá! Sobre a O.S. ${c.os_number} (${eq}), o equipamento já está aprovado/em manutenção na bancada. Assim que ficar pronto para retirada, avisaremos por aqui!`;
+    }
+    return `Olá! Aqui é da A5 Tecnologia. Confirmamos o acompanhamento da O.S. ${c.os_number} (${eq}) em nossa oficina. Qualquer dúvida, estamos à disposição!`;
+  };
 
   useEffect(() => {
     if (!card) return;
@@ -68,6 +97,10 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
     setClientName(card.client_name || '');
     setReportedDefect(card.reported_defect || '');
     setSaveBtnState('idle');
+    setWaOpen(false);
+    setWaPhone(card.phone || '');
+    setWaMessage(buildDefaultWaMessage(card));
+    setWaSending(false);
   }, [card]);
 
   useEffect(() => {
@@ -190,6 +223,42 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
     }
   };
 
+  const handleSendWhatsApp = async () => {
+    const cleanPhone = waPhone.replace(/\D+/g, '');
+    if (cleanPhone.length < 8) {
+      onToast('Informe o WhatsApp do cliente com DDD.');
+      return;
+    }
+    if (!waMessage.trim()) {
+      onToast('Digite a mensagem antes de enviar.');
+      return;
+    }
+    setWaSending(true);
+    try {
+      const res = await apiJson<{ success?: boolean; error?: string; delivered_via?: string }>(
+        '/api/integration/notify-whatsapp',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            os_number: card.os_number,
+            client_name: card.client_name,
+            phone: cleanPhone,
+            message: waMessage.trim(),
+            inbox: waInbox,
+          }),
+        }
+      );
+      if (res.ok && res.data.success) {
+        onToast(`WhatsApp enviado para ${waPhone} (registrado no Chatwoot)!`);
+        setWaOpen(false);
+      } else {
+        onToast(res.data.error || 'Falha ao enviar mensagem pelo WhatsApp.');
+      }
+    } finally {
+      setWaSending(false);
+    }
+  };
+
   const handleReopenAction = async (approve: boolean) => {
     const url = approve ? `/api/cards/${card.id}/reopen-quote` : `/api/cards/${card.id}/deny-reopen`;
     const res = await apiJson(url, {
@@ -292,6 +361,19 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
 
               <button
                 type="button"
+                onClick={() => setWaOpen((v) => !v)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer transition ${
+                  waOpen
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/35 hover:bg-emerald-500/25'
+                }`}
+                title="Avisar cliente via Chatwoot / WhatsApp"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>WhatsApp</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => window.open(`/etiqueta/${encodeURIComponent(card.os_number)}`, '_blank', 'width=450,height=380')}
                 className="px-3 py-1.5 rounded-full bento-inner-tile text-xs font-bold inline-flex items-center gap-1.5 hover:border-blue-500 cursor-pointer"
               >
@@ -359,6 +441,59 @@ export const CardDetailModal: React.FC<CardDetailModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* 3b. Integração Chatwoot / WhatsApp */}
+          {waOpen && (
+            <div className="p-4 rounded-2xl border border-emerald-500/35 bg-emerald-500/[0.06] space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-emerald-700 dark:text-emerald-300">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Avisar Cliente no WhatsApp (via Chatwoot)</span>
+                </div>
+                <select
+                  value={waInbox}
+                  onChange={(e) => setWaInbox(e.target.value as 'laboratorio' | 'chamados')}
+                  className="px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-500/30 text-[11px] font-bold"
+                >
+                  <option value="laboratorio">WhatsApp - Laboratório</option>
+                  <option value="chamados">WhatsApp - Chamados</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">WhatsApp (com DDD)</label>
+                  <input
+                    type="text"
+                    value={waPhone}
+                    onChange={(e) => setWaPhone(e.target.value)}
+                    placeholder="Ex: 92984123456"
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-mono font-bold"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Mensagem para o cliente</label>
+                  <textarea
+                    rows={3}
+                    value={waMessage}
+                    onChange={(e) => setWaMessage(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <CopyMorph text={waMessage} label="Copiar Texto" doneLabel="Copiado!" compact />
+                <button
+                  type="button"
+                  disabled={waSending}
+                  onClick={handleSendWhatsApp}
+                  className="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{waSending ? 'Enviando...' : 'Enviar via WhatsApp'}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* 4. Phase-Aware Labels */}
           <div className="p-4 rounded-2xl bento-inner-tile space-y-3">
