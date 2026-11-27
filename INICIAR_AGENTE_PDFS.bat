@@ -27,7 +27,7 @@ set "A5_PY=python"
 if exist ".venv\Scripts\python.exe" set "A5_PY=%CD%\.venv\Scripts\python.exe"
 
 :loop
-echo [%date% %time%] Iniciando Agente de PDFs A5 -> %A5_VPS_URL%
+echo [%date% %time%] Iniciando Agente de PDFs A5 para %A5_VPS_URL%
 "%A5_PY%" agente_pdfs_recepcao.py
 echo [%date% %time%] Agente encerrado. Reiniciando em 5 segundos...
 timeout /t 5 /nobreak >nul
